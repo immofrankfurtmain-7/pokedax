@@ -74,7 +74,7 @@ function CategoryCard({ cat, isActive, onClick }: { cat: typeof FORUM_CATEGORIES
       onClick={onClick}
     >
       <div className={`relative rounded-[18px] overflow-hidden bg-[linear-gradient(160deg,rgba(18,12,40,0.97),rgba(8,4,20,0.99))] transition-all duration-300 ${isActive ? 'ring-2' : ''}`}
-        style={isActive ? { outlineColor: cat.color, outline: "2px solid", boxShadow: `0 0 24px ${cat.glow}` } : {}}>
+        style={isActive ? { boxShadow: `0 0 24px ${cat.glow}` } : {}}>
 
         {/* Holo foil */}
         <div className="absolute inset-0 z-20 pointer-events-none rounded-[18px] opacity-0 group-hover:opacity-100 transition-opacity"
