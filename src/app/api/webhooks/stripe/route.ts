@@ -1,32 +1,26 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(req: Request) {
   try {
     const body = await req.text()
     const signature = req.headers.get('stripe-signature')
-
-    if (!signature) {
-      return NextResponse.json({ error: 'No signature' }, { status: 400 })
-    }
+    if (!signature) return NextResponse.json({ error: 'No signature' }, { status: 400 })
 
     const Stripe = (await import('stripe')).default
-    const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
+    const s = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
       apiVersion: '2024-11-20.acacia' as never,
     })
 
-    let event: ReturnType<typeof stripeInstance.webhooks.constructEvent>
+    let event: ReturnType<typeof s.webhooks.constructEvent>
     try {
-      event = stripeInstance.webhooks.constructEvent(
-        body, signature, process.env.STRIPE_WEBHOOK_SECRET ?? ''
-      )
-    } catch (err) {
-      console.error('[webhook] signature check failed', err)
+      event = s.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET ?? '')
+    } catch {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
     }
 
     const supabase = await createClient()
-    const obj = event.data.object as Record<string, unknown>
+    const obj = event.data.object as unknown as Record<string, unknown>
 
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -51,23 +45,19 @@ export async function POST(req: Request) {
         break
       }
       case 'invoice.payment_succeeded': {
-        const customerId = obj.customer as string
-        if (customerId) {
+        const cid = obj.customer as string
+        if (cid) {
           await supabase.from('profiles').update({
             premium_until: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-          }).eq('stripe_customer_id', customerId)
+          }).eq('stripe_customer_id', cid)
         }
-        break
-      }
-      case 'invoice.payment_failed': {
-        console.warn('[webhook] Payment failed:', obj.customer)
         break
       }
     }
 
     return NextResponse.json({ received: true })
   } catch (err) {
-    console.error('[webhook] error', err)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+    console.error('[webhook]', err)
+    return NextResponse.json({ error: 'Error' }, { status: 500 })
   }
 }
