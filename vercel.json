@@ -8,11 +8,11 @@
     "src/app/api/**": {
       "maxDuration": 30
     }
-  }
-}
-{
-  "crons": [{
-    "path": "/api/cron/update-prices",
-    "schedule": "0 3 * * *"
-  }]
+  },
+  "crons": [
+    {
+      "path": "/api/cron/update-prices",
+      "schedule": "0 3 * * *"
+    }
+  ]
 }
