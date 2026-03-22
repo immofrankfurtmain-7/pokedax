@@ -9,10 +9,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { fetchAllSets, fetchSetWithCards, fetchCard, getCardImageUrl, extractPrices } from '@/lib/tcgdex'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+
 
 // Hilfsfunktion: kurz warten (Rate Limiting vermeiden)
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
@@ -23,7 +20,10 @@ export async function GET(req: Request) {
   if (secret !== process.env.ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
   const results = { sets: 0, cards: 0, errors: [] as string[] }
 
   try {
