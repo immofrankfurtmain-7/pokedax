@@ -57,27 +57,21 @@ export interface TcgCardWithPrices extends TcgCard {
 
 // Alle Sets laden
 export async function fetchAllSets(): Promise<TcgSet[]> {
-  const res = await fetch(`${BASE_URL}/sets`, {
-    next: { revalidate: 86400 } // 24h Cache
-  })
+  const res = await fetch(`${BASE_URL}/sets`, { cache: 'no-store' })
   if (!res.ok) throw new Error(`TCGdex Sets Error: ${res.status}`)
   return res.json()
 }
 
 // Ein Set mit allen Karten laden
 export async function fetchSetWithCards(setId: string): Promise<TcgSet & { cards: TcgCard[] }> {
-  const res = await fetch(`${BASE_URL}/sets/${setId}`, {
-    next: { revalidate: 86400 }
-  })
+  const res = await fetch(`${BASE_URL}/sets/${setId}`, { cache: 'no-store' })
   if (!res.ok) throw new Error(`TCGdex Set Error: ${res.status}`)
   return res.json()
 }
 
 // Eine einzelne Karte mit Preisen laden
 export async function fetchCard(cardId: string): Promise<TcgCardWithPrices> {
-  const res = await fetch(`${BASE_URL}/cards/${cardId}`, {
-    next: { revalidate: 3600 } // 1h Cache
-  })
+  const res = await fetch(`${BASE_URL}/cards/${cardId}`, { cache: 'no-store' })
   if (!res.ok) throw new Error(`TCGdex Card Error: ${res.status}`)
   return res.json()
 }
