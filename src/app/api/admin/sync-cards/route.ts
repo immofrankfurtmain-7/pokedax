@@ -2,6 +2,8 @@
 // Einmaliger Import aller Karten von TCGdex → Supabase
 // Aufruf: GET /api/admin/sync-cards
 // Header: x-admin-secret: <ADMIN_SECRET aus .env.local>
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
