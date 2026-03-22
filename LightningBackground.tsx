@@ -65,8 +65,8 @@ export default function LightningBackground() {
 
       // Spawn bolts based on scroll speed
       const speed = scrollVelRef.current
-      if (speed > 2) {
-        const count = Math.min(Math.floor(speed / 15) + 1, 4)
+      if (speed > 12) {
+        const count = Math.min(Math.floor(speed / 40) + 1, 2)
         for (let i = 0; i < count; i++) {
           spawnBolt(canvas.width, canvas.height)
         }
@@ -76,7 +76,7 @@ export default function LightningBackground() {
 
     // Auto-spawn ambient bolts
     let ambientTimer = 0
-    const AMBIENT_INTERVAL = 2800
+    const AMBIENT_INTERVAL = 6000
 
     const spawnBolt = (W: number, H: number) => {
       const color = COLORS[Math.floor(Math.random() * COLORS.length)]
