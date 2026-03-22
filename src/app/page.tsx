@@ -6,6 +6,7 @@ import PremiumSection from '@/components/premium/PremiumSection'
 import Footer        from '@/components/layout/Footer'
 import { getTrendingCards } from '@/lib/pokemon-api'
 
+export const dynamic = 'force-dynamic'
 export default async function HomePage() {
   const trending = await getTrendingCards()
 
