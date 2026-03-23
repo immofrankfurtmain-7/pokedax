@@ -21,7 +21,6 @@ interface Props {
 export default function SetGrid({ sets }: Props) {
   const router = useRouter()
 
-  // Nach Serie gruppieren
   const grouped = sets.reduce((acc, set) => {
     const series = set.series || 'Sonstige'
     if (!acc[series]) acc[series] = []
@@ -54,13 +53,22 @@ export default function SetGrid({ sets }: Props) {
                 <div className="h-12 flex items-center justify-center mb-3">
                   {set.logo_url ? (
                     <img
-                      src={set.logo_url}
+                      src={set.logo_url.endsWith('.png') ? set.logo_url : `${set.logo_url}.png`}
                       alt={set.name}
                       className="max-h-12 max-w-full object-contain group-hover:scale-105 transition-transform"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        const fallback = e.currentTarget.nextElementSibling as HTMLElement
+                        if (fallback) fallback.style.display = 'block'
+                      }}
                     />
-                  ) : (
-                    <div className="text-gray-600 text-xs text-center">{set.name}</div>
-                  )}
+                  ) : null}
+                  <div
+                    className="text-gray-600 text-xs text-center"
+                    style={{ display: set.logo_url ? 'none' : 'block' }}
+                  >
+                    {set.name}
+                  </div>
                 </div>
 
                 {/* Name */}

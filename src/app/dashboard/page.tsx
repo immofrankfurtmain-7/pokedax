@@ -9,8 +9,34 @@ export const dynamic = 'force-dynamic'
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile }  = await supabase.from('profiles').select('*').eq('id', user!.id).single()
-  const { data: portfolioCards } = await supabase.from('portfolio_cards').select('id').eq('user_id', user!.id)
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user!.id).single()
+
+  // Korrekte Tabelle: user_collection statt portfolio_cards
+  const { data: portfolioCards } = await supabase
+    .from('user_collection')
+    .select('id')
+    .eq('user_id', user!.id)
+
+  // Portfolio-Wert berechnen via Join auf cards
+  const { data: collectionWithPrices } = await supabase
+    .from('user_collection')
+    .select(`
+      quantity,
+      is_foil,
+      cards (
+        price_market,
+        price_foil_market
+      )
+    `)
+    .eq('user_id', user!.id)
+
+  const portfolioValue = collectionWithPrices?.reduce((sum, item) => {
+    const card = item.cards as any
+    const price = item.is_foil
+      ? (card?.price_foil_market ?? card?.price_market ?? 0)
+      : (card?.price_market ?? 0)
+    return sum + (price * (item.quantity ?? 1))
+  }, 0) ?? 0
 
   const totalCards = portfolioCards?.length ?? 0
   const isPremium  = profile?.is_premium ?? false
@@ -33,35 +59,41 @@ export default async function DashboardPage() {
           </h1>
           <p className="text-white/40 text-sm mt-1 font-normal">{user!.email}</p>
           {isPremium ? (
-            <div className="flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full w-fit"
-              style={{ background:'rgba(255,215,0,0.1)', border:'1px solid rgba(255,215,0,0.3)' }}>
-              <Star size={11} className="text-yellow-400"/>
+            <div
+              className="flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full w-fit"
+              style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)' }}
+            >
+              <Star size={11} className="text-yellow-400" />
               <span className="text-[10px] font-black text-yellow-400 tracking-wider">PREMIUM AKTIV</span>
             </div>
           ) : (
-            <Link href="/dashboard/premium"
+            <Link
+              href="/dashboard/premium"
               className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 rounded-full text-[10px] font-bold text-violet-400 hover:text-violet-300 transition-colors"
-              style={{ background:'rgba(124,58,237,0.1)', border:'1px solid rgba(124,58,237,0.25)' }}>
-              <Star size={10}/> Premium freischalten
+              style={{ background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.25)' }}
+            >
+              <Star size={10} /> Premium freischalten
             </Link>
           )}
         </div>
       </div>
 
-      {/* Stylish cards */}
+      {/* Stylish cards – jetzt mit echtem Wert */}
       <DashboardCards
         totalCards={totalCards}
         isPremium={isPremium}
-        portfolioValue={0}
+        portfolioValue={portfolioValue}
       />
 
       {/* Recent activity */}
-      <div className="mt-8 rounded-2xl overflow-hidden"
+      <div
+        className="mt-8 rounded-2xl overflow-hidden"
         style={{
-          background:'rgba(255,255,255,0.02)',
-          backdropFilter:'blur(20px)',
-          border:'1px solid rgba(255,255,255,0.06)',
-        }}>
+          background: 'rgba(255,255,255,0.02)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+        }}
+      >
         <div className="px-6 py-4 border-b border-white/5">
           <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Letzte Aktivität</span>
         </div>
@@ -69,9 +101,11 @@ export default async function DashboardPage() {
           <div className="text-5xl mb-4 opacity-20">⚡</div>
           <div className="text-sm font-medium text-white/30">Noch keine Aktivität</div>
           <div className="text-xs text-white/20 mt-1">Füge Karten zu deinem Portfolio hinzu um zu starten</div>
-          <Link href="/dashboard/portfolio"
+          <Link
+            href="/dashboard/portfolio"
             className="mt-5 px-5 py-2 rounded-xl text-xs font-bold text-violet-300 transition-all hover:-translate-y-0.5"
-            style={{ background:'rgba(124,58,237,0.12)', border:'1px solid rgba(124,58,237,0.3)' }}>
+            style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)' }}
+          >
             Portfolio öffnen →
           </Link>
         </div>
