@@ -20,19 +20,19 @@ export async function GET(req: Request) {
   )
 
   const { searchParams } = new URL(req.url)
-  const setId = searchParams.get('setId')
-  const limitParam = searchParams.get('limit')
+  const setId       = searchParams.get('setId')
+  const limitParam  = searchParams.get('limit')
   const offsetParam = searchParams.get('offset')
 
   if (!setId) {
     return NextResponse.json({ error: 'setId required' }, { status: 400 })
   }
 
-  const limit = limitParam ? parseInt(limitParam) : 50
+  const limit  = limitParam  ? parseInt(limitParam)  : 50
   const offset = offsetParam ? parseInt(offsetParam) : 0
 
   try {
-    // Karten aus DB laden (nur IDs und Nummern für diesen Batch)
+    // Karten aus DB laden
     const { data: cards, error } = await supabase
       .from('cards')
       .select('id, number')
@@ -42,17 +42,17 @@ export async function GET(req: Request) {
 
     if (error) throw error
     if (!cards?.length) {
-      return NextResponse.json({ success: true, updated: 0, message: 'No cards found' })
+      return NextResponse.json({ success: true, updated: 0, hasMore: false, message: 'No cards found' })
     }
 
     let updated = 0
-    let failed = 0
+    let failed  = 0
 
     for (const card of cards) {
       try {
-        // Einzelner Karten-Call – hier sind die Preise
+        // Korrekte URL: setId-localId (z.B. base1-4)
         const res = await fetch(
-          `${BASE_URL}/cards/${setId}/${card.number}`,
+          `${BASE_URL}/cards/${setId}-${card.number}`,
           { cache: 'no-store' }
         )
 
@@ -64,30 +64,28 @@ export async function GET(req: Request) {
 
         const data = await res.json()
 
-        // TCGdex Preisstruktur: data.variants.normal / data.variants.holo
-        const normal = data.variants?.normal
-        const holo   = data.variants?.holo ?? data.variants?.reverse
+        // Cardmarket Preise (EUR)
+        const cm = data.pricing?.cardmarket
 
         await supabase
           .from('cards')
           .update({
-            price_low:        normal?.low        ?? null,
-            price_mid:        normal?.mid        ?? null,
-            price_high:       normal?.high       ?? null,
-            price_market:     normal?.market     ?? null,
-            price_foil_low:   holo?.low          ?? null,
-            price_foil_mid:   holo?.mid          ?? null,
-            price_foil_high:  holo?.high         ?? null,
-            price_foil_market:holo?.market       ?? null,
-            updated_at:       new Date().toISOString(),
+            price_low:         cm?.low           ?? null,
+            price_mid:         cm?.avg           ?? null,
+            price_high:        cm?.trend         ?? null,
+            price_market:      cm?.avg           ?? null,
+            price_foil_low:    cm?.['low-holo']  ?? null,
+            price_foil_mid:    cm?.['avg-holo']  ?? null,
+            price_foil_high:   cm?.['trend-holo'] ?? null,
+            price_foil_market: cm?.['avg-holo']  ?? null,
+            updated_at:        new Date().toISOString(),
           })
           .eq('id', card.id)
 
         updated++
-        // Rate-Limiting: TCGdex erlaubt ~3-5 req/s
         await sleep(250)
 
-      } catch (cardErr) {
+      } catch {
         failed++
         await sleep(500)
       }
