@@ -45,19 +45,16 @@ export default function CardGrid({ cards: initialCards, userId, setId }: Props) 
     setLoading(cardId)
     try {
       if (currentOwned) {
-        // Karte entfernen
         await supabase
           .from('user_collection')
           .delete()
           .eq('user_id', userId)
           .eq('card_id', cardId)
       } else {
-        // Karte hinzufügen
         await supabase
           .from('user_collection')
           .upsert({ user_id: userId, card_id: cardId, quantity: 1 })
       }
-
       setCards(prev => prev.map(c =>
         c.id === cardId ? { ...c, owned: !currentOwned } : c
       ))
@@ -90,8 +87,8 @@ export default function CardGrid({ cards: initialCards, userId, setId }: Props) 
                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
             }`}
           >
-            {f === 'all' && `Alle (${cards.length})`}
-            {f === 'owned' && `Vorhanden (${owned})`}
+            {f === 'all'     && `Alle (${cards.length})`}
+            {f === 'owned'   && `Vorhanden (${owned})`}
             {f === 'missing' && `Fehlend (${cards.length - owned})`}
           </button>
         ))}
@@ -109,7 +106,7 @@ export default function CardGrid({ cards: initialCards, userId, setId }: Props) 
               onClick={() => !isLoading && toggleCard(card.id, card.owned)}
               className={`
                 relative cursor-pointer rounded-xl border-2 overflow-hidden
-                transition-all duration-200 group
+                transition-all duration-200 group flex flex-col
                 ${card.owned
                   ? `${typeColor} opacity-100 shadow-lg`
                   : 'border-gray-800 opacity-40 hover:opacity-70'
@@ -117,6 +114,18 @@ export default function CardGrid({ cards: initialCards, userId, setId }: Props) 
                 ${isLoading ? 'scale-95' : 'hover:scale-105'}
               `}
             >
+              {/* Kartennummer oben links */}
+              <div className="absolute top-1 left-1 z-10 bg-black/60 text-gray-300 text-xs px-1.5 py-0.5 rounded font-mono">
+                #{card.number}
+              </div>
+
+              {/* Owned Badge oben rechts */}
+              {card.owned && (
+                <div className="absolute top-1 right-1 z-10 bg-yellow-400 text-black text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  ✓
+                </div>
+              )}
+
               {/* Karten-Bild */}
               {card.image_url ? (
                 <img
@@ -131,12 +140,19 @@ export default function CardGrid({ cards: initialCards, userId, setId }: Props) 
                 </div>
               )}
 
-              {/* Owned Overlay */}
-              {card.owned && (
-                <div className="absolute top-1 right-1 bg-yellow-400 text-black text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                  ✓
-                </div>
-              )}
+              {/* Name + Preis unter dem Bild */}
+              <div className="bg-black/80 px-1.5 py-1 flex flex-col gap-0.5">
+                <p className="text-white text-[10px] font-medium leading-tight truncate">
+                  {card.name}
+                </p>
+                {card.price_market ? (
+                  <p className="text-yellow-400 text-[10px] font-bold">
+                    {card.price_market.toFixed(2)} €
+                  </p>
+                ) : (
+                  <p className="text-gray-600 text-[10px]">kein Preis</p>
+                )}
+              </div>
 
               {/* Loading Overlay */}
               {isLoading && (
@@ -144,18 +160,6 @@ export default function CardGrid({ cards: initialCards, userId, setId }: Props) 
                   <div className="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
-
-              {/* Preis */}
-              {card.price_market && (
-                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-yellow-400 text-xs text-center py-0.5">
-                  {card.price_market.toFixed(2)} €
-                </div>
-              )}
-
-              {/* Nummer */}
-              <div className="absolute top-1 left-1 bg-black/60 text-gray-300 text-xs px-1 rounded">
-                #{card.number}
-              </div>
             </div>
           )
         })}
