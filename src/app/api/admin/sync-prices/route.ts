@@ -32,7 +32,6 @@ export async function GET(req: Request) {
   const offset = offsetParam ? parseInt(offsetParam) : 0
 
   try {
-    // Karten aus DB laden
     const { data: cards, error } = await supabase
       .from('cards')
       .select('id, number')
@@ -50,7 +49,6 @@ export async function GET(req: Request) {
 
     for (const card of cards) {
       try {
-        // Korrekte URL: setId-localId (z.B. base1-4)
         const res = await fetch(
           `${BASE_URL}/cards/${setId}-${card.number}`,
           { cache: 'no-store' }
@@ -63,21 +61,28 @@ export async function GET(req: Request) {
         }
 
         const data = await res.json()
-
-        // Cardmarket Preise (EUR)
-        const cm = data.pricing?.cardmarket
+        const cm   = data.pricing?.cardmarket
 
         await supabase
           .from('cards')
           .update({
-            price_low:         cm?.low           ?? null,
-            price_mid:         cm?.avg           ?? null,
-            price_high:        cm?.trend         ?? null,
-            price_market:      cm?.avg           ?? null,
-            price_foil_low:    cm?.['low-holo']  ?? null,
-            price_foil_mid:    cm?.['avg-holo']  ?? null,
+            // Aktuelle Preise
+            price_low:         cm?.low            ?? null,
+            price_mid:         cm?.avg            ?? null,
+            price_high:        cm?.trend          ?? null,
+            price_market:      cm?.avg            ?? null,
+            price_foil_low:    cm?.['low-holo']   ?? null,
+            price_foil_mid:    cm?.['avg-holo']   ?? null,
             price_foil_high:   cm?.['trend-holo'] ?? null,
-            price_foil_market: cm?.['avg-holo']  ?? null,
+            price_foil_market: cm?.['avg-holo']   ?? null,
+            // Preisentwicklung normal
+            price_avg1:        cm?.avg1           ?? null,
+            price_avg7:        cm?.avg7           ?? null,
+            price_avg30:       cm?.avg30          ?? null,
+            // Preisentwicklung holo/foil
+            price_foil_avg1:   cm?.['avg1-holo']  ?? null,
+            price_foil_avg7:   cm?.['avg7-holo']  ?? null,
+            price_foil_avg30:  cm?.['avg30-holo'] ?? null,
             updated_at:        new Date().toISOString(),
           })
           .eq('id', card.id)
