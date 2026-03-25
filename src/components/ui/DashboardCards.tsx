@@ -151,10 +151,10 @@ function PortfolioModal({ cards, totalValue, onClose }: {
                 transition={{ delay: i * 0.012 }}
                 style={{
                   display:'grid',
-                  gridTemplateColumns:'20px 38px 1fr auto',
+                  gridTemplateColumns:'20px 44px 1fr auto',
                   alignItems:'center',
                   gap:10,
-                  padding:'8px 12px',
+                  padding:'12px 14px',
                   borderRadius:14,
                   background:'#07021a',
                   border:'1.5px solid rgba(167,139,250,.15)',
@@ -179,14 +179,14 @@ function PortfolioModal({ cards, totalValue, onClose }: {
 
                 {/* Bild */}
                 {card.image_url ? (
-                  <img src={card.image_url} alt={card.name} style={{ width:38, height:52, objectFit:'cover', borderRadius:6, border:`1px solid ${accent}44` }}/>
+                  <img src={card.image_url} alt={card.name} style={{ width:44, height:60, objectFit:'cover', borderRadius:6, border:`1px solid ${accent}44` }}/>
                 ) : (
-                  <div style={{ width:38, height:52, borderRadius:6, background:'rgba(255,255,255,.05)', border:`1px solid ${accent}33` }}/>
+                  <div style={{ width:44, height:60, borderRadius:6, background:'rgba(255,255,255,.05)', border:`1px solid ${accent}33` }}/>
                 )}
 
                 {/* Info */}
                 <div style={{ minWidth:0 }}>
-                  <div style={{ color:'#fff', fontSize:13, fontWeight:800, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</div>
+                  <div style={{ color:'#fff', fontSize:14, fontWeight:800, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</div>
                   <div style={{ display:'flex', gap:5, alignItems:'center', marginTop:3 }}>
                     <span style={{ fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8, background:`${accent}18`, color:accent, flexShrink:0 }}>#{card.number}</span>
                     {card.set_id && <span style={{ color:'rgba(255,255,255,.2)', fontSize:10, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.set_id}</span>}
