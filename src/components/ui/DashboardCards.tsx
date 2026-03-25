@@ -30,26 +30,36 @@ function MiniSparkline({ card }: { card: CollectionCard }) {
   const isDown     = pctChange < -1
   const color      = isUp ? '#4ade80' : isDown ? '#f87171' : '#fbbf24'
 
-  const points  = hasHistory ? [p30 || cur, p7 || cur, p1 || cur, cur] : [cur, cur, cur, cur]
-  const minP    = Math.min(...points) * 0.95
-  const maxP    = Math.max(...points) * 1.05
-  const range   = maxP - minP || 1
-  const W = 52, H = 22
-  const xs = [2, 18, 36, 50]
+  const points = hasHistory ? [p30||cur, p7||cur, p1||cur, cur] : [cur, cur, cur, cur]
+  const minP   = Math.min(...points) * 0.95
+  const maxP   = Math.max(...points) * 1.05
+  const range  = maxP - minP || 1
+  const W = 40, H = 20
+  const xs = [2, 14, 28, 38]
   const ys = points.map(p => H - ((p - minP) / range) * (H - 4) - 1)
-  const pathD = `M${xs[0]} ${ys[0]} C${xs[0]+6} ${ys[0]},${xs[1]-4} ${ys[1]},${xs[1]} ${ys[1]} C${xs[1]+6} ${ys[1]},${xs[2]-6} ${ys[2]},${xs[2]} ${ys[2]} C${xs[2]+4} ${ys[2]},${xs[3]-6} ${ys[3]},${xs[3]} ${ys[3]}`
+  const pathD = `M${xs[0]} ${ys[0]} C${xs[0]+4} ${ys[0]},${xs[1]-3} ${ys[1]},${xs[1]} ${ys[1]} C${xs[1]+4} ${ys[1]},${xs[2]-4} ${ys[2]},${xs[2]} ${ys[2]} C${xs[2]+3} ${ys[2]},${xs[3]-4} ${ys[3]},${xs[3]} ${ys[3]}`
   const areaD = `${pathD} L${xs[3]} ${H} L${xs[0]} ${H} Z`
   const gId   = `g${card.id.replace(/[^a-z0-9]/gi,'').slice(0,8)}`
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:3, flexShrink:0, minWidth:110 }}>
+    <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
       {/* Preis */}
-      <div style={{ fontSize:15, fontWeight:900, color:'#fff', letterSpacing:'-.01em', lineHeight:1 }}>
-        {cur > 0 ? `€${cur.toFixed(2)}` : '–'}
+      <div style={{ textAlign:'right' }}>
+        <div style={{ fontSize:14, fontWeight:900, color:'#fff', whiteSpace:'nowrap' }}>
+          {cur > 0 ? `€${cur.toFixed(2)}` : '–'}
+        </div>
+        <div style={{
+          fontSize:9, fontWeight:800,
+          color, whiteSpace:'nowrap',
+          display:'flex', alignItems:'center', gap:2, justifyContent:'flex-end'
+        }}>
+          {isUp ? '▲' : isDown ? '▼' : '●'}
+          {hasHistory ? ` ${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%` : ' –'}
+        </div>
       </div>
 
       {/* Sparkline */}
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow:'visible' }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow:'visible', flexShrink:0 }}>
         <defs>
           <linearGradient id={gId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor={color} stopOpacity=".4"/>
@@ -58,25 +68,8 @@ function MiniSparkline({ card }: { card: CollectionCard }) {
         </defs>
         <path d={areaD} fill={`url(#${gId})`}/>
         <path d={pathD} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx={xs[0]} cy={ys[0]} r="1.5" fill={color} opacity=".3"/>
-        <circle cx={xs[1]} cy={ys[1]} r="1.5" fill={color} opacity=".5"/>
-        <circle cx={xs[2]} cy={ys[2]} r="1.5" fill={color} opacity=".7"/>
-        <circle cx={xs[3]} cy={ys[3]} r="3"   fill={color}/>
+        <circle cx={xs[3]} cy={ys[3]} r="2.5" fill={color}/>
       </svg>
-
-      {/* Badge */}
-      <div style={{
-        display:'flex', alignItems:'center', gap:2,
-        borderRadius:20, padding:'1px 6px',
-        fontSize:9, fontWeight:800, letterSpacing:'.04em',
-        background: isUp ? 'rgba(74,222,128,.1)' : isDown ? 'rgba(248,113,113,.1)' : 'rgba(251,191,36,.1)',
-        color, border:`1px solid ${color}33`,
-      }}>
-        {isUp   && '▲ '}
-        {isDown && '▼ '}
-        {!isUp && !isDown && '● '}
-        {hasHistory ? `${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%` : 'kein Trend'}
-      </div>
     </div>
   )
 }
@@ -115,7 +108,7 @@ function PortfolioModal({ cards, totalValue, onClose }: {
         exit={{ opacity:0, scale:0.95, y:20 }}
         transition={{ type:'spring', stiffness:300, damping:25 }}
         onClick={e => e.stopPropagation()}
-        style={{ width:'100%', maxWidth:620, maxHeight:'88vh', borderRadius:20, overflow:'hidden', display:'flex', flexDirection:'column', background:'rgba(7,2,26,0.99)', border:'1.5px solid rgba(167,139,250,.3)', boxShadow:'0 25px 60px rgba(0,0,0,.7)' }}
+        style={{ width:'100%', maxWidth:580, maxHeight:'88vh', borderRadius:20, overflow:'hidden', display:'flex', flexDirection:'column', background:'rgba(7,2,26,0.99)', border:'1.5px solid rgba(167,139,250,.3)', boxShadow:'0 25px 60px rgba(0,0,0,.7)' }}
       >
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
@@ -157,11 +150,16 @@ function PortfolioModal({ cards, totalValue, onClose }: {
                 animate={{ opacity:1, x:0 }}
                 transition={{ delay: i * 0.012 }}
                 style={{
-                  display:'flex', alignItems:'center', gap:10,
-                  padding:'8px 12px', borderRadius:14,
+                  display:'grid',
+                  gridTemplateColumns:'20px 38px 1fr auto',
+                  alignItems:'center',
+                  gap:10,
+                  padding:'8px 12px',
+                  borderRadius:14,
                   background:'#07021a',
                   border:'1.5px solid rgba(167,139,250,.15)',
-                  position:'relative', overflow:'hidden',
+                  position:'relative',
+                  overflow:'hidden',
                 }}
               >
                 {/* Typ-Streifen */}
@@ -177,26 +175,26 @@ function PortfolioModal({ cards, totalValue, onClose }: {
                 </svg>
 
                 {/* Rang */}
-                <span style={{ color:'rgba(255,255,255,.15)', fontSize:11, fontFamily:'monospace', width:16, textAlign:'right', flexShrink:0 }}>{i+1}</span>
+                <span style={{ color:'rgba(255,255,255,.15)', fontSize:11, fontFamily:'monospace', textAlign:'right' }}>{i+1}</span>
 
                 {/* Bild */}
                 {card.image_url ? (
-                  <img src={card.image_url} alt={card.name} style={{ width:34, height:47, objectFit:'cover', borderRadius:6, flexShrink:0, border:`1px solid ${accent}44` }}/>
+                  <img src={card.image_url} alt={card.name} style={{ width:38, height:52, objectFit:'cover', borderRadius:6, border:`1px solid ${accent}44` }}/>
                 ) : (
-                  <div style={{ width:34, height:47, borderRadius:6, background:'rgba(255,255,255,.05)', flexShrink:0, border:`1px solid ${accent}33` }}/>
+                  <div style={{ width:38, height:52, borderRadius:6, background:'rgba(255,255,255,.05)', border:`1px solid ${accent}33` }}/>
                 )}
 
-                {/* Info – flex:1 damit es den restlichen Platz füllt */}
-                <div style={{ flex:1, minWidth:0, paddingRight:8 }}>
+                {/* Info */}
+                <div style={{ minWidth:0 }}>
                   <div style={{ color:'#fff', fontSize:13, fontWeight:800, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</div>
-                  <div style={{ display:'flex', gap:5, alignItems:'center', marginTop:3, flexWrap:'wrap' }}>
+                  <div style={{ display:'flex', gap:5, alignItems:'center', marginTop:3 }}>
                     <span style={{ fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8, background:`${accent}18`, color:accent, flexShrink:0 }}>#{card.number}</span>
                     {card.set_id && <span style={{ color:'rgba(255,255,255,.2)', fontSize:10, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.set_id}</span>}
                   </div>
-                  {card.rarity && <div style={{ color:'rgba(255,255,255,.18)', fontSize:10, marginTop:2 }}>{card.rarity}</div>}
+                  {card.rarity && <div style={{ color:'rgba(255,255,255,.18)', fontSize:10, marginTop:1 }}>{card.rarity}</div>}
                 </div>
 
-                {/* Sparkline + Preis */}
+                {/* Preis + Sparkline */}
                 <MiniSparkline card={card}/>
               </motion.div>
             )
