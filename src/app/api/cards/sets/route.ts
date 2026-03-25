@@ -2,7 +2,7 @@
 import { createClient } from '@/lib/supabase/server'
 
 export async function GET() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: sets } = await supabase
     .from('sets')
     .select('id, name')

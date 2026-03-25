@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const page    = parseInt(searchParams.get('page') ?? '1')
   const limit   = 20
   const offset  = (page - 1) * limit
-  const supabase = createClient()
+  const supabase = await createClient()
 
   let dbQuery = supabase
     .from('cards')
