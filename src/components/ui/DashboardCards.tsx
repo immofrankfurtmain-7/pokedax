@@ -17,49 +17,33 @@ interface CollectionCard {
   set_id?: string
 }
 
-// ── MINI SPARKLINE ────────────────────────────────────────────────────────
 function MiniSparkline({ card }: { card: CollectionCard }) {
   const cur = card.price_market ?? 0
   const p30 = card.price_avg30 ?? 0
   const p7  = card.price_avg7  ?? 0
   const p1  = card.price_avg1  ?? 0
-
   const hasHistory = p30 > 0 || p7 > 0 || p1 > 0
   const pctChange  = p30 > 0 ? ((cur - p30) / p30) * 100 : 0
-  const isUp       = pctChange >  1
-  const isDown     = pctChange < -1
-  const color      = isUp ? '#4ade80' : isDown ? '#f87171' : '#fbbf24'
-
+  const isUp   = pctChange >  1
+  const isDown = pctChange < -1
+  const color  = isUp ? '#4ade80' : isDown ? '#f87171' : '#fbbf24'
   const points = hasHistory ? [p30||cur, p7||cur, p1||cur, cur] : [cur, cur, cur, cur]
   const minP   = Math.min(...points) * 0.95
   const maxP   = Math.max(...points) * 1.05
   const range  = maxP - minP || 1
-  const W = 40, H = 20
-  const xs = [2, 14, 28, 38]
+  const W = 48, H = 24
+  const xs = [2, 16, 32, 46]
   const ys = points.map(p => H - ((p - minP) / range) * (H - 4) - 1)
-  const pathD = `M${xs[0]} ${ys[0]} C${xs[0]+4} ${ys[0]},${xs[1]-3} ${ys[1]},${xs[1]} ${ys[1]} C${xs[1]+4} ${ys[1]},${xs[2]-4} ${ys[2]},${xs[2]} ${ys[2]} C${xs[2]+3} ${ys[2]},${xs[3]-4} ${ys[3]},${xs[3]} ${ys[3]}`
+  const pathD = `M${xs[0]} ${ys[0]} C${xs[0]+5} ${ys[0]},${xs[1]-4} ${ys[1]},${xs[1]} ${ys[1]} C${xs[1]+5} ${ys[1]},${xs[2]-5} ${ys[2]},${xs[2]} ${ys[2]} C${xs[2]+4} ${ys[2]},${xs[3]-5} ${ys[3]},${xs[3]} ${ys[3]}`
   const areaD = `${pathD} L${xs[3]} ${H} L${xs[0]} ${H} Z`
   const gId   = `g${card.id.replace(/[^a-z0-9]/gi,'').slice(0,8)}`
 
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-      {/* Preis */}
-      <div style={{ textAlign:'right' }}>
-        <div style={{ fontSize:14, fontWeight:900, color:'#fff', whiteSpace:'nowrap' }}>
-          {cur > 0 ? `€${cur.toFixed(2)}` : '–'}
-        </div>
-        <div style={{
-          fontSize:9, fontWeight:800,
-          color, whiteSpace:'nowrap',
-          display:'flex', alignItems:'center', gap:2, justifyContent:'flex-end'
-        }}>
-          {isUp ? '▲' : isDown ? '▼' : '●'}
-          {hasHistory ? ` ${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%` : ' –'}
-        </div>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0, width:110 }}>
+      <div style={{ fontSize:16, fontWeight:900, color:'#fff', whiteSpace:'nowrap' }}>
+        {cur > 0 ? `€${cur.toFixed(2)}` : '–'}
       </div>
-
-      {/* Sparkline */}
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow:'visible', flexShrink:0 }}>
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow:'visible' }}>
         <defs>
           <linearGradient id={gId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor={color} stopOpacity=".4"/>
@@ -67,27 +51,28 @@ function MiniSparkline({ card }: { card: CollectionCard }) {
           </linearGradient>
         </defs>
         <path d={areaD} fill={`url(#${gId})`}/>
-        <path d={pathD} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx={xs[3]} cy={ys[3]} r="2.5" fill={color}/>
+        <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx={xs[3]} cy={ys[3]} r="3" fill={color}/>
       </svg>
+      <div style={{ fontSize:10, fontWeight:800, color, whiteSpace:'nowrap' }}>
+        {isUp ? '▲' : isDown ? '▼' : '●'}{' '}
+        {hasHistory ? `${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%` : '–'}
+      </div>
     </div>
   )
 }
 
-// ── PORTFOLIO MODAL ───────────────────────────────────────────────────────
 function PortfolioModal({ cards, totalValue, onClose }: {
   cards: CollectionCard[]
   totalValue: number
   onClose: () => void
 }) {
   const [sortBy, setSortBy] = useState<'value'|'name'>('value')
-
   const sorted = [...cards].sort((a, b) =>
     sortBy === 'value'
       ? (b.price_market ?? 0) - (a.price_market ?? 0)
       : a.name.localeCompare(b.name)
   )
-
   const accentFor = (rarity?: string) => {
     if (!rarity) return '#a78bfa'
     const r = rarity.toLowerCase()
@@ -108,38 +93,38 @@ function PortfolioModal({ cards, totalValue, onClose }: {
         exit={{ opacity:0, scale:0.95, y:20 }}
         transition={{ type:'spring', stiffness:300, damping:25 }}
         onClick={e => e.stopPropagation()}
-        style={{ width:'100%', maxWidth:580, maxHeight:'88vh', borderRadius:20, overflow:'hidden', display:'flex', flexDirection:'column', background:'rgba(7,2,26,0.99)', border:'1.5px solid rgba(167,139,250,.3)', boxShadow:'0 25px 60px rgba(0,0,0,.7)' }}
+        style={{ width:'100%', maxWidth:640, maxHeight:'88vh', borderRadius:20, overflow:'hidden', display:'flex', flexDirection:'column', background:'rgba(7,2,26,0.99)', border:'1.5px solid rgba(167,139,250,.3)', boxShadow:'0 25px 60px rgba(0,0,0,.7)' }}
       >
         {/* Header */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 18px', borderBottom:'1px solid rgba(255,255,255,.05)' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:'1px solid rgba(255,255,255,.05)', flexShrink:0 }}>
           <div>
-            <div style={{ color:'#fff', fontWeight:900, fontSize:16 }}>Mein Portfolio</div>
-            <div style={{ color:'rgba(255,255,255,.35)', fontSize:11, marginTop:2 }}>
+            <div style={{ color:'#fff', fontWeight:900, fontSize:18 }}>Mein Portfolio</div>
+            <div style={{ color:'rgba(255,255,255,.35)', fontSize:12, marginTop:3 }}>
               {cards.length} Karten · <span style={{ color:'#4ade80', fontWeight:700 }}>€{totalValue.toFixed(2)}</span> Gesamtwert
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <button
               onClick={() => setSortBy(s => s === 'value' ? 'name' : 'value')}
-              style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 10px', borderRadius:10, fontSize:11, fontWeight:600, color:'rgba(255,255,255,.5)', background:'rgba(255,255,255,.05)', border:'1px solid rgba(255,255,255,.08)', cursor:'pointer' }}
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, fontSize:12, fontWeight:600, color:'rgba(255,255,255,.6)', background:'rgba(255,255,255,.06)', border:'1px solid rgba(255,255,255,.1)', cursor:'pointer' }}
             >
-              <ArrowUpDown size={11}/> {sortBy === 'value' ? 'Nach Wert' : 'Nach Name'}
+              <ArrowUpDown size={12}/> {sortBy === 'value' ? 'Nach Wert' : 'Nach Name'}
             </button>
             <button
               onClick={onClose}
-              style={{ width:30, height:30, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.4)', background:'rgba(255,255,255,.05)', border:'none', cursor:'pointer' }}
+              style={{ width:36, height:36, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,.5)', background:'rgba(255,255,255,.06)', border:'none', cursor:'pointer' }}
             >
-              <X size={14}/>
+              <X size={16}/>
             </button>
           </div>
         </div>
 
         {/* Liste */}
-        <div style={{ overflowY:'auto', flex:1, padding:'10px 12px', display:'flex', flexDirection:'column', gap:6 }}>
+        <div style={{ overflowY:'auto', flex:1, padding:'12px 16px', display:'flex', flexDirection:'column', gap:8 }}>
           {sorted.length === 0 ? (
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 0', textAlign:'center' }}>
               <div style={{ fontSize:40, marginBottom:12, opacity:.2 }}>📦</div>
-              <div style={{ color:'rgba(255,255,255,.3)', fontSize:13 }}>Noch keine Karten im Portfolio</div>
+              <div style={{ color:'rgba(255,255,255,.3)', fontSize:14 }}>Noch keine Karten im Portfolio</div>
             </div>
           ) : sorted.map((card, i) => {
             const accent = accentFor(card.rarity)
@@ -150,23 +135,25 @@ function PortfolioModal({ cards, totalValue, onClose }: {
                 animate={{ opacity:1, x:0 }}
                 transition={{ delay: i * 0.012 }}
                 style={{
-                  display:'grid',
-                  gridTemplateColumns:'20px 44px 1fr auto',
+                  display:'flex',
+                  flexDirection:'row',
                   alignItems:'center',
-                  gap:10,
-                  padding:'12px 14px',
-                  borderRadius:14,
+                  gap:14,
+                  padding:'12px 16px',
+                  minHeight:70,
+                  borderRadius:16,
                   background:'#07021a',
-                  border:'1.5px solid rgba(167,139,250,.15)',
+                  border:`1.5px solid rgba(167,139,250,.15)`,
                   position:'relative',
                   overflow:'hidden',
+                  boxSizing:'border-box',
                 }}
               >
                 {/* Typ-Streifen */}
-                <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${accent},transparent)`, borderRadius:'14px 14px 0 0' }}/>
+                <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:`linear-gradient(90deg,${accent},transparent)`, borderRadius:'16px 16px 0 0' }}/>
 
                 {/* Pokéball BG */}
-                <svg style={{ position:'absolute', right:-8, top:'50%', transform:'translateY(-50%)', width:50, height:50, opacity:.04 }} viewBox="0 0 60 60">
+                <svg style={{ position:'absolute', right:-10, top:'50%', transform:'translateY(-50%)', width:60, height:60, opacity:.04, flexShrink:0 }} viewBox="0 0 60 60">
                   <circle cx="30" cy="30" r="28" fill="none" stroke="white" strokeWidth="2"/>
                   <path d="M2 30 Q2 4 30 4 Q58 4 58 30" fill="white" fillOpacity=".5"/>
                   <line x1="2" y1="30" x2="58" y2="30" stroke="white" strokeWidth="3"/>
@@ -175,23 +162,39 @@ function PortfolioModal({ cards, totalValue, onClose }: {
                 </svg>
 
                 {/* Rang */}
-                <span style={{ color:'rgba(255,255,255,.15)', fontSize:11, fontFamily:'monospace', textAlign:'right' }}>{i+1}</span>
+                <span style={{ color:'rgba(255,255,255,.2)', fontSize:12, fontFamily:'monospace', width:20, textAlign:'right', flexShrink:0 }}>{i+1}</span>
 
                 {/* Bild */}
-                {card.image_url ? (
-                  <img src={card.image_url} alt={card.name} style={{ width:44, height:60, objectFit:'cover', borderRadius:6, border:`1px solid ${accent}44` }}/>
-                ) : (
-                  <div style={{ width:44, height:60, borderRadius:6, background:'rgba(255,255,255,.05)', border:`1px solid ${accent}33` }}/>
-                )}
+                <div style={{ flexShrink:0, width:42, height:58 }}>
+                  {card.image_url ? (
+                    <img
+                      src={card.image_url}
+                      alt={card.name}
+                      style={{ width:42, height:58, objectFit:'cover', borderRadius:7, border:`1.5px solid ${accent}55`, display:'block' }}
+                    />
+                  ) : (
+                    <div style={{ width:42, height:58, borderRadius:7, background:'rgba(255,255,255,.05)', border:`1.5px solid ${accent}33` }}/>
+                  )}
+                </div>
 
-                {/* Info */}
-                <div style={{ minWidth:0 }}>
-                  <div style={{ color:'#fff', fontSize:14, fontWeight:800, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.name}</div>
-                  <div style={{ display:'flex', gap:5, alignItems:'center', marginTop:3 }}>
-                    <span style={{ fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:8, background:`${accent}18`, color:accent, flexShrink:0 }}>#{card.number}</span>
-                    {card.set_id && <span style={{ color:'rgba(255,255,255,.2)', fontSize:10, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{card.set_id}</span>}
+                {/* Info – nimmt restlichen Platz */}
+                <div style={{ flex:1, minWidth:0, overflow:'hidden' }}>
+                  <div style={{ color:'#fff', fontSize:14, fontWeight:800, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                    {card.name}
                   </div>
-                  {card.rarity && <div style={{ color:'rgba(255,255,255,.18)', fontSize:10, marginTop:1 }}>{card.rarity}</div>}
+                  <div style={{ display:'flex', gap:6, alignItems:'center', marginTop:4, flexWrap:'nowrap' }}>
+                    <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:8, background:`${accent}20`, color:accent, flexShrink:0, whiteSpace:'nowrap' }}>
+                      #{card.number}
+                    </span>
+                    {card.set_id && (
+                      <span style={{ color:'rgba(255,255,255,.25)', fontSize:11, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {card.set_id}
+                      </span>
+                    )}
+                  </div>
+                  {card.rarity && (
+                    <div style={{ color:'rgba(255,255,255,.2)', fontSize:10, marginTop:3 }}>{card.rarity}</div>
+                  )}
                 </div>
 
                 {/* Preis + Sparkline */}
@@ -202,16 +205,15 @@ function PortfolioModal({ cards, totalValue, onClose }: {
         </div>
 
         {/* Footer */}
-        <div style={{ padding:'10px 18px', borderTop:'1px solid rgba(255,255,255,.05)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <span style={{ color:'rgba(255,255,255,.25)', fontSize:11 }}>{cards.length} Karten gesamt</span>
-          <Link href="/dashboard/portfolio" onClick={onClose} style={{ fontSize:11, fontWeight:700, color:'#a78bfa' }}>Zum Portfolio →</Link>
+        <div style={{ padding:'12px 20px', borderTop:'1px solid rgba(255,255,255,.05)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+          <span style={{ color:'rgba(255,255,255,.25)', fontSize:12 }}>{cards.length} Karten gesamt</span>
+          <Link href="/dashboard/portfolio" onClick={onClose} style={{ fontSize:12, fontWeight:700, color:'#a78bfa' }}>Zum Portfolio →</Link>
         </div>
       </motion.div>
     </div>
   )
 }
 
-// ── POKEBALL CARD ─────────────────────────────────────────────────────────
 function PokeballCard({ label, onClick, href, sublabel, value, color }: {
   label:string; onClick?:()=>void; href?:string; sublabel:string; value:string; color:string
 }) {
@@ -296,7 +298,6 @@ function GlassCard({ label, href, icon: Icon, value, sub, color, accentColor }: 
   )
 }
 
-// ── MAIN ──────────────────────────────────────────────────────────────────
 interface Props {
   totalCards: number
   isPremium: boolean
@@ -306,7 +307,6 @@ interface Props {
 
 export default function DashboardCards({ totalCards, isPremium, portfolioValue = 0, collectionCards = [] }: Props) {
   const [showModal, setShowModal] = useState(false)
-
   return (
     <>
       <div className="space-y-8">
