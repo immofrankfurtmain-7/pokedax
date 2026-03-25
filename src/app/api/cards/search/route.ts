@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       { count: 'exact' }
     )
 
-  if (query.trim()) dbQuery = dbQuery.ilike('name', %+query.trim()+%)
+  if (query.trim()) dbQuery = dbQuery.ilike('name', '%' + query.trim() + '%')
   if (setId)  dbQuery = dbQuery.eq('set_id', setId)
   if (rarity) dbQuery = dbQuery.eq('rarity', rarity)
   if (type)   dbQuery = dbQuery.contains('types', [type])
@@ -33,6 +33,7 @@ export async function GET(request: Request) {
     name:         'name',
   }
   const sortColumn = validSorts[sortBy] ?? 'price_market'
+
   dbQuery = dbQuery
     .order(sortColumn, { ascending: sortDir === 'asc', nullsFirst: false })
     .range(offset, offset + limit - 1)
