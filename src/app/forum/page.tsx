@@ -83,10 +83,11 @@ export default function ForumPage() {
   const [newCategory, setNewCategory] = useState('')
   const [submitting,  setSubmitting]  = useState(false)
   const [user,        setUser]        = useState<any>(null)
+  const [profile,     setProfile]     = useState<any>(null)
   const [loading,     setLoading]     = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/user').then(r => r.json()).then(d => setUser(d.user)).catch(() => {})
+    fetch('/api/auth/user').then(r => r.json()).then(d => { setUser(d.user); if(d.user) fetch('/api/forum/profile').then(r=>r.json()).then(p=>setProfile(p.profile)) }).catch(() => {})
     fetch('/api/forum/categories').then(r => r.json()).then(d => setCategories(d.categories ?? []))
     loadPosts('')
   }, [])
@@ -138,7 +139,7 @@ export default function ForumPage() {
             </div>
             <button onClick={() => setShowNewPost(true)}
               className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              + Neuer Beitrag
+              + Neuer Beitrag</button>{(profile?.forum_role === 'moderator' || profile?.forum_role === 'admin') && (<Link href="/forum/mod" className="bg-red-800 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors ml-2">Mod-Panel</Link>)}<span style={{display:'none'}}>
             </button>
           </div>
 
