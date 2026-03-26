@@ -16,11 +16,13 @@ type Profile = {
   post_count: number
 }
 
+
 type Reply = {
   id: string
   content: string
   created_at: string
   upvotes: number
+  is_deleted: boolean
   author_id: string
   profiles: Profile
 }
