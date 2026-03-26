@@ -8,20 +8,16 @@ type Card = {
   id: string
   name: string
   number: string
-  rarity: string
-  types: string[]
-  image_url: string
+  rarity: string | null
+  image_url: string | null
   price_market: number | null
   price_avg7: number | null
-  price_avg30: number | null
   trend: number | null
   set_id: string
   sets: { id: string; name: string; series: string }
 }
 
-const TYPES    = ['Fire','Water','Grass','Lightning','Psychic','Fighting','Darkness','Metal','Dragon','Colorless']
-const RARITIES = ['Common','Uncommon','Rare','Rare Holo','Rare Ultra','Rare Secret','Amazing Rare','Radiant Rare']
-const SORTS    = [
+const SORTS = [
   { value: 'price_market',     label: 'Preis ab' },
   { value: 'price_market|asc', label: 'Preis auf' },
   { value: 'trend',            label: 'Trend' },
@@ -51,8 +47,6 @@ function Signal({ trend }: { trend: number | null }) {
 export default function PreischeckPage() {
   const [query,   setQuery]   = useState('')
   const [setId,   setSetId]   = useState('')
-  const [rarity,  setRarity]  = useState('')
-  const [type,    setType]    = useState('')
   const [sort,    setSort]    = useState('price_market')
   const [page,    setPage]    = useState(1)
   const [cards,   setCards]   = useState<Card[]>([])
@@ -71,11 +65,11 @@ export default function PreischeckPage() {
 
   const fetchCards = useCallback(async () => {
     setLoading(true)
-    const parts = sort.includes('|') ? sort.split('|') : [sort, 'desc']
+    const parts   = sort.includes('|') ? sort.split('|') : [sort, 'desc']
     const sortBy  = parts[0]
     const sortDir = parts[1] ?? 'desc'
-    const params = new URLSearchParams({
-      q: debouncedQuery, set: setId, rarity, type,
+    const params  = new URLSearchParams({
+      q: debouncedQuery, set: setId,
       sort: sortBy, dir: sortDir, page: String(page),
     })
     const res  = await fetch('/api/cards/search?' + params.toString())
@@ -84,58 +78,36 @@ export default function PreischeckPage() {
     setTotal(data.total ?? 0)
     setPages(data.pages ?? 0)
     setLoading(false)
-  }, [debouncedQuery, setId, rarity, type, sort, page])
+  }, [debouncedQuery, setId, sort, page])
 
   useEffect(() => { fetchCards() }, [fetchCards])
-  useEffect(() => { setPage(1) }, [debouncedQuery, setId, rarity, type, sort])
+  useEffect(() => { setPage(1) }, [debouncedQuery, setId, sort])
 
   return (
     <main className="min-h-screen bg-black text-white px-4 py-8 max-w-6xl mx-auto">
       <div className="mb-8">
         <div className="text-xs text-cyan-400 uppercase tracking-widest mb-1">Live von Cardmarket</div>
         <h1 className="text-3xl font-bold">Preischeck</h1>
-        <p className="text-gray-400 mt-1">{total.toLocaleString('de-DE')} Karten</p>
+        <p className="text-gray-400 mt-1">{total.toLocaleString('de-DE')} Karten gefunden</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <input
           type="text"
           placeholder="Kartenname suchen..."
           value={query}
           onChange={e => setQuery(e.target.value)}
-          className="col-span-1 sm:col-span-2 lg:col-span-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 text-sm"
+          className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 text-sm"
         />
         <select value={setId} onChange={e => setSetId(e.target.value)}
           className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 text-sm">
           <option value="">Alle Sets</option>
           {sets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
-        <select value={type} onChange={e => setType(e.target.value)}
-          className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 text-sm">
-          <option value="">Alle Typen</option>
-          {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
         <select value={sort} onChange={e => setSort(e.target.value)}
           className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 text-sm">
           {SORTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
-      </div>
-
-      <div className="flex gap-2 flex-wrap mb-6">
-        {['', ...RARITIES].map(r => (
-          <button
-            key={r || 'all'}
-            onClick={() => setRarity(r)}
-            className={
-              'text-xs px-3 py-1 rounded-full border transition-colors ' +
-              (rarity === r
-                ? (r === '' ? 'bg-cyan-500 border-cyan-500 text-black' : 'bg-purple-600 border-purple-600 text-white')
-                : 'border-gray-700 text-gray-400 hover:border-gray-500')
-            }
-          >
-            {r || 'Alle'}
-          </button>
-        ))}
       </div>
 
       {loading ? (
@@ -177,16 +149,12 @@ export default function PreischeckPage() {
           </div>
           {pages > 1 && (
             <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                 className="px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-sm text-gray-400 disabled:opacity-40 hover:border-gray-500 transition-colors">
                 Zurueck
               </button>
               <span className="text-gray-500 text-sm">Seite {page} von {pages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(pages, p + 1))}
-                disabled={page === pages}
+              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages}
                 className="px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-sm text-gray-400 disabled:opacity-40 hover:border-gray-500 transition-colors">
                 Weiter
               </button>
