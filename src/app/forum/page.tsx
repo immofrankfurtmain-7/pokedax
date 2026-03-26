@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
+import { createClient } from '@/lib/supabase/client'
 
 type Category = {
   id: string
@@ -87,15 +88,13 @@ export default function ForumPage() {
   const [loading,     setLoading]     = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/user')
-      .then(r => r.json())
-      .then(d => {
-        setUser(d.user)
-        if (d.user) {
-          fetch('/api/forum/profile').then(r => r.json()).then(p => setProfile(p.profile))
-        }
-      })
-      .catch(() => {})
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      if (user) {
+        fetch('/api/forum/profile').then(r => r.json()).then(p => setProfile(p.profile))
+      }
+    })
     fetch('/api/forum/categories').then(r => r.json()).then(d => setCategories(d.categories ?? []))
     loadPosts('')
   }, [])
