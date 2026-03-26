@@ -22,6 +22,8 @@ type Report = {
   reason: string
   status: string
   created_at: string
+  post_id: string | null
+  reply_id: string | null
   profiles: { username: string }
   forum_posts: { title: string; is_deleted: boolean } | null
 }
