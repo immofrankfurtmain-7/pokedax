@@ -138,7 +138,7 @@ export default function ForumPage() {
     <>
       <Navbar />
       <main className="min-h-screen bg-black text-white">
-        <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 pt-24 pb-8">
 
           <div className="mb-8 flex items-start justify-between gap-3">
             <div>
