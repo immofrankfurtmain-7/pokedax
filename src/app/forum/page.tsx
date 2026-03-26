@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageSquare, Flame, Plus, Search, ChevronRight, X, ArrowUp, Clock, Tag } from 'lucide-react'
@@ -7,35 +7,35 @@ import Footer from '@/components/layout/Footer'
 import { formatRelativeTime } from '@/lib/utils'
 
 const CATEGORIES = [
-  { id:'marktplatz',      name:'Marktplatz',        emoji:'🏪', color:'#ff5500', grad:'linear-gradient(135deg,#ff5500,#cc2200)', glow:'rgba(255,85,0,0.55)',   type:'Fire',      posts:1240 },
-  { id:'preisdiskussion', name:'Preisdiskussion',   emoji:'📈', color:'#FFD700', grad:'linear-gradient(135deg,#FFD700,#cc8800)', glow:'rgba(255,215,0,0.55)',  type:'Lightning', posts:876  },
-  { id:'fake-check',      name:'Fake-Check',        emoji:'🔍', color:'#cc44ff', grad:'linear-gradient(135deg,#cc44ff,#7700cc)', glow:'rgba(204,68,255,0.55)', type:'Psychic',   posts:334  },
-  { id:'neuigkeiten',     name:'Neuigkeiten',       emoji:'📰', color:'#00aaff', grad:'linear-gradient(135deg,#00aaff,#0055cc)', glow:'rgba(0,170,255,0.55)',  type:'Water',     posts:512  },
-  { id:'einsteiger',      name:'Einsteiger',        emoji:'🌱', color:'#00cc66', grad:'linear-gradient(135deg,#00cc66,#007733)', glow:'rgba(0,204,102,0.55)',  type:'Grass',     posts:689  },
-  { id:'turniere',        name:'Turniere & Events', emoji:'🏆', color:'#ff9900', grad:'linear-gradient(135deg,#ff9900,#cc5500)', glow:'rgba(255,153,0,0.55)',  type:'Dragon',    posts:201  },
-  { id:'premium-lounge',  name:'Premium Lounge',    emoji:'💎', color:'#FFD700', grad:'linear-gradient(135deg,#FFD700,#aa7700)', glow:'rgba(255,215,0,0.55)',  type:'⭐',         posts:89, premium:true },
+  { id:'marktplatz',      name:'Marktplatz',        emoji:'ðŸª', color:'#ff5500', grad:'linear-gradient(135deg,#ff5500,#cc2200)', glow:'rgba(255,85,0,0.55)',   type:'Fire',      posts:1240 },
+  { id:'preisdiskussion', name:'Preisdiskussion',   emoji:'ðŸ“ˆ', color:'#FFD700', grad:'linear-gradient(135deg,#FFD700,#cc8800)', glow:'rgba(255,215,0,0.55)',  type:'Lightning', posts:876  },
+  { id:'fake-check',      name:'Fake-Check',        emoji:'ðŸ”', color:'#cc44ff', grad:'linear-gradient(135deg,#cc44ff,#7700cc)', glow:'rgba(204,68,255,0.55)', type:'Psychic',   posts:334  },
+  { id:'neuigkeiten',     name:'Neuigkeiten',       emoji:'ðŸ“°', color:'#00aaff', grad:'linear-gradient(135deg,#00aaff,#0055cc)', glow:'rgba(0,170,255,0.55)',  type:'Water',     posts:512  },
+  { id:'einsteiger',      name:'Einsteiger',        emoji:'ðŸŒ±', color:'#00cc66', grad:'linear-gradient(135deg,#00cc66,#007733)', glow:'rgba(0,204,102,0.55)',  type:'Grass',     posts:689  },
+  { id:'turniere',        name:'Turniere & Events', emoji:'ðŸ†', color:'#ff9900', grad:'linear-gradient(135deg,#ff9900,#cc5500)', glow:'rgba(255,153,0,0.55)',  type:'Dragon',    posts:201  },
+  { id:'premium-lounge',  name:'Premium Lounge',    emoji:'ðŸ’Ž', color:'#FFD700', grad:'linear-gradient(135deg,#FFD700,#aa7700)', glow:'rgba(255,215,0,0.55)',  type:'â­',         posts:89, premium:true },
 ]
 
 const ALL_POSTS = [
-  { id:'1',  catId:'marktplatz',      title:'Glurak ex PSA 10 zu verkaufen – 200€ VB',                        author:'PokéTrader_Kai',   time:new Date(Date.now()-720000).toISOString(),    replies:8,  upvotes:24, hot:true,  tags:['Verkauf','PSA','Glurak'] },
+  { id:'1',  catId:'marktplatz',      title:'Glurak ex PSA 10 zu verkaufen â€“ 200â‚¬ VB',                        author:'PokÃ©Trader_Kai',   time:new Date(Date.now()-720000).toISOString(),    replies:8,  upvotes:24, hot:true,  tags:['Verkauf','PSA','Glurak'] },
   { id:'2',  catId:'preisdiskussion', title:'Warum steigt Pikachu alt art gerade so stark?',                  author:'SammelFan_NRW',    time:new Date(Date.now()-2040000).toISOString(),   replies:23, upvotes:51, hot:true,  tags:['Pikachu','Preis','Alt Art'] },
   { id:'3',  catId:'fake-check',      title:'Ist diese Glurak Base Set echt? Bitte checken!',                 author:'Neueinsteiger_Max', time:new Date(Date.now()-3600000).toISOString(),   replies:5,  upvotes:9,  hot:false, tags:['Glurak','Base Set','Fake'] },
-  { id:'4',  catId:'neuigkeiten',     title:'Neues Set Scarlet & Violet 9 – alle Infos zu den neuen Karten!', author:'PokéNews_DE',      time:new Date(Date.now()-7200000).toISOString(),   replies:41, upvotes:88, hot:true,  tags:['News','SV9','Set'] },
+  { id:'4',  catId:'neuigkeiten',     title:'Neues Set Scarlet & Violet 9 â€“ alle Infos zu den neuen Karten!', author:'PokÃ©News_DE',      time:new Date(Date.now()-7200000).toISOString(),   replies:41, upvotes:88, hot:true,  tags:['News','SV9','Set'] },
   { id:'5',  catId:'einsteiger',      title:'Wie fange ich am besten mit dem Sammeln an 2026?',               author:'FrischerTrainer',  time:new Date(Date.now()-10800000).toISOString(),  replies:17, upvotes:32, hot:false, tags:['Einsteiger','Tipps'] },
   { id:'6',  catId:'marktplatz',      title:'[Suche] Mewtu Base Set PSA 9 oder besser',                       author:'VintageSammler',   time:new Date(Date.now()-14400000).toISOString(),  replies:12, upvotes:7,  hot:false, tags:['Suche','Mewtwo','Vintage'] },
   { id:'7',  catId:'preisdiskussion', title:'Lohnt sich PSA-Grading noch 2026? Meine Erfahrungen',            author:'GradingPro_DE',    time:new Date(Date.now()-18000000).toISOString(),  replies:34, upvotes:73, hot:true,  tags:['PSA','Grading','Investment'] },
-  { id:'8',  catId:'turniere',        title:'Regional Stuttgart 2026 – Anmeldung jetzt offen!',               author:'TurnierOrga',      time:new Date(Date.now()-21600000).toISOString(),  replies:22, upvotes:45, hot:true,  tags:['Turnier','Stuttgart','Event'] },
-  { id:'9',  catId:'fake-check',      title:'Verdächtige Pikachu Promo – kann das jemand einschätzen?',       author:'Sammlerin_Eva',    time:new Date(Date.now()-28800000).toISOString(),  replies:9,  upvotes:14, hot:false, tags:['Pikachu','Promo','Fake'] },
-  { id:'10', catId:'einsteiger',      title:'Welche Sets sind für Einsteiger 2026 am empfehlenswertesten?',   author:'NeuerSammler22',   time:new Date(Date.now()-36000000).toISOString(),  replies:11, upvotes:21, hot:false, tags:['Einsteiger','Sets'] },
-  { id:'11', catId:'neuigkeiten',     title:'Cardmarket ändert Gebührenstruktur – was bedeutet das für uns?', author:'TCG_Reporter',     time:new Date(Date.now()-43200000).toISOString(),  replies:28, upvotes:62, hot:true,  tags:['Cardmarket','Gebühren','News'] },
-  { id:'12', catId:'marktplatz',      title:'Biete: Vollständiges Paldeas Schicksale Set NM',                 author:'SetKollektionär',  time:new Date(Date.now()-50400000).toISOString(),  replies:6,  upvotes:18, hot:false, tags:['Verkauf','Set','Paldeas'] },
+  { id:'8',  catId:'turniere',        title:'Regional Stuttgart 2026 â€“ Anmeldung jetzt offen!',               author:'TurnierOrga',      time:new Date(Date.now()-21600000).toISOString(),  replies:22, upvotes:45, hot:true,  tags:['Turnier','Stuttgart','Event'] },
+  { id:'9',  catId:'fake-check',      title:'VerdÃ¤chtige Pikachu Promo â€“ kann das jemand einschÃ¤tzen?',       author:'Sammlerin_Eva',    time:new Date(Date.now()-28800000).toISOString(),  replies:9,  upvotes:14, hot:false, tags:['Pikachu','Promo','Fake'] },
+  { id:'10', catId:'einsteiger',      title:'Welche Sets sind fÃ¼r Einsteiger 2026 am empfehlenswertesten?',   author:'NeuerSammler22',   time:new Date(Date.now()-36000000).toISOString(),  replies:11, upvotes:21, hot:false, tags:['Einsteiger','Sets'] },
+  { id:'11', catId:'neuigkeiten',     title:'Cardmarket Ã¤ndert GebÃ¼hrenstruktur â€“ was bedeutet das fÃ¼r uns?', author:'TCG_Reporter',     time:new Date(Date.now()-43200000).toISOString(),  replies:28, upvotes:62, hot:true,  tags:['Cardmarket','GebÃ¼hren','News'] },
+  { id:'12', catId:'marktplatz',      title:'Biete: VollstÃ¤ndiges Paldeas Schicksale Set NM',                 author:'SetKollektionÃ¤r',  time:new Date(Date.now()-50400000).toISOString(),  replies:6,  upvotes:18, hot:false, tags:['Verkauf','Set','Paldeas'] },
 ]
 
 type SortMode = 'hot' | 'new' | 'top'
 type Post     = typeof ALL_POSTS[0]
 type Cat      = typeof CATEGORIES[0]
 
-// ── Category Card (TCG-Karten-Style) ──────────────────────────────────────────
+// â”€â”€ Category Card (TCG-Karten-Style) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CategoryCard({ cat, isActive, onClick }: { cat: Cat; isActive: boolean; onClick: () => void }) {
   return (
     <motion.div
@@ -85,7 +85,7 @@ function CategoryCard({ cat, isActive, onClick }: { cat: Cat; isActive: boolean;
   )
 }
 
-// ── Post Row ──────────────────────────────────────────────────────────────────
+// â”€â”€ Post Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function PostRow({ post, catColor, catEmoji, catName, onOpen }: {
   post: Post; catColor: string; catEmoji: string; catName: string; onOpen: () => void
 }) {
@@ -128,9 +128,9 @@ function PostRow({ post, catColor, catEmoji, catName, onOpen }: {
 
         <div className="flex items-center gap-3 flex-wrap text-[10px] text-white/28 font-medium">
           <span>{post.author}</span>
-          <span>·</span>
+          <span>Â·</span>
           <span className="flex items-center gap-1"><Clock size={9}/>{formatRelativeTime(post.time)}</span>
-          <span>·</span>
+          <span>Â·</span>
           <span className="flex items-center gap-1"><MessageSquare size={9}/>{post.replies} Antworten</span>
         </div>
 
@@ -150,7 +150,7 @@ function PostRow({ post, catColor, catEmoji, catName, onOpen }: {
   )
 }
 
-// ── Create Post Modal ─────────────────────────────────────────────────────────
+// â”€â”€ Create Post Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CreatePostModal({ onClose }: { onClose: () => void }) {
   const [title,   setTitle]   = useState('')
   const [content, setContent] = useState('')
@@ -162,10 +162,10 @@ function CreatePostModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
       <motion.div initial={{ opacity:0, scale:0.9 }} animate={{ opacity:1, scale:1 }}
         className="bg-[rgba(10,6,24,0.98)] border border-violet-800/30 rounded-2xl p-8 max-w-sm w-full text-center">
-        <div className="text-5xl mb-4">🎉</div>
+        <div className="text-5xl mb-4">ðŸŽ‰</div>
         <h3 className="text-xl font-black text-white mb-2">Beitrag erstellt!</h3>
-        <p className="text-sm text-white/45 mb-6">Dein Beitrag ist jetzt sichtbar für die Community.</p>
-        <button onClick={onClose} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 text-white text-sm font-bold">Schließen</button>
+        <p className="text-sm text-white/45 mb-6">Dein Beitrag ist jetzt sichtbar fÃ¼r die Community.</p>
+        <button onClick={onClose} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 text-white text-sm font-bold">SchlieÃŸen</button>
       </motion.div>
     </div>
   )
@@ -212,7 +212,7 @@ function CreatePostModal({ onClose }: { onClose: () => void }) {
           <div>
             <label className="text-[10px] font-semibold text-white/28 uppercase tracking-widest block mb-1.5">Inhalt</label>
             <textarea value={content} onChange={e => setContent(e.target.value)}
-              rows={5} placeholder="Beschreibe dein Anliegen, deine Frage oder deinen Beitrag ausführlich…"
+              rows={5} placeholder="Beschreibe dein Anliegen, deine Frage oder deinen Beitrag ausfÃ¼hrlichâ€¦"
               className="w-full bg-white/4 border border-white/9 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/22 outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/12 transition-all resize-none"/>
           </div>
 
@@ -228,7 +228,7 @@ function CreatePostModal({ onClose }: { onClose: () => void }) {
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 text-sm font-semibold hover:text-white hover:border-white/20 transition-all">Abbrechen</button>
             <button disabled={!title.trim() || !content.trim()} onClick={() => setDone(true)}
               className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-500 text-white text-sm font-bold shadow-[0_6px_20px_rgba(124,58,237,0.4)] hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none transition-all">
-              Veröffentlichen
+              VerÃ¶ffentlichen
             </button>
           </div>
         </div>
@@ -237,13 +237,13 @@ function CreatePostModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-// ── Post Detail Drawer ────────────────────────────────────────────────────────
+// â”€â”€ Post Detail Drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function PostDetail({ post, cat, onClose }: { post: Post; cat: Cat; onClose: () => void }) {
   const [reply,   setReply]   = useState('')
   const [replies, setReplies] = useState([
-    { author:'PokéExpert_DE', time:new Date(Date.now()-300000).toISOString(),  content:'Super interessante Frage! Ich denke der Grund liegt vor allem daran, dass die Turniersaison beginnt und viele Spieler die Karte brauchen.',    upvotes:12 },
-    { author:'SammelFan_NRW', time:new Date(Date.now()-600000).toISOString(),  content:'Stimme zu – hab das auch beobachtet. Cardmarket-Trend zeigt +15% in der letzten Woche. Jetzt verkaufen wäre aus meiner Sicht klug.', upvotes:8 },
-    { author:'VintageSammler', time:new Date(Date.now()-900000).toISOString(), content:'Interessant, ich warte noch etwas ab. Der Peak könnte noch höher gehen wenn die neuen Turnierdecks veröffentlicht werden.',                  upvotes:5 },
+    { author:'PokÃ©Expert_DE', time:new Date(Date.now()-300000).toISOString(),  content:'Super interessante Frage! Ich denke der Grund liegt vor allem daran, dass die Turniersaison beginnt und viele Spieler die Karte brauchen.',    upvotes:12 },
+    { author:'SammelFan_NRW', time:new Date(Date.now()-600000).toISOString(),  content:'Stimme zu â€“ hab das auch beobachtet. Cardmarket-Trend zeigt +15% in der letzten Woche. Jetzt verkaufen wÃ¤re aus meiner Sicht klug.', upvotes:8 },
+    { author:'VintageSammler', time:new Date(Date.now()-900000).toISOString(), content:'Interessant, ich warte noch etwas ab. Der Peak kÃ¶nnte noch hÃ¶her gehen wenn die neuen Turnierdecks verÃ¶ffentlicht werden.',                  upvotes:5 },
   ])
 
   const addReply = () => {
@@ -275,13 +275,13 @@ function PostDetail({ post, cat, onClose }: { post: Post; cat: Cat; onClose: () 
             <h2 className="text-xl font-black text-white mb-2 leading-tight">{post.title}</h2>
             <div className="flex gap-3 text-[11px] text-white/28 mb-4 flex-wrap">
               <span className="font-semibold text-white/50">{post.author}</span>
-              <span>·</span>
+              <span>Â·</span>
               <span>{formatRelativeTime(post.time)}</span>
-              <span>·</span>
+              <span>Â·</span>
               <span>{post.upvotes} Upvotes</span>
             </div>
             <p className="text-sm text-white/58 leading-relaxed font-normal">
-              Hier stünde der vollständige Beitragsinhalt aus der Supabase-Datenbank. Mit echtem Backend kannst du hier Markdown-Inhalte rendern, Kartenbilder einbetten, Code-Blöcke, Links und alles weitere unterstützen.
+              Hier stÃ¼nde der vollstÃ¤ndige Beitragsinhalt aus der Supabase-Datenbank. Mit echtem Backend kannst du hier Markdown-Inhalte rendern, Kartenbilder einbetten, Code-BlÃ¶cke, Links und alles weitere unterstÃ¼tzen.
             </p>
             <div className="flex gap-1.5 mt-3 flex-wrap">
               {post.tags.map(tag => (
@@ -323,7 +323,7 @@ function PostDetail({ post, cat, onClose }: { post: Post; cat: Cat; onClose: () 
           <input
             value={reply} onChange={e => setReply(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addReply() } }}
-            placeholder="Antwort schreiben… (Enter zum Senden)"
+            placeholder="Antwort schreibenâ€¦ (Enter zum Senden)"
             className="flex-1 bg-white/4 border border-white/9 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/22 outline-none focus:border-violet-500/60 focus:ring-2 focus:ring-violet-500/12 transition-all"
           />
           <button onClick={addReply} disabled={!reply.trim()}
@@ -336,7 +336,7 @@ function PostDetail({ post, cat, onClose }: { post: Post; cat: Cat; onClose: () 
   )
 }
 
-// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
+// â”€â”€ MAIN PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ForumPage() {
   const [activeCat,  setActiveCat]  = useState<string | null>(null)
   const [sortMode,   setSortMode]   = useState<SortMode>('hot')
@@ -375,7 +375,7 @@ export default function ForumPage() {
               </div>
               <h1 className="text-4xl font-black text-white tracking-tight">Forum</h1>
               <p className="text-white/40 text-sm mt-1 font-normal">
-                {ALL_POSTS.length.toLocaleString('de-DE')} Beiträge ·{' '}
+                {ALL_POSTS.length.toLocaleString('de-DE')} BeitrÃ¤ge Â·{' '}
                 <span className="text-green-400 font-semibold">247 online</span>
               </p>
             </div>
@@ -400,12 +400,12 @@ export default function ForumPage() {
           <div className="relative flex-1 min-w-[180px]">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Beiträge, Tags, Autoren suchen…"
+              placeholder="BeitrÃ¤ge, Tags, Autoren suchenâ€¦"
               className="w-full bg-white/4 border border-white/9 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/22 outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/10 transition-all"/>
           </div>
 
           <div className="flex gap-1 bg-white/4 border border-white/8 rounded-xl p-1">
-            {([['hot','🔥 Hot'],['new','✨ Neu'],['top','⭐ Top']] as [SortMode,string][]).map(([mode, label]) => (
+            {([['hot','ðŸ”¥ Hot'],['new','âœ¨ Neu'],['top','â­ Top']] as [SortMode,string][]).map(([mode, label]) => (
               <button key={mode} onClick={() => setSortMode(mode)}
                 className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${sortMode === mode ? 'bg-violet-600/35 text-violet-200 border border-violet-600/30' : 'text-white/35 hover:text-white/65'}`}>
                 {label}
@@ -417,13 +417,13 @@ export default function ForumPage() {
             <div className="flex items-center gap-2 rounded-full px-3 py-1.5 border text-xs font-semibold"
               style={{ background:`${cat.color}14`, borderColor:`${cat.color}44`, color:cat.color }}>
               {cat.emoji} {cat.name}
-              <button onClick={() => setActiveCat(null)} className="ml-1 opacity-70 hover:opacity-100 text-sm leading-none">×</button>
+              <button onClick={() => setActiveCat(null)} className="ml-1 opacity-70 hover:opacity-100 text-sm leading-none">Ã—</button>
             </div>
           )}
         </div>
 
         <div className="text-xs text-white/25 font-medium mb-4">
-          {filtered.length} Beitrag{filtered.length !== 1 ? 'e' : ''}{search ? ` für „${search}"` : ''}
+          {filtered.length} Beitrag{filtered.length !== 1 ? 'e' : ''}{search ? ` fÃ¼r â€ž${search}"` : ''}
         </div>
 
         {/* Posts */}
@@ -442,11 +442,11 @@ export default function ForumPage() {
                 })
               : (
                 <motion.div key="empty" initial={{ opacity:0 }} animate={{ opacity:1 }} className="text-center py-16">
-                  <div className="text-5xl mb-4 opacity-25">💬</div>
-                  <div className="text-sm font-medium text-white/30">Keine Beiträge gefunden</div>
+                  <div className="text-5xl mb-4 opacity-25">ðŸ’¬</div>
+                  <div className="text-sm font-medium text-white/30">Keine BeitrÃ¤ge gefunden</div>
                   <button onClick={() => { setSearch(''); setActiveCat(null) }}
                     className="mt-3 text-xs text-violet-400 hover:text-violet-300 font-semibold transition-colors">
-                    Filter zurücksetzen
+                    Filter zurÃ¼cksetzen
                   </button>
                 </motion.div>
               )
@@ -467,3 +467,4 @@ export default function ForumPage() {
     </main>
   )
 }
+
