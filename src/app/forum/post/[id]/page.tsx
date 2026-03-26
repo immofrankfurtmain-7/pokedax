@@ -16,7 +16,6 @@ type Profile = {
   post_count: number
 }
 
-
 type Reply = {
   id: string
   content: string
