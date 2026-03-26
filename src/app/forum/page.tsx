@@ -47,7 +47,7 @@ const CAT_ICONS: Record<string, string> = {
 
 const CAT_COLORS: Record<string, string> = {
   marktplatz:    '#FF6B35',
-  preise:        '##4ECDC4',
+  preise:        '#4ECDC4',
   'fake-check':  '#9B59B6',
   news:          '#E74C3C',
   einsteiger:    '#2ECC71',
@@ -87,7 +87,15 @@ export default function ForumPage() {
   const [loading,     setLoading]     = useState(true)
 
   useEffect(() => {
-    fetch('/api/auth/user').then(r => r.json()).then(d => { setUser(d.user); if(d.user) fetch('/api/forum/profile').then(r=>r.json()).then(p=>setProfile(p.profile)) }).catch(() => {})
+    fetch('/api/auth/user')
+      .then(r => r.json())
+      .then(d => {
+        setUser(d.user)
+        if (d.user) {
+          fetch('/api/forum/profile').then(r => r.json()).then(p => setProfile(p.profile))
+        }
+      })
+      .catch(() => {})
     fetch('/api/forum/categories').then(r => r.json()).then(d => setCategories(d.categories ?? []))
     loadPosts('')
   }, [])
@@ -125,22 +133,32 @@ export default function ForumPage() {
     setSubmitting(false)
   }
 
+  const isMod = profile?.forum_role === 'moderator' || profile?.forum_role === 'admin'
+
   return (
     <>
       <Navbar />
       <main className="min-h-screen bg-black text-white">
         <div className="max-w-5xl mx-auto px-4 py-8">
 
-          <div className="mb-8 flex items-start justify-between">
+          <div className="mb-8 flex items-start justify-between gap-3">
             <div>
               <div className="text-xs text-purple-400 uppercase tracking-widest mb-1">Community</div>
               <h1 className="text-3xl font-bold">Forum</h1>
               <p className="text-gray-400 mt-1">Deutschlands aktivste Pokemon TCG Community</p>
             </div>
-            <button onClick={() => setShowNewPost(true)}
-              className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              + Neuer Beitrag</button>{(profile?.forum_role === 'moderator' || profile?.forum_role === 'admin') && (<Link href="/forum/mod" className="bg-red-800 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors ml-2">Mod-Panel</Link>)}<span style={{display:'none'}}>
-            </button>
+            <div className="flex gap-2 flex-shrink-0">
+              {isMod && (
+                <Link href="/forum/mod"
+                  className="bg-red-800 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  Mod-Panel
+                </Link>
+              )}
+              <button onClick={() => setShowNewPost(true)}
+                className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                + Neuer Beitrag
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 mb-8">
@@ -223,32 +241,49 @@ export default function ForumPage() {
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
               <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg p-6">
                 <h2 className="text-lg font-bold mb-4">Neuer Beitrag</h2>
-                <select value={newCategory} onChange={e => setNewCategory(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm mb-3 focus:outline-none focus:border-purple-500">
-                  <option value="">Kategorie waehlen...</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{CAT_ICONS[c.id] ?? ''} {c.name}</option>
-                  ))}
-                </select>
-                <input type="text" placeholder="Titel..." value={newTitle}
-                  onChange={e => setNewTitle(e.target.value)} maxLength={120}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm mb-3 focus:outline-none focus:border-purple-500"
-                />
-                <textarea placeholder="Was moechtest du schreiben?" value={newContent}
-                  onChange={e => setNewContent(e.target.value)} rows={5}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm mb-4 focus:outline-none focus:border-purple-500 resize-none"
-                />
-                <div className="flex gap-2 justify-end">
+                {!user ? (
+                  <div className="text-center py-6">
+                    <p className="text-gray-400 mb-4">Du musst eingeloggt sein um einen Beitrag zu erstellen.</p>
+                    <Link href="/auth/login" className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-sm font-medium">
+                      Einloggen
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <select value={newCategory} onChange={e => setNewCategory(e.target.value)}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm mb-3 focus:outline-none focus:border-purple-500">
+                      <option value="">Kategorie waehlen...</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.id}>{CAT_ICONS[c.id] ?? ''} {c.name}</option>
+                      ))}
+                    </select>
+                    <input type="text" placeholder="Titel..." value={newTitle}
+                      onChange={e => setNewTitle(e.target.value)} maxLength={120}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm mb-3 focus:outline-none focus:border-purple-500"
+                    />
+                    <textarea placeholder="Was moechtest du schreiben?" value={newContent}
+                      onChange={e => setNewContent(e.target.value)} rows={5}
+                      className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm mb-4 focus:outline-none focus:border-purple-500 resize-none"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={() => setShowNewPost(false)}
+                        className="px-4 py-2 rounded-lg border border-gray-700 text-sm text-gray-400 hover:border-gray-500 transition-colors">
+                        Abbrechen
+                      </button>
+                      <button onClick={submitPost}
+                        disabled={submitting || !newTitle.trim() || !newContent.trim() || !newCategory}
+                        className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-medium transition-colors">
+                        {submitting ? 'Wird gesendet...' : 'Veroeffentlichen'}
+                      </button>
+                    </div>
+                  </>
+                )}
+                {user && (
                   <button onClick={() => setShowNewPost(false)}
-                    className="px-4 py-2 rounded-lg border border-gray-700 text-sm text-gray-400 hover:border-gray-500 transition-colors">
-                    Abbrechen
+                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-300">
+                    x
                   </button>
-                  <button onClick={submitPost}
-                    disabled={submitting || !newTitle.trim() || !newContent.trim() || !newCategory}
-                    className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-medium transition-colors">
-                    {submitting ? 'Wird gesendet...' : 'Veroeffentlichen'}
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           )}
