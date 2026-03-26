@@ -1,4 +1,5 @@
 ﻿'use client'
+import Navbar from '@/components/layout/Navbar'
 
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
@@ -84,7 +85,7 @@ export default function PreischeckPage() {
   useEffect(() => { setPage(1) }, [debouncedQuery, setId, sort])
 
   return (
-    <main className="min-h-screen bg-black text-white px-4 py-8 max-w-6xl mx-auto">
+    <>`n      <Navbar />`n      <main className="min-h-screen bg-black text-white px-4 py-8 max-w-6xl mx-auto">
       <div className="mb-8">
         <div className="text-xs text-cyan-400 uppercase tracking-widest mb-1">Live von Cardmarket</div>
         <h1 className="text-3xl font-bold">Preischeck</h1>
@@ -162,6 +163,6 @@ export default function PreischeckPage() {
           )}
         </div>
       )}
-    </main>
+    </main>`n    </>
   )
 }
