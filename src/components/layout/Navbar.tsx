@@ -5,334 +5,327 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Search, LayoutDashboard, MessageSquare, Gamepad2,
-  Star, Menu, X, ChevronRight, LogOut, User, Shield,
-  Zap, Swords, TrendingUp, BookOpen, Crown
+  Search, LayoutDashboard, MessageSquare, Gamepad2, Zap,
+  Menu, X, ChevronRight, LogOut, Home, Crown,
+  Shield, Star, Camera
 } from "lucide-react";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-  color: string;
-  glow: string;
-}
+const NAV = [
+  { href: "/",           label: "Start",      icon: Home,           color: "#EE1515" },
+  { href: "/preischeck", label: "Preischeck", icon: Search,         color: "#00E5FF" },
+  { href: "/dashboard",  label: "Dashboard",  icon: LayoutDashboard,color: "#A855F7" },
+  { href: "/forum",      label: "Forum",      icon: MessageSquare,  color: "#22C55E" },
+  { href: "/spiel",      label: "Spiel",      icon: Gamepad2,       color: "#FACC15" },
+  { href: "/scanner",    label: "Scanner",    icon: Camera,         color: "#F97316" },
+];
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/preischeck",  label: "Preischeck",  icon: <Search size={16} />,       color: "#00ffff",  glow: "rgba(0,255,255,0.3)"   },
-  { href: "/dashboard",   label: "Dashboard",   icon: <LayoutDashboard size={16}/>,color: "#c864ff",  glow: "rgba(200,100,255,0.3)" },
-  { href: "/forum",       label: "Forum",       icon: <MessageSquare size={16} />, color: "#00ff96",  glow: "rgba(0,255,150,0.3)"   },
-  { href: "/spiel",       label: "Spiel",       icon: <Gamepad2 size={16} />,      color: "#ffdc00",  glow: "rgba(255,220,0,0.3)"   },
-  { href: "/scanner",     label: "Scanner",     icon: <Zap size={16} />,           color: "#ff9600",  glow: "rgba(255,150,0,0.3)"   },
+const BOTTOM_NAV = [
+  { href: "/",           label: "Start",    icon: Home          },
+  { href: "/preischeck", label: "Preise",   icon: Search        },
+  { href: "/scanner",    label: "Scanner",  icon: Camera        },
+  { href: "/forum",      label: "Forum",    icon: MessageSquare },
+  { href: "/dashboard",  label: "Profil",   icon: LayoutDashboard },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const drawerRef = useRef<HTMLDivElement>(null);
+  const [user, setUser]       = useState<any>(null);
+  const [open, setOpen]       = useState(false);
+  const drawerRef             = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    const sb = createClient();
+    sb.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
-      if (user) {
-        supabase
-          .from("profiles")
-          .select("username, avatar_url, forum_role, badge_champion, badge_elite4, badge_gym_leader, badge_trainer, is_premium")
-          .eq("id", user.id)
-          .single()
-          .then(({ data }) => setProfile(data));
-      }
+      if (user) sb.from("profiles").select("username,avatar_url,forum_role,is_premium,badge_champion,badge_elite4,badge_gym_leader,badge_trainer").eq("id", user.id).single().then(({ data }) => setProfile(data));
     });
   }, []);
 
-  // Close drawer on route change
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
+  useEffect(() => { setOpen(false); }, [pathname]);
 
-  // Close on outside click
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (mobileOpen && drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
-        setMobileOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [mobileOpen]);
+    const handler = (e: MouseEvent) => {
+      if (open && drawerRef.current && !drawerRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
 
-  // Prevent body scroll when drawer open
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
+  }, [open]);
 
-  const roleColor = profile?.forum_role === "admin" ? "#ff4444"
-    : profile?.forum_role === "moderator" ? "#00ccff"
-    : profile?.is_premium ? "#ffd700"
-    : "rgba(255,255,255,0.5)";
+  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
-  const topBadge = profile?.badge_champion ? { icon: <Crown size={10} />, color: "#ffd700" }
-    : profile?.badge_elite4 ? { icon: <Star size={10} />, color: "#c864ff" }
-    : profile?.badge_gym_leader ? { icon: <Shield size={10} />, color: "#00c8ff" }
-    : profile?.badge_trainer ? { icon: <Zap size={10} />, color: "#00ff96" }
+  const roleColor = profile?.forum_role === "admin" ? "#EE1515"
+    : profile?.forum_role === "moderator" ? "#00E5FF"
+    : profile?.is_premium ? "#FACC15"
+    : "rgba(255,255,255,0.4)";
+
+  const badgeLabel = profile?.badge_champion ? "Champion"
+    : profile?.badge_elite4 ? "Top Vier"
+    : profile?.badge_gym_leader ? "Arenaleiter"
+    : profile?.badge_trainer ? "Trainer"
     : null;
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+  async function signOut() {
+    await createClient().auth.signOut();
     window.location.href = "/";
   }
 
   return (
     <>
-      {/* ── Desktop & Mobile Topbar ── */}
-      <nav
-        className="sticky top-0 z-50 w-full"
-        style={{
-          background: "rgba(8, 0, 16, 0.92)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          boxShadow: "0 4px 30px rgba(0,0,0,0.4)",
-        }}
-      >
-        {/* Cyan top accent line */}
-        <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, #00ffff40, #c864ff40, transparent)" }} />
+      {/* ── Top Navbar ── */}
+      <nav className="sticky-header" style={{ height: 56 }}>
+        {/* Red top line */}
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #EE1515 30%, #EE1515 70%, transparent)" }} />
 
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div
-              className="flex items-center justify-center text-lg font-black"
-              style={{
-                width: "32px", height: "32px", borderRadius: "50%",
-                background: "radial-gradient(circle, #ffd70040, transparent)",
-                border: "1.5px solid #ffd70060",
-                color: "#ffd700",
-                fontSize: "16px",
-              }}
-            >
-              ◎
-            </div>
-            <span
-              className="font-black tracking-tight hidden sm:block"
-              style={{
-                background: "linear-gradient(135deg, #ffd700, #ffaa00)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                fontSize: "17px",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              POKÉDAX
-            </span>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: "50%",
+              background: "linear-gradient(135deg, #FACC15, #f59e0b)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14, fontWeight: 900, color: "#000",
+              boxShadow: "0 0 12px rgba(250,204,21,0.3)",
+            }}>◎</div>
+            <span style={{
+              fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 17,
+              background: "linear-gradient(135deg, #FACC15, #f59e0b)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              letterSpacing: "-0.02em",
+            }}>POKÉDAX</span>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <div className="hidden md:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+          {/* Desktop Links */}
+          <div style={{ display: "flex", gap: 2 }} className="hidden-mobile">
+            {NAV.map(({ href, label, icon: Icon, color }) => {
+              const active = isActive(href);
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all duration-200 text-sm font-medium"
-                  style={{
-                    color: isActive ? item.color : "rgba(255,255,255,0.5)",
-                    background: isActive ? `${item.glow}` : "transparent",
-                    border: isActive ? `1px solid ${item.color}30` : "1px solid transparent",
-                    boxShadow: isActive ? `0 0 12px ${item.glow}` : "none",
-                  }}
-                >
-                  <span style={{ color: isActive ? item.color : "rgba(255,255,255,0.35)" }}>{item.icon}</span>
-                  {item.label}
+                <Link key={href} href={href} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "6px 12px", borderRadius: 8,
+                  fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500,
+                  color: active ? color : "rgba(255,255,255,0.5)",
+                  background: active ? `${color}15` : "transparent",
+                  border: `1px solid ${active ? color + "30" : "transparent"}`,
+                  textDecoration: "none",
+                  transition: "all .15s",
+                }}>
+                  <Icon size={14} />
+                  {label}
                 </Link>
               );
             })}
           </div>
 
-          {/* Right side: User + Hamburger */}
-          <div className="flex items-center gap-2">
-            {/* User avatar (desktop) */}
+          {/* Right: User + Hamburger */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Desktop user */}
             {user && profile ? (
-              <div className="hidden md:flex items-center gap-2">
-                <div className="relative">
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="hidden-mobile">
+                <div style={{ position: "relative" }}>
                   {profile.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={profile.username}
-                      className="rounded-full object-cover"
-                      style={{ width: 30, height: 30, border: `1.5px solid ${roleColor}`, boxShadow: `0 0 6px ${roleColor}60` }}
-                    />
+                    <img src={profile.avatar_url} alt={profile.username}
+                      style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", border: `2px solid ${roleColor}` }} />
                   ) : (
-                    <div
-                      className="rounded-full flex items-center justify-center font-bold"
-                      style={{ width: 30, height: 30, background: `${roleColor}20`, border: `1.5px solid ${roleColor}`, color: roleColor, fontSize: 12 }}
-                    >
-                      {profile.username?.[0]?.toUpperCase()}
-                    </div>
-                  )}
-                  {topBadge && (
-                    <div className="absolute -bottom-1 -right-1 rounded-full flex items-center justify-center"
-                      style={{ width: 14, height: 14, background: "#080010", border: `1px solid ${topBadge.color}`, color: topBadge.color }}>
-                      {topBadge.icon}
-                    </div>
+                    <div style={{
+                      width: 30, height: 30, borderRadius: "50%",
+                      background: `${roleColor}20`, border: `2px solid ${roleColor}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontWeight: 700, fontSize: 12, color: roleColor,
+                    }}>{profile.username?.[0]?.toUpperCase()}</div>
                   )}
                 </div>
-                <span style={{ color: roleColor, fontSize: 13, fontWeight: 600 }}>{profile.username}</span>
-                <button
-                  onClick={handleSignOut}
-                  className="p-1.5 rounded-lg transition-colors"
-                  style={{ color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer" }}
-                  title="Ausloggen"
-                >
+                <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: roleColor }}>
+                  {profile.username}
+                </span>
+                <button onClick={signOut} title="Ausloggen"
+                  style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", padding: 4, display: "flex" }}>
                   <LogOut size={14} />
                 </button>
               </div>
             ) : (
-              <div className="hidden md:flex items-center gap-2">
-                <Link href="/auth/login"
-                  className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-                  style={{ color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  Login
-                </Link>
-                <Link href="/auth/register"
-                  className="px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
-                  style={{ background: "rgba(0,255,255,0.1)", border: "1px solid rgba(0,255,255,0.3)", color: "#00ffff" }}>
-                  Registrieren
-                </Link>
+              <div style={{ display: "flex", gap: 6 }} className="hidden-mobile">
+                <Link href="/auth/login" style={{
+                  padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500,
+                  color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.12)",
+                  textDecoration: "none",
+                }}>Login</Link>
+                <Link href="/auth/register" style={{
+                  padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                  color: "white", background: "#EE1515", border: "none", textDecoration: "none",
+                  fontFamily: "Poppins, sans-serif",
+                }}>Registrieren</Link>
               </div>
             )}
 
-            {/* Hamburger button (mobile) */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden flex items-center justify-center rounded-lg transition-all"
+            {/* Hamburger */}
+            <button onClick={() => setOpen(!open)}
               style={{
-                width: 38, height: 38,
-                background: mobileOpen ? "rgba(0,255,255,0.1)" : "rgba(255,255,255,0.05)",
-                border: `1px solid ${mobileOpen ? "rgba(0,255,255,0.3)" : "rgba(255,255,255,0.1)"}`,
-                color: mobileOpen ? "#00ffff" : "rgba(255,255,255,0.7)",
-                cursor: "pointer",
+                width: 36, height: 36, borderRadius: 8,
+                background: open ? "rgba(238,21,21,0.1)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${open ? "rgba(238,21,21,0.3)" : "rgba(255,255,255,0.1)"}`,
+                color: open ? "#EE1515" : "rgba(255,255,255,0.6)",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}
-              aria-label="Menü"
+              aria-label="Menü öffnen"
             >
-              {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+              {open ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ── Mobile Overlay ── */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 md:hidden"
-          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          aria-hidden="true"
-        />
+      {/* ── Overlay ── */}
+      {open && (
+        <div onClick={() => setOpen(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)", zIndex: 48 }} />
       )}
 
-      {/* ── Mobile Drawer ── */}
-      <div
-        ref={drawerRef}
-        className="fixed top-0 right-0 h-full z-50 md:hidden flex flex-col transition-transform duration-300 ease-out"
-        style={{
-          width: "280px",
-          background: "linear-gradient(180deg, #0d0020 0%, #080010 100%)",
-          borderLeft: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "-20px 0 60px rgba(0,0,0,0.8)",
-          transform: mobileOpen ? "translateX(0)" : "translateX(100%)",
-        }}
-      >
-        {/* Drawer header */}
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-          <span
-            className="font-black"
-            style={{ background: "linear-gradient(135deg, #ffd700, #ffaa00)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontSize: 18 }}
-          >
-            POKÉDAX
-          </span>
-          <button
-            onClick={() => setMobileOpen(false)}
-            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}
-          >
+      {/* ── Drawer ── */}
+      <div ref={drawerRef} style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 49,
+        width: 290,
+        background: "linear-gradient(180deg, #111111 0%, #0A0A0A 100%)",
+        borderLeft: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "-24px 0 60px rgba(0,0,0,0.9)",
+        transform: open ? "translateX(0)" : "translateX(100%)",
+        transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+        display: "flex", flexDirection: "column",
+        overflowY: "auto",
+      }}>
+        {/* Red top line */}
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #EE1515, transparent)", flexShrink: 0 }} />
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
+          <span style={{
+            fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 17,
+            background: "linear-gradient(135deg, #FACC15, #f59e0b)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          }}>POKÉDAX</span>
+          <button onClick={() => setOpen(false)}
+            style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", display: "flex" }}>
             <X size={20} />
           </button>
         </div>
 
-        {/* User section in drawer */}
+        {/* User block */}
         {user && profile ? (
-          <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-            <div className="flex items-center gap-3">
+          <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.username} className="rounded-full"
-                  style={{ width: 40, height: 40, border: `2px solid ${roleColor}` }} />
+                <img src={profile.avatar_url} alt={profile.username}
+                  style={{ width: 40, height: 40, borderRadius: "50%", border: `2px solid ${roleColor}` }} />
               ) : (
-                <div className="rounded-full flex items-center justify-center font-bold"
-                  style={{ width: 40, height: 40, background: `${roleColor}20`, border: `2px solid ${roleColor}`, color: roleColor, fontSize: 16 }}>
-                  {profile.username?.[0]?.toUpperCase()}
-                </div>
+                <div style={{
+                  width: 40, height: 40, borderRadius: "50%",
+                  background: `${roleColor}20`, border: `2px solid ${roleColor}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: 700, fontSize: 16, color: roleColor,
+                }}>{profile.username?.[0]?.toUpperCase()}</div>
               )}
               <div>
-                <p className="font-bold text-white" style={{ fontSize: 14 }}>{profile.username}</p>
-                <p style={{ color: roleColor, fontSize: 11, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>
-                  {profile.forum_role === "admin" ? "Admin" : profile.forum_role === "moderator" ? "Moderator" : profile.is_premium ? "Premium" : "Member"}
-                </p>
+                <div style={{ fontWeight: 600, fontSize: 14, color: "#F8FAFC" }}>{profile.username}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: roleColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {profile.forum_role === "admin" ? "Admin"
+                    : profile.forum_role === "moderator" ? "Moderator"
+                    : profile.is_premium ? "⭐ Premium"
+                    : badgeLabel || "Trainer"}
+                </div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="px-5 py-4 flex flex-col gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-            <Link href="/auth/login" className="text-center py-2 rounded-xl font-medium text-sm"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}>
-              Login
-            </Link>
-            <Link href="/auth/register" className="text-center py-2 rounded-xl font-bold text-sm"
-              style={{ background: "rgba(0,255,255,0.1)", border: "1px solid rgba(0,255,255,0.3)", color: "#00ffff" }}>
-              Registrieren
-            </Link>
+          <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+            <Link href="/auth/login" onClick={() => setOpen(false)} style={{
+              display: "block", textAlign: "center", padding: "9px 0", borderRadius: 10,
+              fontSize: 14, fontWeight: 500, color: "rgba(255,255,255,0.6)",
+              border: "1px solid rgba(255,255,255,0.12)", textDecoration: "none",
+            }}>Login</Link>
+            <Link href="/auth/register" onClick={() => setOpen(false)} style={{
+              display: "block", textAlign: "center", padding: "9px 0", borderRadius: 10,
+              fontSize: 14, fontWeight: 700, color: "white",
+              background: "#EE1515", textDecoration: "none", fontFamily: "Poppins, sans-serif",
+            }}>Registrieren</Link>
           </div>
         )}
 
-        {/* Nav links in drawer */}
-        <div className="flex-1 px-3 py-4 overflow-y-auto">
-          <p className="px-2 mb-3 text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.2)" }}>
+        {/* Nav Links */}
+        <div style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", textTransform: "uppercase", padding: "4px 8px 10px" }}>
             Navigation
-          </p>
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+          </div>
+          {NAV.map(({ href, label, icon: Icon, color }) => {
+            const active = isActive(href);
             return (
-              <Link key={item.href} href={item.href}
-                className="flex items-center justify-between px-3 py-3 rounded-xl mb-1 transition-all"
-                style={{
-                  background: isActive ? `${item.glow}` : "transparent",
-                  border: isActive ? `1px solid ${item.color}30` : "1px solid transparent",
-                  color: isActive ? item.color : "rgba(255,255,255,0.6)",
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <span style={{ color: isActive ? item.color : "rgba(255,255,255,0.3)" }}>{item.icon}</span>
-                  <span style={{ fontSize: 15, fontWeight: isActive ? 600 : 400 }}>{item.label}</span>
+              <Link key={href} href={href} onClick={() => setOpen(false)} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "11px 10px", borderRadius: 10, marginBottom: 2,
+                background: active ? `${color}15` : "transparent",
+                border: `1px solid ${active ? color + "25" : "transparent"}`,
+                color: active ? color : "rgba(255,255,255,0.6)",
+                textDecoration: "none", transition: "all .15s",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Icon size={16} />
+                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: active ? 600 : 400 }}>{label}</span>
                 </div>
                 <ChevronRight size={14} style={{ color: "rgba(255,255,255,0.2)" }} />
               </Link>
             );
           })}
+
+          {/* Premium upsell */}
+          {!profile?.is_premium && (
+            <Link href="/dashboard/premium" onClick={() => setOpen(false)} style={{
+              display: "block", margin: "12px 0 0", padding: "12px 10px", borderRadius: 10,
+              background: "rgba(250,204,21,0.08)", border: "1px solid rgba(250,204,21,0.2)",
+              textDecoration: "none",
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#FACC15", marginBottom: 2 }}>👑 Premium · 7,99€/Mo</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>Unlimitierter Scanner + mehr</div>
+            </Link>
+          )}
         </div>
 
-        {/* Drawer footer */}
+        {/* Sign out */}
         {user && (
-          <div className="px-5 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-            <button onClick={handleSignOut}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all"
-              style={{ background: "rgba(255,60,60,0.08)", border: "1px solid rgba(255,60,60,0.2)", color: "rgba(255,100,100,0.8)", fontSize: 13, cursor: "pointer" }}>
+          <div style={{ padding: "12px 10px", borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
+            <button onClick={signOut} style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              padding: "10px", borderRadius: 10, cursor: "pointer",
+              background: "rgba(238,21,21,0.06)", border: "1px solid rgba(238,21,21,0.15)",
+              color: "rgba(238,21,21,0.7)", fontSize: 13, fontFamily: "Inter, sans-serif",
+            }}>
               <LogOut size={14} />
               Ausloggen
             </button>
           </div>
         )}
       </div>
+
+      {/* ── Bottom Navigation (Mobile only) ── */}
+      <nav className="bottom-nav">
+        {BOTTOM_NAV.map(({ href, label, icon: Icon }) => {
+          const active = isActive(href);
+          return (
+            <Link key={href} href={href} className={`bottom-nav-item${active ? " active" : ""}`}>
+              <Icon size={20} />
+              <span className="bottom-nav-label">{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <style>{`
+        @media (min-width: 769px) { .hidden-mobile { display: flex !important; } }
+        @media (max-width: 768px) { .hidden-mobile { display: none !important; } }
+      `}</style>
     </>
   );
 }
