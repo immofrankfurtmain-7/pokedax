@@ -16,7 +16,7 @@ interface Post {
   category_id: string;
   author_id: string;
   reply_count: number;
-  like_count: number;
+  upvotes: number;
   view_count: number;
   is_pinned: boolean;
   is_locked: boolean;
@@ -41,7 +41,7 @@ interface Reply {
   content: string;
   author_id: string;
   upvotes: number;
-  like_count?: number;
+  upvotes?: number;
   created_at: string;
   profiles: {
     username: string;
@@ -413,7 +413,7 @@ export default function PostDetailPage() {
                 }}
               >
                 <Heart size={13} fill={liked ? "currentColor" : "none"} />
-                {post.like_count + (liked ? 1 : 0)}
+                {post.upvotes + (liked ? 1 : 0)}
               </button>
 
               <div className="flex items-center gap-1.5" style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>

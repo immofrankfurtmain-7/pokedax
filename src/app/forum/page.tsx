@@ -21,7 +21,7 @@ interface Post {
   category_id: string;
   author_id: string;
   reply_count: number;
-  like_count: number;
+  upvotes: number;
   view_count: number;
   is_pinned: boolean;
   is_locked: boolean;
@@ -315,7 +315,7 @@ function PostRow({ post, categoryId }: { post: Post; categoryId?: string }) {
           </div>
           <div className="flex items-center gap-1">
             <Heart size={11} style={{ color: "rgba(255,255,255,0.3)" }} />
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>{post.like_count}</span>
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>{post.upvotes}</span>
           </div>
           <div className="flex items-center gap-1">
             <Eye size={11} style={{ color: "rgba(255,255,255,0.3)" }} />

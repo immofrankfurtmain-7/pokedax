@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("forum_posts")
     .select(
-      `id, title, category_id, author_id, reply_count, like_count,
+      `id, title, category_id, author_id, reply_count, upvotes,
        view_count, is_pinned, is_locked, is_hot, tags, created_at,
        profiles(username, avatar_url, forum_role, post_count,
          badge_trainer, badge_gym_leader, badge_elite4, badge_champion, is_premium)`
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (sort === "hot") {
-    query = query.order("is_hot", { ascending: false }).order("like_count", { ascending: false });
+    query = query.order("is_hot", { ascending: false }).order("upvotes", { ascending: false });
   } else {
     query = query.order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
   }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       tags: tags || [],
       upvotes: 0,
       reply_count: 0,
-      like_count: 0,
+      upvotes: 0,
       view_count: 0,
       is_pinned: false,
       is_locked: false,
