@@ -7,6 +7,7 @@ import { useDebounce } from '@/hooks/useDebounce'
 import WishlistButton from '@/components/ui/WishlistButton'
 import WishlistButton from '@/components/ui/WishlistButton'
 
+
 type Card = {
   id: string
   name: string
