@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -13,7 +13,7 @@ const NAV_LINKS = [
   { href: '/preischeck',  label: 'Preischeck' },
   { href: '/scanner',     label: 'Scanner' },
   { href: '/forum',       label: 'Forum' },
-<Link href="/spiel">Spiel</Link>
+{ href: '/spiel', label: 'Spiel' },
   { href: '/dashboard',   label: 'Dashboard', requiresAuth: true },
 ]
 
