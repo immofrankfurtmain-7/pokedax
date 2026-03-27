@@ -15,7 +15,7 @@ type Card = {
   sets: { name: string }
 }
 
-type Score = { username: string; score: number; created_at: string }
+type Score = { id: string; username: string; score: number; created_at: string }
 
 const MEDALS = ['','','']
 
