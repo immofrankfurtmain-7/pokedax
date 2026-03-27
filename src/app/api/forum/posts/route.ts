@@ -74,7 +74,6 @@ export async function POST(request: NextRequest) {
       tags: tags || [],
       upvotes: 0,
       reply_count: 0,
-      upvotes: 0,
       view_count: 0,
       is_pinned: false,
       is_locked: false,
