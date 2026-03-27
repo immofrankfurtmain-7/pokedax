@@ -31,8 +31,8 @@ export default async function HomePage() {
         rarity: row.rarity || "",
         types: row.types || [],
         images: {
-          small: row.image_url || \`https://assets.tcgdex.net/en/\${row.set_id}/\${row.number}/low.webp\`,
-          large: row.image_url || \`https://assets.tcgdex.net/en/\${row.set_id}/\${row.number}/high.webp\`,
+          small: row.image_url || `https://assets.tcgdex.net/en/${row.set_id}/${row.number}/low.webp`,
+          large: row.image_url || `https://assets.tcgdex.net/en/${row.set_id}/${row.number}/high.webp`,
         },
         set: { id: row.set_id || "", name: row.set_id?.toUpperCase() || "" },
       },
