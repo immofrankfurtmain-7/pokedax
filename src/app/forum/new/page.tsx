@@ -43,7 +43,7 @@ export default function NewPostPage() {
   const catStyle = CATEGORY_STYLES[selectedCategory] || { color: "#00ffff", glow: "rgba(0,255,255,0.3)" };
 
   function addTag() {
-    const t = tagInput.trim().toLowerCase().replace(/[^a-z0-9Ã¤Ã¶Ã¼-]/g, "");
+    const t = tagInput.trim().toLowerCase().replace(/[^a-z0-9äöü-]/g, "");
     if (t && !tags.includes(t) && tags.length < 5) {
       setTags([...tags, t]);
       setTagInput("");
@@ -52,7 +52,7 @@ export default function NewPostPage() {
 
   async function handleSubmit() {
     if (!title.trim() || !content.trim() || !selectedCategory) {
-      setError("Bitte alle Pflichtfelder ausfÃ¼llen.");
+      setError("Bitte alle Pflichtfelder ausfüllen.");
       return;
     }
     setSubmitting(true);
@@ -99,7 +99,7 @@ export default function NewPostPage() {
           style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px" }}
         >
           <ArrowLeft size={14} />
-          ZurÃ¼ck zum Forum
+          Zurück zum Forum
         </Link>
 
         <div className="mb-8">
@@ -207,7 +207,7 @@ export default function NewPostPage() {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-                  placeholder="Tag eingeben, Enter drÃ¼cken"
+                  placeholder="Tag eingeben, Enter drücken"
                   className="w-full pl-8 pr-4 py-2 rounded-xl focus:outline-none transition-all"
                   style={{
                     background: "rgba(255,255,255,0.04)",
@@ -289,7 +289,7 @@ export default function NewPostPage() {
               }}
             >
               <Send size={14} />
-              {submitting ? "Wird erstellt..." : "Beitrag verÃ¶ffentlichen"}
+              {submitting ? "Wird erstellt..." : "Beitrag veröffentlichen"}
             </button>
           </div>
         </div>

@@ -199,7 +199,7 @@ function HoloCard({ category }: { category: Category }) {
                 {category.post_count.toLocaleString()}
               </span>
             </div>
-            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px" }}>BeitrÃ¤ge</span>
+            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px" }}>Beiträge</span>
           </div>
         </div>
 
@@ -404,7 +404,7 @@ export default function ForumPage() {
               }}
             />
             <span style={{ color: "#00ffff", fontSize: "11px", letterSpacing: "0.3em", fontWeight: 600 }}>
-              POKÃ‰DAX
+              POKÉDAX
             </span>
             <div
               style={{
@@ -426,7 +426,7 @@ export default function ForumPage() {
             Community Forum
           </h1>
           <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>
-            Tausche, diskutiere und werde Teil der deutschen PokÃ©mon TCG Community
+            Tausche, diskutiere und werde Teil der deutschen Pokémon TCG Community
           </p>
         </div>
 
@@ -513,7 +513,7 @@ export default function ForumPage() {
                 className="text-sm font-bold uppercase tracking-widest"
                 style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.2em" }}
               >
-                Neueste BeitrÃ¤ge
+                Neueste Beiträge
               </h2>
             </div>
             <div>

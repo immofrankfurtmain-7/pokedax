@@ -172,7 +172,7 @@ function UserInfo({ profile }: { profile: Post["profiles"] | Reply["profiles"] }
         )}
       </div>
       <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", marginTop: "1px" }}>
-        {profile.post_count} BeitrÃ¤ge
+        {profile.post_count} Beiträge
       </p>
     </div>
   );
@@ -277,7 +277,7 @@ export default function PostDetailPage() {
         style={{ background: "linear-gradient(180deg, #080010 0%, #0d0020 100%)" }}
       >
         <p className="text-white mb-4">Beitrag nicht gefunden.</p>
-        <Link href="/forum" className="text-cyan-400 hover:underline">â† ZurÃ¼ck zum Forum</Link>
+        <Link href="/forum" className="text-cyan-400 hover:underline">← Zurück zum Forum</Link>
       </div>
     );
   }
@@ -298,7 +298,7 @@ export default function PostDetailPage() {
           style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px" }}
         >
           <ArrowLeft size={14} />
-          ZurÃ¼ck zum Forum
+          Zurück zum Forum
         </Link>
 
         {/* Category pill */}
@@ -601,7 +601,7 @@ export default function PostDetailPage() {
           >
             <Lock size={16} style={{ color: "#ff8800" }} />
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}>
-              Dieser Beitrag wurde gesperrt. Neue Antworten sind nicht mÃ¶glich.
+              Dieser Beitrag wurde gesperrt. Neue Antworten sind nicht möglich.
             </p>
           </div>
         )}
