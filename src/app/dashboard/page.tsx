@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { Star } from 'lucide-react'
 import Link from 'next/link'
 import AvatarUpload from '@/components/ui/AvatarUpload'
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
   const username   = profile?.username ?? user!.email?.split('@')[0] ?? 'Trainer'
 
   return (
-    <div className="p-8">
+    <div className="p-8"><div className="flex gap-3 mb-6 flex-wrap"><a href="/dashboard" className="px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium">Dashboard</a><a href="/dashboard/portfolio" className="px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-sm hover:border-gray-500 transition-colors">Portfolio</a><a href="/dashboard/wishlist" className="px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-sm hover:border-gray-500 transition-colors">Wishlists</a><a href="/dashboard/alerts" className="px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-300 text-sm hover:border-gray-500 transition-colors">Alerts</a><a href="/dashboard/premium" className="px-4 py-2 rounded-lg bg-gray-900 border border-yellow-700/50 text-yellow-400 text-sm hover:border-yellow-600 transition-colors">Premium</a></div>
       <div className="flex items-center gap-5 mb-10">
         <AvatarUpload userId={user!.id} avatarUrl={profile?.avatar_url} username={username} size="lg"/>
         <div>
