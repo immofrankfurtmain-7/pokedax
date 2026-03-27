@@ -1,7 +1,9 @@
-'use client'
+﻿'use client'
 // src/components/portfolio/CardGrid.tsx
 
 import { useState } from 'react'
+import WishlistButton from '@/components/ui/WishlistButton'
+import WishlistButton from '@/components/ui/WishlistButton'
 import { createClient } from '@/lib/supabase/client'
 
 interface Card {
@@ -154,6 +156,14 @@ export default function CardGrid({ cards: initialCards, userId, setId }: Props) 
                 )}
               </div>
 
+              {/* Wishlist */}
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20" onClick={e => e.stopPropagation()}>
+                <WishlistButton cardId={card.id} />
+              </div>
+              {/* Wishlist */}
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20" onClick={e => e.stopPropagation()}>
+                <WishlistButton cardId={card.id} />
+              </div>
               {/* Loading Overlay */}
               {isLoading && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
