@@ -2,7 +2,7 @@
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import Image from "next/image";
+import FloatingPikachu from "@/components/ui/FloatingPikachu";
 
 export const metadata: Metadata = {
   title: "PokéDax – Deutschlands #1 Pokémon TCG Plattform",
@@ -15,27 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Navbar />
 
-        {/* Pikachu Floaters – immer sichtbar */}
-        <div className="pikachu-left" aria-hidden="true">
-          <Image
-            src="/pikachu-left.svg"
-            alt=""
-            width={80}
-            height={80}
-            priority
-            style={{ width: "100%", height: "auto" }}
-          />
-        </div>
-        <div className="pikachu-right" aria-hidden="true">
-          <Image
-            src="/pikachu-right.svg"
-            alt=""
-            width={80}
-            height={80}
-            priority
-            style={{ width: "100%", height: "auto", transform: "scaleX(-1)" }}
-          />
-        </div>
+        <FloatingPikachu />
 
         <main>{children}</main>
         <Footer />
