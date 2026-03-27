@@ -5,6 +5,7 @@ import ForumSection  from '@/components/forum/ForumSection'
 import PremiumSection from '@/components/premium/PremiumSection'
 import Footer        from '@/components/layout/Footer'
 import { getTrendingCards } from '@/lib/pokemon-api'
+import OnlineUsers from '@/components/ui/OnlineUsers'
 
 export const dynamic = 'force-dynamic'
 export default async function HomePage() {
@@ -35,6 +36,7 @@ export default async function HomePage() {
       </div>
 
       <PremiumSection/>
+<OnlineUsers />
       <Footer/>
     </main>
   )
