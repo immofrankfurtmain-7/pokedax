@@ -4,7 +4,47 @@ import TrendingGrid from "@/components/cards/TrendingGrid";
 import ForumSection from "@/components/forum/ForumSection";
 import PremiumSection from "@/components/premium/PremiumSection";
 import OnlineUsers from "@/components/ui/OnlineUsers";
-export default function HomePage() {
+import type { TrendingCard } from "@/types";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function HomePage() {
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("cards")
+    .select("id,name,set_id,number,rarity,types,image_url,price_market,price_low,price_high,price_avg7,price_avg30")
+    .not("price_market", "is", null)
+    .order("price_market", { ascending: false })
+    .limit(8);
+
+  const trendingCards: TrendingCard[] = (rows || []).map((row, i) => {
+    const change7d = row.price_avg7 && row.price_avg30 && row.price_avg30 > 0
+      ? Math.round(((row.price_avg7 - row.price_avg30) / row.price_avg30) * 1000) / 10
+      : 0;
+    const signal: "buy" | "sell" | "hold" = change7d >= 3 ? "buy" : change7d <= -3 ? "sell" : "hold";
+    return {
+      rank: i + 1,
+      rankChange: 0,
+      card: {
+        id: row.id,
+        name: row.name,
+        number: row.number || "",
+        rarity: row.rarity || "",
+        types: row.types || [],
+        images: {
+          small: row.image_url || \`https://assets.tcgdex.net/en/\${row.set_id}/\${row.number}/low.webp\`,
+          large: row.image_url || \`https://assets.tcgdex.net/en/\${row.set_id}/\${row.number}/high.webp\`,
+        },
+        set: { id: row.set_id || "", name: row.set_id?.toUpperCase() || "" },
+      },
+      price: {
+        price:    row.price_market || 0,
+        low:      row.price_low    || 0,
+        high:     row.price_high   || 0,
+        change7d,
+        signal,
+      },
+    } as TrendingCard;
+  });
 
   return (
     <div style={{ background: "#0A0A0A", minHeight: "100vh" }}>
@@ -108,7 +148,7 @@ export default function HomePage() {
             Alle ansehen <ArrowRight size={14} />
           </Link>
         </div>
-        <TrendingGrid />
+        <TrendingGrid cards={trendingCards} />
       </section>
 
       {/* ── FORUM SECTION ── */}
