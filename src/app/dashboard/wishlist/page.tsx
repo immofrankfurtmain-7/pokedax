@@ -170,7 +170,7 @@ export default function WishlistPage() {
                             </div>
                             <div className="p-3">
                               <p className="text-white text-xs font-medium truncate">{card.name}</p>
-                              <p className="text-gray-500 text-xs truncate">{card.sets?.name}</p>
+                              <p className="text-gray-500 text-xs truncate">{Array.isArray(card.sets) ? card.sets[0]?.name : card.sets?.name}</p>
                               <div className="mt-1.5 flex items-center justify-between">
                                 <span className="text-cyan-400 text-sm font-bold">{fmt(card.price_market)}</span>
                                 {trend !== null && (
