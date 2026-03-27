@@ -4,16 +4,7 @@ import TrendingGrid from "@/components/cards/TrendingGrid";
 import ForumSection from "@/components/forum/ForumSection";
 import PremiumSection from "@/components/premium/PremiumSection";
 import OnlineUsers from "@/components/ui/OnlineUsers";
-import { createClient } from "@/lib/supabase/server";
-
-export default async function HomePage() {
-  const supabase = await createClient();
-  const { data: cards } = await supabase
-    .from("cards")
-    .select("id,name,set_id,number,rarity,types,image_url,price_market,price_low,price_avg7,price_avg30")
-    .not("price_market", "is", null)
-    .order("price_market", { ascending: false })
-    .limit(8);
+export default function HomePage() {
 
   return (
     <div style={{ background: "#0A0A0A", minHeight: "100vh" }}>
@@ -117,7 +108,7 @@ export default async function HomePage() {
             Alle ansehen <ArrowRight size={14} />
           </Link>
         </div>
-        <TrendingGrid cards={cards || []} />
+        <TrendingGrid />
       </section>
 
       {/* ── FORUM SECTION ── */}
