@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { MessageSquare, TrendingUp, Pin, Lock, Flame, Eye, Heart } from "lucide-react";
+import ForumHeader from "@/components/forum/ForumHeader";
 
 interface Category {
   id: string;
@@ -374,7 +375,12 @@ export default function ForumPage() {
     setCategoryPosts(data.posts || []);
   }
 
+  // Sum up total posts across all categories
+  const totalPosts = categories.reduce((sum, c) => sum + (c.post_count || 0), 0);
+
   return (
+    <>
+    <ForumHeader postCount={totalPosts} />
     <div
       className="min-h-screen"
       style={{
@@ -582,5 +588,6 @@ export default function ForumPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
