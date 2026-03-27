@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { href: '/preischeck',  label: 'Preischeck' },
   { href: '/scanner',     label: 'Scanner' },
   { href: '/forum',       label: 'Forum' },
+<Link href="/spiel">Spiel</Link>
   { href: '/dashboard',   label: 'Dashboard', requiresAuth: true },
 ]
 
