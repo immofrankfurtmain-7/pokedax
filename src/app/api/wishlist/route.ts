@@ -10,14 +10,33 @@ export async function GET(request: Request) {
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'id erforderlich' }, { status: 400 })
 
-  const { data, error } = await supabase
+  const { data: wlItems, error: wlError } = await supabase
     .from('wishlist_items')
-    .select('id, added_at, cards!inner(id, name, number, set_id, image_url, price_market, price_avg7, sets!inner(name))')
+    .select('id, added_at, card_id')
     .eq('wishlist_id', id)
     .order('added_at', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ items: data ?? [] })
+  if (wlError) return NextResponse.json({ error: wlError.message }, { status: 500 })
+
+  if (!wlItems || wlItems.length === 0) {
+    return NextResponse.json({ items: [] })
+  }
+
+  const cardIds = wlItems.map(i => i.card_id)
+  const { data: cards, error: cardsError } = await supabase
+    .from('cards')
+    .select('id, name, number, set_id, image_url, price_market, price_avg7, sets!inner(name)')
+    .in('id', cardIds)
+
+  if (cardsError) return NextResponse.json({ error: cardsError.message }, { status: 500 })
+
+  const items = wlItems.map(item => ({
+    id:       item.id,
+    added_at: item.added_at,
+    cards:    cards?.find(c => c.id === item.card_id) ?? null,
+  }))
+
+  return NextResponse.json({ items })
 }
 
 export async function POST(request: Request) {
@@ -28,10 +47,19 @@ export async function POST(request: Request) {
   const { wishlist_id, card_id } = await request.json()
   if (!wishlist_id || !card_id) return NextResponse.json({ error: 'wishlist_id und card_id erforderlich' }, { status: 400 })
 
-  const { data: wl } = await supabase.from('wishlists').select('id').eq('id', wishlist_id).eq('user_id', user.id).single()
+  const { data: wl } = await supabase
+    .from('wishlists')
+    .select('id')
+    .eq('id', wishlist_id)
+    .eq('user_id', user.id)
+    .single()
+
   if (!wl) return NextResponse.json({ error: 'Wishlist nicht gefunden' }, { status: 404 })
 
-  const { error } = await supabase.from('wishlist_items').insert({ wishlist_id, card_id })
+  const { error } = await supabase
+    .from('wishlist_items')
+    .insert({ wishlist_id, card_id })
+
   if (error && error.code === '23505') return NextResponse.json({ error: 'Karte bereits in Liste' }, { status: 409 })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
