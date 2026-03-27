@@ -3,7 +3,6 @@
 
 import { useState } from 'react'
 import WishlistButton from '@/components/ui/WishlistButton'
-import WishlistButton from '@/components/ui/WishlistButton'
 import { createClient } from '@/lib/supabase/client'
 
 interface Card {
