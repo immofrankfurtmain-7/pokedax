@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useDebounce } from '@/hooks/useDebounce'
 import WishlistButton from '@/components/ui/WishlistButton'
-import WishlistButton from '@/components/ui/WishlistButton'
+
 
 
 type Card = {
