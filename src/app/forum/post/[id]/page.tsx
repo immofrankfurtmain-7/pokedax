@@ -41,7 +41,6 @@ interface Reply {
   content: string;
   author_id: string;
   upvotes: number;
-  upvotes?: number;
   created_at: string;
   profiles: {
     username: string;
