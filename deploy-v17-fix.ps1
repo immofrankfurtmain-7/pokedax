@@ -1,4 +1,11 @@
-﻿"use client";
+﻿# PokeDax v17 – BackgroundCanvas null fix
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+Write-Host "PokeDax v17 – Canvas fix..." -ForegroundColor Cyan
+
+
+$bgCanvas = @'
+"use client";
 
 import { useEffect, useRef } from "react";
 
@@ -269,3 +276,57 @@ export default function BackgroundCanvas({ intensity = "medium" }: Props) {
     />
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\components\ui\BackgroundCanvas.tsx", $bgCanvas, $enc)
+Write-Host "  OK: BackgroundCanvas.tsx" -ForegroundColor Green
+
+$rootLayout = @'
+import type { Metadata } from "next";
+import { Poppins, Inter } from "next/font/google";
+import "./globals.css";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import FloatingPikachu from "@/components/ui/FloatingPikachu";
+import BackgroundCanvas from "@/components/ui/BackgroundCanvas";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "PokéDax – Deutschlands #1 Pokémon TCG Plattform",
+  description: "Live Cardmarket EUR Preise, KI-Scanner, Portfolio und Community. Deutschlands größte Pokémon TCG Plattform.",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="de" className={`${poppins.variable} ${inter.variable}`}>
+      <body>
+        <Navbar />
+        <BackgroundCanvas intensity="medium" />
+        <FloatingPikachu />
+        <main>{children}</main>
+        <Footer />
+      </body>
+    </html>
+  );
+}
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\layout.tsx", $rootLayout, $enc)
+Write-Host "  OK: layout.tsx" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "Fertig!" -ForegroundColor Cyan
+Write-Host "GitHub Desktop -> Commit & Push" -ForegroundColor Yellow
