@@ -51,7 +51,7 @@ export default async function HomePage() {
 
       {/* ── HERO ── */}
       <section style={{
-        background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(238,21,21,0.09), transparent), radial-gradient(ellipse 40% 30% at 80% 90%, rgba(250,204,21,0.04), transparent), #0A0A0A",
+        background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(238,21,21,0.09), transparent), radial-gradient(ellipse 40% 30% at 80% 90%, rgba(250,204,21,0.04), transparent)",
         padding: "72px 20px 60px",
         textAlign: "center",
         position: "relative",
@@ -70,16 +70,22 @@ export default async function HomePage() {
           </span>
         </div>
 
-        <h1 style={{ fontSize: "clamp(36px, 7vw, 64px)", fontFamily: "Poppins, sans-serif", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.05, marginBottom: 18 }}>
-          <span style={{ color: "#F8FAFC" }}>Pokémon TCG</span>
-          <br />
-          <span style={{ background: "linear-gradient(135deg, #EE1515, #ff6b6b)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            Preis-Check DE
-          </span>
-        </h1>
+        {/* Logo */}
+        <div style={{ marginBottom: 24, display: "inline-block" }}>
+          <img
+            src="/pokedax-logo.jpg"
+            alt="PokéDax"
+            style={{
+              height: "clamp(90px, 14vw, 160px)",
+              width: "auto",
+              filter: "drop-shadow(0 0 32px rgba(250,204,21,0.5)) drop-shadow(0 0 60px rgba(238,21,21,0.3))",
+              borderRadius: 16,
+            }}
+          />
+        </div>
 
-        <p style={{ fontSize: 15, color: "#94A3B8", maxWidth: 480, margin: "0 auto 32px", lineHeight: 1.65 }}>
-          Scanne deine Karte und erhalte sofort den aktuellen Marktwert mit Kauf-/Verkaufsempfehlung – direkt von Cardmarket.
+        <p style={{ fontSize: 16, color: "#CBD5E1", maxWidth: 520, margin: "0 auto 32px", lineHeight: 1.7, fontFamily: "Inter, sans-serif" }}>
+          Deutschlands #1 Pokémon TCG Plattform — Live Cardmarket EUR-Preise, KI-Scanner & Community.
         </p>
 
         <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>

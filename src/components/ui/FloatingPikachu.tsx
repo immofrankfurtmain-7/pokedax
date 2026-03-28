@@ -66,7 +66,7 @@ export default function FloatingPikachu() {
           transition: state.visible && isLeft
             ? "transform 0.6s cubic-bezier(0.34,1.56,0.64,1)"
             : "transform 0.5s cubic-bezier(0.4,0,1,1)",
-          width: 80,
+          width: 110,
         }}
       >
         <div style={{
@@ -95,7 +95,7 @@ export default function FloatingPikachu() {
           transition: state.visible && isRight
             ? "transform 0.6s cubic-bezier(0.34,1.56,0.64,1)"
             : "transform 0.5s cubic-bezier(0.4,0,1,1)",
-          width: 80,
+          width: 110,
         }}
       >
         <div style={{
