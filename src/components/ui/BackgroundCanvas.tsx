@@ -15,7 +15,7 @@ export default function BackgroundCanvas({ intensity = "medium" }: Props) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ctx = el.getContext("2d");
+    const ctx = el.getContext("2d") as CanvasRenderingContext2D;
     if (!ctx) return;
 
     const COUNT = intensity === "low" ? 60 : intensity === "high" ? 140 : 100;
