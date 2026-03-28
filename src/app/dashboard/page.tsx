@@ -109,7 +109,7 @@ export default async function DashboardPage() {
     : 'rgba(255,255,255,0.4)'
 
   return (
-    <div style={{ background: '#0A0A0A', minHeight: '100vh', color: 'white' }}>
+    <div style={{ background: 'transparent', minHeight: '100vh', color: 'white' }}>
       {/* Red top accent */}
       <div style={{ height: 2, background: 'linear-gradient(90deg, transparent, #EE1515 30%, #EE1515 70%, transparent)' }} />
 

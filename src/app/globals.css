@@ -2,9 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  background: #0A0A0A;
-}
+
 
 :root {
   /* Core Brand */
@@ -67,9 +65,7 @@ html {
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+
 
 body {
   background: transparent;
@@ -345,4 +341,28 @@ main { font-family: var(--font-poppins), 'Poppins', sans-serif; font-weight: 800
 /* hide pikachu on very small screens */
 @media (max-width: 400px) {
   .pikachu-left, .pikachu-right { display: none; }
+}
+
+/* ── Canvas visibility fix ── */
+html {
+  background: #0A0A0A;
+}
+body {
+  background: transparent !important;
+}
+/* All direct page wrappers must not create opaque background */
+main > div[style] {
+  background: transparent !important;
+}
+nav {
+  position: relative;
+  z-index: 50;
+}
+main {
+  position: relative;
+  z-index: 1;
+}
+footer {
+  position: relative;
+  z-index: 1;
 }
