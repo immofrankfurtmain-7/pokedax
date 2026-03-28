@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
-import Navbar from '@/components/layout/Navbar'
 import { createClient } from '@/lib/supabase/client'
 
 type Card = {
@@ -94,7 +93,6 @@ export default function SpielPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-black text-white">
         <div className="max-w-4xl mx-auto px-4 pt-24 pb-12">
 

@@ -20,7 +20,7 @@ export default function Footer() {
               src="/pokedax-logo.png"
               alt="PokéDax"
               style={{
-                height: 60,
+                height: 148,
                 width: "auto",
                 filter: "drop-shadow(0 0 10px rgba(250,204,21,0.4))",
                 marginBottom: 12,

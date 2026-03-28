@@ -1,8 +1,7 @@
-'use client'
+﻿'use client'
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Camera, Upload, X, ChevronRight, Zap } from 'lucide-react'
-import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { formatCurrency } from '@/lib/utils'
 import { SIGNAL_LABELS, SIGNAL_COLORS } from '@/lib/pokemon-api'
@@ -80,7 +79,6 @@ export default function ScannerPage() {
 
   return (
     <main className="min-h-screen">
-      <Navbar/>
       <div className="max-w-lg mx-auto px-6 py-16">
         {/* Header */}
         <div className="mb-8">
