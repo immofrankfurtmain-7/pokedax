@@ -1,38 +1,111 @@
-import Link from 'next/link'
+﻿"use client";
+
+import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="relative z-10 border-t border-white/5 bg-black/20 backdrop-blur-sm mt-20">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+    <footer style={{
+      background: "rgba(0,0,0,0.6)",
+      borderTop: "1px solid rgba(255,255,255,0.07)",
+      padding: "40px 20px 32px",
+      position: "relative",
+      zIndex: 1,
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 32, marginBottom: 32 }}>
+
+          {/* Logo + Description */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <svg viewBox="0 0 60 60" className="w-6 h-6"><circle cx="30" cy="30" r="28" fill="white" stroke="rgba(0,0,0,0.2)" strokeWidth="1"/><path d="M2.5 30 Q2.5 3 30 3 Q57.5 3 57.5 30" fill="#CC0000"/><line x1="2.5" y1="30" x2="57.5" y2="30" stroke="rgba(0,0,0,0.3)" strokeWidth="2.5"/><circle cx="30" cy="30" r="9" fill="white" stroke="rgba(0,0,0,0.2)" strokeWidth="2.5"/><circle cx="30" cy="30" r="4.5" fill="rgba(245,245,245,0.9)"/></svg>
-              <span className="font-display text-lg tracking-widest text-yellow-400">POKÉDAX</span>
-            </div>
-            <p className="text-sm text-white/30 leading-relaxed">
-              Deutschlands #1 Pokémon-TCG-Preis-Plattform.<br/>
+            <img
+              src="/pokedax-logo.png"
+              alt="PokéDax"
+              style={{
+                height: 60,
+                width: "auto",
+                filter: "drop-shadow(0 0 10px rgba(250,204,21,0.4))",
+                marginBottom: 12,
+              }}
+            />
+            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, lineHeight: 1.6, maxWidth: 220 }}>
+              Deutschlands #1 Pokémon-TCG-Preis-Plattform.
               Live-Preise · KI-Scanner · Community
             </p>
           </div>
+
+          {/* Platform links */}
           <div>
-            <div className="text-xs font-semibold text-white/30 tracking-widest uppercase mb-3">Plattform</div>
-            {[['/', 'Start'], ['/preischeck', 'Preischeck'], ['/scanner', 'Scanner'], ['/forum', 'Forum'], ['/dashboard', 'Dashboard']].map(([href, label]) => (
-              <Link key={href} href={href} className="block text-sm text-white/40 hover:text-white/75 mb-1.5 transition-colors">{label}</Link>
-            ))}
+            <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>
+              Plattform
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { href: "/",           label: "Start"      },
+                { href: "/preischeck", label: "Preischeck" },
+                { href: "/scanner",    label: "Scanner"    },
+                { href: "/forum",      label: "Forum"      },
+                { href: "/dashboard",  label: "Dashboard"  },
+                { href: "/spiel",      label: "Spiel"      },
+              ].map(l => (
+                <Link key={l.href} href={l.href} style={{
+                  color: "rgba(255,255,255,0.4)", fontSize: 13,
+                  textDecoration: "none", transition: "color .15s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = "white")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
           </div>
+
+          {/* Legal links */}
           <div>
-            <div className="text-xs font-semibold text-white/30 tracking-widest uppercase mb-3">Rechtliches</div>
-            {[['#', 'Datenschutz'], ['#', 'Impressum'], ['#', 'Nutzungsbedingungen'], ['#', 'Kontakt']].map(([href, label]) => (
-              <Link key={label} href={href} className="block text-sm text-white/40 hover:text-white/75 mb-1.5 transition-colors">{label}</Link>
-            ))}
+            <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 14 }}>
+              Rechtliches
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { href: "#", label: "Datenschutz"        },
+                { href: "#", label: "Impressum"          },
+                { href: "#", label: "Nutzungsbedingungen"},
+                { href: "#", label: "Kontakt"            },
+              ].map(l => (
+                <Link key={l.label} href={l.href} style={{
+                  color: "rgba(255,255,255,0.4)", fontSize: 13,
+                  textDecoration: "none", transition: "color .15s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = "white")}
+                onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-2 pt-6 border-t border-white/5">
-          <p className="text-xs text-white/20">© 2026 PokeDax · Nicht offiziell · Nicht affiliiert mit The Pokémon Company International</p>
-          <p className="text-xs text-white/25">Made with ♥ für Pokémon-Sammler in D/A/CH</p>
+
+        {/* Bottom bar */}
+        <div style={{
+          paddingTop: 20,
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexWrap: "wrap", gap: 8,
+        }}>
+          <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 12 }}>
+            © 2026 PokéDax · Nicht offiziell · Nicht affiliiert mit The Pokémon Company International
+          </p>
+          <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 12 }}>
+            Made with ♥ für Pokémon-Sammler in D/A/CH
+          </p>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          footer > div > div:first-child + div { grid-template-columns: 1fr 1fr !important; }
+        }
+      `}</style>
     </footer>
-  )
+  );
 }

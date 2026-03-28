@@ -71,15 +71,16 @@ export default async function HomePage() {
         </div>
 
         {/* Logo */}
-        <div style={{ marginBottom: 24, display: "inline-block" }}>
+        <div style={{ marginBottom: 28, display: "flex", justifyContent: "center", width: "100%" }}>
           <img
             src="/pokedax-logo.png"
             alt="PokéDax"
             style={{
-              height: "clamp(90px, 14vw, 160px)",
+              height: "clamp(140px, 22vw, 260px)",
               width: "auto",
-              filter: "drop-shadow(0 0 32px rgba(250,204,21,0.5)) drop-shadow(0 0 60px rgba(238,21,21,0.3))",
-              borderRadius: 16,
+              filter: "drop-shadow(0 0 40px rgba(250,204,21,0.6)) drop-shadow(0 0 80px rgba(238,21,21,0.4))",
+              display: "block",
+              margin: "0 auto",
             }}
           />
         </div>

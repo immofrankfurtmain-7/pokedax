@@ -78,18 +78,18 @@ export default function Navbar() {
   return (
     <>
       {/* ── Top Navbar ── */}
-      <nav className="sticky-header" style={{ height: 56 }}>
+      <nav className="sticky-header" style={{ height: 64 }}>
         {/* Red top line */}
         <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #EE1515 30%, #EE1515 70%, transparent)" }} />
 
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px", height: 62, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
             <img
               src="/pokedax-logo.png"
               alt="PokéDax"
               style={{
-                height: 36, width: "auto",
+                height: 48, width: "auto",
                 filter: "drop-shadow(0 0 8px rgba(250,204,21,0.4))",
               }}
             />
