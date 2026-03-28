@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error("STRIPE_SECRET_KEY fehlt");
-  return new Stripe(key, { apiVersion: "2023-10-16" });
+  return new Stripe(key, { apiVersion: "2024-06-20" });
 }
 
 const PLANS = {
