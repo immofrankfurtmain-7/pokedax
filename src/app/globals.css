@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  background: #0A0A0A;
+}
+
 :root {
   /* Core Brand */
   --red: #EE1515;
@@ -68,7 +72,7 @@ html {
 }
 
 body {
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
   font-family: var(--font-inter), 'Inter', -apple-system, sans-serif;
   font-size: 15px;
@@ -276,7 +280,12 @@ input:focus, textarea:focus, select:focus {
 /* ── Price highlight ── */
 .price-up   { color: #22C55E; }
 .price-down { color: #EF4444; }
-.price-main { font-family: var(--font-poppins), 'Poppins', sans-serif; font-weight: 800; color: var(--cyan); }
+.price-nav, main, footer {
+  position: relative;
+  z-index: 1;
+}
+
+main { font-family: var(--font-poppins), 'Poppins', sans-serif; font-weight: 800; color: var(--cyan); }
 
 /* ── Forum post row ── */
 .forum-row {

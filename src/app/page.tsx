@@ -47,7 +47,7 @@ export default async function HomePage() {
   });
 
   return (
-    <div style={{ background: "#0A0A0A", minHeight: "100vh" }}>
+    <div style={{ background: "rgba(10,10,10,0.85)", minHeight: "100vh" }}>
 
       {/* ── HERO ── */}
       <section style={{
@@ -97,7 +97,7 @@ export default async function HomePage() {
         <div style={{
           display: "flex", flexWrap: "wrap", justifyContent: "center",
           border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16,
-          overflow: "hidden", background: "#111111",
+          overflow: "hidden", background: "rgba(17,17,17,0.85)",
           maxWidth: 640, margin: "0 auto",
         }}>
           {[
