@@ -73,7 +73,7 @@ export default async function HomePage() {
         {/* Logo */}
         <div style={{ marginBottom: 24, display: "inline-block" }}>
           <img
-            src="/pokedax-logo.jpg"
+            src="/pokedax-logo.png"
             alt="PokéDax"
             style={{
               height: "clamp(90px, 14vw, 160px)",

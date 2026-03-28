@@ -85,19 +85,14 @@ export default function Navbar() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px", height: 54, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: "50%",
-              background: "linear-gradient(135deg, #FACC15, #f59e0b)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, fontWeight: 900, color: "#000",
-              boxShadow: "0 0 12px rgba(250,204,21,0.3)",
-            }}>◎</div>
-            <span style={{
-              fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 17,
-              background: "linear-gradient(135deg, #FACC15, #f59e0b)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              letterSpacing: "-0.02em",
-            }}>POKÉDAX</span>
+            <img
+              src="/pokedax-logo.png"
+              alt="PokéDax"
+              style={{
+                height: 36, width: "auto",
+                filter: "drop-shadow(0 0 8px rgba(250,204,21,0.4))",
+              }}
+            />
           </Link>
 
           {/* Desktop Links */}
@@ -203,11 +198,11 @@ export default function Navbar() {
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0 }}>
-          <span style={{
-            fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 17,
-            background: "linear-gradient(135deg, #FACC15, #f59e0b)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-          }}>POKÉDAX</span>
+          <img
+            src="/pokedax-logo.png"
+            alt="PokéDax"
+            style={{ height: 32, width: "auto", filter: "drop-shadow(0 0 6px rgba(250,204,21,0.4))" }}
+          />
           <button onClick={() => setOpen(false)}
             style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", display: "flex" }}>
             <X size={20} />
