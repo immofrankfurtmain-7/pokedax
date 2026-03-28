@@ -1,5 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap');
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -71,14 +70,14 @@ html {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: var(--font-inter), 'Inter', -apple-system, sans-serif;
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5 {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -203,7 +202,7 @@ h1, h2, h3, h4, h5 {
   border: none;
   border-radius: 12px;
   padding: 12px 24px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
@@ -220,7 +219,7 @@ h1, h2, h3, h4, h5 {
   border: 1px solid var(--border3);
   border-radius: 12px;
   padding: 12px 24px;
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-poppins), 'Poppins', sans-serif;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -237,7 +236,7 @@ input, textarea, select {
   color: var(--text);
   border: 1px solid var(--border2);
   border-radius: 12px;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-inter), 'Inter', sans-serif;
   transition: border-color 0.15s;
 }
 input:focus, textarea:focus, select:focus {
@@ -277,7 +276,7 @@ input:focus, textarea:focus, select:focus {
 /* ── Price highlight ── */
 .price-up   { color: #22C55E; }
 .price-down { color: #EF4444; }
-.price-main { font-family: 'Poppins', sans-serif; font-weight: 800; color: var(--cyan); }
+.price-main { font-family: var(--font-poppins), 'Poppins', sans-serif; font-weight: 800; color: var(--cyan); }
 
 /* ── Forum post row ── */
 .forum-row {
