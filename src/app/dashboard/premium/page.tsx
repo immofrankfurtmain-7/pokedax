@@ -1,153 +1,298 @@
-'use client'
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Star, Check, X, Zap, Shield, BarChart2, ShoppingBag, Bell, Layers, CreditCard } from 'lucide-react'
-import { toast } from 'sonner'
+﻿"use client";
 
-const FEATURES_PREMIUM = [
-  { icon: Zap,         text: 'Unlimitierter Pro-Scanner mit Condition-Erkennung' },
-  { icon: BarChart2,   text: 'Portfolio-Tracker mit Live-Charts und Gewinnanalyse' },
-  { icon: Layers,      text: 'Set-Tracker für alle Pokémon TCG Sets' },
-  { icon: ShoppingBag, text: 'Interner Marktplatz – kaufe/verkaufe direkt' },
-  { icon: Bell,        text: 'Realtime Preis-Alerts per E-Mail' },
-  { icon: Shield,      text: 'Ad-free + Exklusive Forum-Channels' },
-]
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { Crown, Check, X, Zap, Shield, TrendingUp, Bell, Star } from "lucide-react";
+import { usePremium } from "@/hooks/usePremium";
 
-export default function PremiumPage() {
-  const [loading, setLoading] = useState<'monthly' | 'yearly' | null>(null)
-  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly')
+const PLANS = [
+  {
+    id:       "free",
+    name:     "Free",
+    price:    "0€",
+    period:   "für immer",
+    color:    "rgba(255,255,255,0.1)",
+    features: [
+      { text: "5 Scans pro Tag",      ok: true  },
+      { text: "Basis-Preischeck",     ok: true  },
+      { text: "Forum lesen",          ok: true  },
+      { text: "Unlimitierter Scanner",ok: false },
+      { text: "Portfolio-Tracker",    ok: false },
+      { text: "Preis-Alerts",         ok: false },
+      { text: "Grading-Beratung",     ok: false },
+    ],
+    cta:      "Kostenlos starten",
+    ctaStyle: "outline" as const,
+  },
+  {
+    id:       "premium",
+    name:     "Premium",
+    price:    "7,99€",
+    period:   "pro Monat",
+    color:    "#FACC15",
+    badge:    "BELIEBTESTE WAHL",
+    features: [
+      { text: "Unlimitierter Pro-Scanner", ok: true },
+      { text: "Portfolio + Live-Charts",   ok: true },
+      { text: "Set-Tracker",               ok: true },
+      { text: "Interner Marktplatz",       ok: true },
+      { text: "Realtime Preis-Alerts",     ok: true },
+      { text: "Exklusive Forum-Channels",  ok: true },
+      { text: "2× Grading-Beratung/Mo",    ok: true },
+      { text: "Ad-free",                   ok: true },
+    ],
+    cta:      "Premium werden",
+    ctaStyle: "gold" as const,
+  },
+  {
+    id:       "dealer",
+    name:     "Händler",
+    price:    "19,99€",
+    period:   "pro Monat",
+    color:    "#EE1515",
+    features: [
+      { text: "Alles aus Premium",          ok: true },
+      { text: "Verified Seller Badge",      ok: true },
+      { text: "Eigene Shop-Seite",          ok: true },
+      { text: "Top-Platzierung Marktplatz", ok: true },
+      { text: "Monatliche Marktanalyse",    ok: true },
+      { text: "Priority Support 24/7",      ok: true },
+      { text: "API-Zugang (Beta)",          ok: true },
+      { text: "Unlimitierte Grading-Beratung", ok: true },
+    ],
+    cta:      "Händler werden",
+    ctaStyle: "red" as const,
+  },
+];
 
-  const handleCheckout = async (plan: 'monthly' | 'yearly') => {
-    setLoading(plan)
+const FEATURES = [
+  { icon: <Zap size={20} />,       title: "Pro-Scanner",        desc: "Unlimitiertes Scannen mit Condition-Erkennung und Alt-Art-Detection." },
+  { icon: <TrendingUp size={20} />,title: "Portfolio-Tracker",  desc: "Live-Charts und Gewinn-/Verlustanalyse für deine gesamte Sammlung." },
+  { icon: <Shield size={20} />,    title: "Set-Tracker",        desc: "Alle TCG Sets im Blick – fehlende Karten, Wert pro Set." },
+  { icon: <Bell size={20} />,      title: "Preis-Alerts",       desc: "Echtzeit-Benachrichtigung wenn eine Karte deinen Zielpreis erreicht." },
+  { icon: <Star size={20} />,      title: "Exklusiv-Forum",     desc: "Zugang zu Premium-Channels mit Insider-Infos und Deals." },
+  { icon: <Crown size={20} />,     title: "Grading-Beratung",   desc: "KI-gestützte PSA/BGS-Empfehlung – lohnt sich das Grading?" },
+];
+
+function PremiumPageContent() {
+  const searchParams          = useSearchParams();
+  const { isPremium, loading } = usePremium();
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [toast, setToast]     = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get("success") === "1") {
+      setToast({ type: "success", msg: "🎉 Premium aktiviert! Danke für dein Abo." });
+      setTimeout(() => setToast(null), 5000);
+    }
+    if (searchParams.get("canceled") === "1") {
+      setToast({ type: "error", msg: "Zahlung abgebrochen. Du kannst jederzeit upgraden." });
+      setTimeout(() => setToast(null), 4000);
+    }
+  }, [searchParams]);
+
+  async function handleUpgrade(planId: string) {
+    if (planId === "free") return;
+    setUpgrading(planId);
     try {
-      const res = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
-      })
-      const { url, error } = await res.json()
-      if (error) { toast.error(error); return }
-      window.location.href = url
+      const res  = await fetch("/api/stripe/checkout", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ plan: planId }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setToast({ type: "error", msg: data.error || "Fehler beim Laden des Checkouts." });
+      }
     } catch {
-      toast.error('Fehler beim Weiterleiten zu Stripe.')
+      setToast({ type: "error", msg: "Netzwerkfehler. Bitte erneut versuchen." });
     } finally {
-      setLoading(null)
+      setUpgrading(null);
     }
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-10">
-        <div className="text-[11px] font-bold text-violet-400 uppercase tracking-widest mb-1.5">Dashboard</div>
-        <h1 className="text-3xl font-black text-white tracking-tight">Premium werden</h1>
-        <p className="text-white/40 text-sm mt-1">Schalte alle Features frei und hole das Maximum aus deiner Sammlung</p>
-      </div>
+    <div style={{ background: "transparent", minHeight: "100vh", color: "white" }}>
+      <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #FACC15 30%, #FACC15 70%, transparent)" }} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Features list */}
-        <div>
-          <h2 className="text-base font-bold text-white/60 mb-5 uppercase text-xs tracking-widest">Was du bekommst</h2>
-          <div className="space-y-3">
-            {FEATURES_PREMIUM.map(({ icon: Icon, text }) => (
-              <motion.div key={text}
-                initial={{ opacity:0, x:-10 }} animate={{ opacity:1, x:0 }}
-                className="flex items-center gap-3 bg-white/2 border border-white/6 rounded-xl px-4 py-3">
-                <div className="w-8 h-8 rounded-xl bg-violet-950/60 border border-violet-700/30 flex items-center justify-center flex-shrink-0">
-                  <Icon size={14} className="text-violet-400"/>
-                </div>
-                <span className="text-sm text-white/70 font-medium">{text}</span>
-                <Check size={13} className="text-green-400 ml-auto flex-shrink-0"/>
-              </motion.div>
-            ))}
-          </div>
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 80, left: "50%", transform: "translateX(-50%)",
+          zIndex: 100, padding: "12px 24px", borderRadius: 12,
+          background: toast.type === "success" ? "rgba(34,197,94,0.15)" : "rgba(238,21,21,0.15)",
+          border: `1px solid ${toast.type === "success" ? "rgba(34,197,94,0.4)" : "rgba(238,21,21,0.4)"}`,
+          color: toast.type === "success" ? "#22C55E" : "#EE1515",
+          fontSize: 14, fontWeight: 600, whiteSpace: "nowrap",
+        }}>
+          {toast.msg}
+        </div>
+      )}
 
-          {/* Testimonial */}
-          <div className="mt-6 bg-violet-950/30 border border-violet-800/25 rounded-2xl p-5">
-            <div className="text-yellow-400 text-sm mb-2">★★★★★</div>
-            <p className="text-sm text-white/55 italic leading-relaxed font-normal">
-              „Dank PokeDax habe ich meinen Glurak ex genau zum richtigen Zeitpunkt verkauft – 40€ mehr als ich gedacht hätte."
-            </p>
-            <div className="text-xs text-white/30 mt-3 font-medium">— SammelFan_NRW, Essen</div>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "48px 20px" }}>
+
+        {/* Header */}
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "4px 14px", borderRadius: 20, marginBottom: 16,
+            background: "rgba(250,204,21,0.1)", border: "1px solid rgba(250,204,21,0.3)",
+          }}>
+            <Crown size={12} style={{ color: "#FACC15" }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#FACC15", letterSpacing: "0.1em" }}>
+              ELITE TRAINER LOUNGE
+            </span>
           </div>
+          <h1 style={{
+            fontFamily: "Poppins, sans-serif", fontWeight: 900,
+            fontSize: "clamp(28px, 5vw, 44px)", letterSpacing: "-0.02em", marginBottom: 12,
+          }}>
+            Maximiere deine Sammlung
+          </h1>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 15, maxWidth: 480, margin: "0 auto" }}>
+            Premium-Mitglieder steigern den Wert ihrer Sammlung im Schnitt um 18% im ersten Monat.
+          </p>
+
+          {isPremium && !loading && (
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 8, marginTop: 16,
+              padding: "8px 20px", borderRadius: 20,
+              background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)",
+              color: "#22C55E", fontSize: 14, fontWeight: 600,
+            }}>
+              <Check size={16} />
+              Du bist bereits Premium-Mitglied!
+            </div>
+          )}
         </div>
 
-        {/* Pricing card */}
-        <div>
-          {/* Billing toggle */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex gap-1 bg-white/4 border border-white/8 rounded-xl p-1">
-              {(['monthly', 'yearly'] as const).map(b => (
-                <button key={b} onClick={() => setBilling(b)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${billing === b ? 'bg-violet-600/40 text-violet-200 border border-violet-600/30' : 'text-white/35 hover:text-white/65'}`}>
-                  {b === 'monthly' ? 'Monatlich' : 'Jährlich'}
-                </button>
-              ))}
-            </div>
-            {billing === 'yearly' && (
-              <span className="text-[10px] font-black px-2 py-1 rounded-full bg-green-950/60 border border-green-500/30 text-green-400">
-                2 Monate GRATIS
-              </span>
-            )}
-          </div>
-
-          {/* Main plan card */}
-          <motion.div layout
-            className="bg-gradient-to-b from-violet-950/70 to-[rgba(4,2,14,0.95)] border border-violet-700/40 rounded-2xl p-7 shadow-[0_0_50px_rgba(124,58,237,0.12),inset_0_1px_0_rgba(167,139,250,0.1)] mb-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Star size={16} className="text-yellow-400"/>
-              <span className="text-sm font-black text-white">Premium</span>
-            </div>
-            <div className="flex items-end gap-2 mb-1">
-              <div className="text-5xl font-black text-white tracking-tight">
-                {billing === 'monthly' ? '4,99' : '3,99'}
-              </div>
-              <div className="text-white/40 text-sm font-medium pb-1.5">€/Monat</div>
-            </div>
-            {billing === 'yearly' && (
-              <div className="text-xs text-white/35 mb-4">= 47,88 €/Jahr · <span className="text-green-400 font-bold">Spare 11,88 €</span></div>
-            )}
-            <div className="text-xs text-white/30 mb-6">{billing === 'monthly' ? 'Monatlich kündbar' : 'Jährlich abgerechnet'}</div>
-
-            <button
-              onClick={() => handleCheckout(billing)}
-              disabled={loading !== null}
-              className="w-full py-3.5 rounded-xl font-bold text-base bg-gradient-to-r from-violet-600 to-purple-500 text-white shadow-[0_8px_28px_rgba(124,58,237,0.5)] hover:shadow-[0_12px_36px_rgba(124,58,237,0.65)] hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transition-all flex items-center justify-center gap-2"
-            >
-              <CreditCard size={16}/>
-              {loading === billing ? 'Weiterleitung zu Stripe…' : 'Jetzt Premium werden'}
-            </button>
-
-            <div className="flex items-center justify-center gap-4 mt-4">
-              <img src="https://js.stripe.com/v3/fingerprinted/img/visa-365725566f9578a9589553aa9296d178.svg" alt="Visa" className="h-5 opacity-40"/>
-              <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d8844094130711885b5e41b28c9848f.svg" alt="MC" className="h-5 opacity-40"/>
-              <div className="flex items-center gap-1 text-[10px] text-white/30">
-                <Shield size={10}/> SSL-verschlüsselt
+        {/* Feature Grid */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 16, marginBottom: 56,
+        }}>
+          {FEATURES.map(f => (
+            <div key={f.title} style={{
+              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 16, padding: "20px",
+              display: "flex", gap: 14, alignItems: "flex-start",
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                background: "rgba(250,204,21,0.1)", border: "1px solid rgba(250,204,21,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#FACC15",
+              }}>{f.icon}</div>
+              <div>
+                <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14, color: "white", marginBottom: 4 }}>
+                  {f.title}
+                </p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", lineHeight: 1.5 }}>{f.desc}</p>
               </div>
             </div>
-          </motion.div>
-
-          {/* Free plan comparison */}
-          <div className="bg-white/2 border border-white/6 rounded-2xl p-5">
-            <div className="text-xs font-bold text-white/35 uppercase tracking-widest mb-3">Free vs Premium</div>
-            {[
-              ['5 Scans/Tag', 'Unlimitierte Scans'],
-              ['Kein Portfolio', 'Portfolio + Charts'],
-              ['Kein Set-Tracker', 'Alle Sets tracken'],
-              ['Kein Marktplatz', 'Kaufen & Verkaufen'],
-              ['Kein Alerts', 'Realtime Preis-Alerts'],
-            ].map(([free, premium], i) => (
-              <div key={i} className="flex items-center gap-2 py-2 border-b border-white/4 last:border-0 text-xs">
-                <div className="flex-1 flex items-center gap-1.5 text-white/30">
-                  <X size={10} className="text-white/20 flex-shrink-0"/> {free}
-                </div>
-                <div className="flex-1 flex items-center gap-1.5 text-green-400">
-                  <Check size={10} className="flex-shrink-0"/> {premium}
-                </div>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
+
+        {/* Pricing Cards */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 16, marginBottom: 32,
+        }}>
+          {PLANS.map(plan => (
+            <div key={plan.id} style={{
+              background: plan.id === "premium"
+                ? "linear-gradient(135deg, rgba(250,204,21,0.08), rgba(255,255,255,0.03))"
+                : "rgba(255,255,255,0.03)",
+              border: `1px solid ${plan.id === "premium" ? "rgba(250,204,21,0.35)" : "rgba(255,255,255,0.08)"}`,
+              borderRadius: 20, padding: "28px 24px",
+              position: "relative", overflow: "hidden",
+            }}>
+              {plan.badge && (
+                <div style={{
+                  position: "absolute", top: 12, right: 12,
+                  padding: "3px 10px", borderRadius: 20,
+                  background: "#FACC15", color: "#000",
+                  fontSize: 9, fontWeight: 800, letterSpacing: "0.05em",
+                }}>
+                  {plan.badge}
+                </div>
+              )}
+
+              <p style={{
+                fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 20,
+                color: plan.color === "rgba(255,255,255,0.1)" ? "white" : plan.color,
+                marginBottom: 4,
+              }}>{plan.name}</p>
+
+              <div style={{ marginBottom: 20 }}>
+                <span style={{
+                  fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 36,
+                  color: "white",
+                }}>{plan.price}</span>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginLeft: 6 }}>
+                  / {plan.period}
+                </span>
+              </div>
+
+              <ul style={{ listStyle: "none", marginBottom: 24, display: "flex", flexDirection: "column", gap: 8 }}>
+                {plan.features.map(f => (
+                  <li key={f.text} style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    color: f.ok ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.2)",
+                    fontSize: 13,
+                  }}>
+                    {f.ok
+                      ? <Check size={14} style={{ color: "#22C55E", flexShrink: 0 }} />
+                      : <X     size={14} style={{ color: "rgba(255,255,255,0.15)", flexShrink: 0 }} />
+                    }
+                    <span style={{ textDecoration: f.ok ? "none" : "line-through" }}>{f.text}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handleUpgrade(plan.id)}
+                disabled={upgrading === plan.id || (plan.id !== "free" && isPremium)}
+                style={{
+                  width: "100%", padding: "12px 0", borderRadius: 12,
+                  fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 14,
+                  cursor: plan.id === "free" || (isPremium && plan.id !== "free") ? "not-allowed" : "pointer",
+                  opacity: upgrading === plan.id ? 0.7 : 1,
+                  background: plan.ctaStyle === "gold"
+                    ? "linear-gradient(135deg, #FACC15, #f59e0b)"
+                    : plan.ctaStyle === "red"
+                    ? "#EE1515"
+                    : "rgba(255,255,255,0.06)",
+                  border: plan.ctaStyle === "outline"
+                    ? "1px solid rgba(255,255,255,0.15)"
+                    : "none",
+                  color: plan.ctaStyle === "gold" ? "#000" : "white",
+                }}
+              >
+                {upgrading === plan.id
+                  ? "Wird geladen..."
+                  : isPremium && plan.id !== "free"
+                  ? "Bereits aktiv"
+                  : plan.cta}
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.2)", fontSize: 12 }}>
+          Alle Preise inkl. MwSt. · Monatlich kündbar · Sichere Zahlung via Stripe
+        </p>
       </div>
     </div>
-  )
+  );
+}
+
+export default function PremiumPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh" }} />}>
+      <PremiumPageContent />
+    </Suspense>
+  );
 }
