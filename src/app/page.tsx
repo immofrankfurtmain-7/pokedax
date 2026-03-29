@@ -4,6 +4,7 @@ import TrendingGrid from "@/components/cards/TrendingGrid";
 import ForumSection from "@/components/forum/ForumSection";
 import PremiumSection from "@/components/premium/PremiumSection";
 import OnlineUsers from "@/components/ui/OnlineUsers";
+import MewtwoSilhouette from "@/components/ui/MewtwoSilhouette";
 import type { TrendingCard } from "@/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -56,7 +57,9 @@ export default async function HomePage() {
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
+        isolation: "isolate",
       }}>
+        <MewtwoSilhouette />
         {/* Live badge */}
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 7,
