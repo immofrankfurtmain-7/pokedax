@@ -1,161 +1,120 @@
 ﻿"use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Search, SlidersHorizontal, X, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import WishlistButton from "@/components/ui/WishlistButton";
+import { useState, useEffect } from "react";
+import { Search, X, TrendingUp, TrendingDown } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 
 interface Card {
-  id: string;
-  name: string;
-  set_id: string;
-  number: string;
-  rarity: string | null;
-  types: string[] | null;
-  image_url: string | null;
-  price_market: number | null;
-  price_low: number | null;
-  price_avg7: number | null;
-  price_avg30: number | null;
+  id: string; name: string; set_id: string; number: string;
+  rarity: string | null; types: string[] | null; image_url: string | null;
+  price_market: number | null; price_low: number | null;
+  price_avg7: number | null; price_avg30: number | null;
 }
+interface CardSet { id: string; name: string; }
 
-interface CardSet {
-  id: string;
-  name: string;
-}
+const TYPES = [
+  { id:"Fire",      label:"Feuer",      emoji:"🔥", color:"#F97316", glow:"rgba(249,115,22,0.3)"  },
+  { id:"Water",     label:"Wasser",     emoji:"💧", color:"#3B82F6", glow:"rgba(59,130,246,0.3)"  },
+  { id:"Grass",     label:"Pflanze",    emoji:"🌿", color:"#22C55E", glow:"rgba(34,197,94,0.3)"   },
+  { id:"Lightning", label:"Elektro",    emoji:"⚡", color:"#FACC15", glow:"rgba(250,204,21,0.3)"  },
+  { id:"Psychic",   label:"Psycho",     emoji:"🔮", color:"#A855F7", glow:"rgba(168,85,247,0.3)"  },
+  { id:"Fighting",  label:"Kampf",      emoji:"👊", color:"#EF4444", glow:"rgba(239,68,68,0.3)"   },
+  { id:"Darkness",  label:"Finsternis", emoji:"🌑", color:"#6B7280", glow:"rgba(107,114,128,0.3)" },
+  { id:"Metal",     label:"Metall",     emoji:"⚙️", color:"#9CA3AF", glow:"rgba(156,163,175,0.3)" },
+  { id:"Dragon",    label:"Drache",     emoji:"🐉", color:"#7C3AED", glow:"rgba(124,58,237,0.3)"  },
+  { id:"Colorless", label:"Farblos",    emoji:"⭐", color:"#CBD5E1", glow:"rgba(203,213,225,0.3)" },
+];
 
-const TYPE_COLORS: Record<string, string> = {
-  Fire: "#ff6b35", Water: "#4fc3f7", Grass: "#66bb6a",
-  Lightning: "#ffee58", Psychic: "#ab47bc", Fighting: "#ef5350",
-  Darkness: "#5c5c5c", Metal: "#90a4ae", Dragon: "#7e57c2",
-  Fairy: "#f48fb1", Colorless: "#bdbdbd", Normal: "#bdbdbd",
+const RARITY_DOTS: Record<string,number> = {
+  "Common":1,"Uncommon":2,"Rare":3,"Rare Holo":4,"Rare Holo EX":5,"Ultra Rare":6,"Secret Rare":6,
 };
 
-function PriceTrend({ avg7, avg30 }: { avg7?: number | null; avg30?: number | null }) {
-  if (!avg7 || !avg30 || avg30 === 0) return null;
-  const pct = ((avg7 - avg30) / avg30) * 100;
-  if (Math.abs(pct) < 1) return <Minus size={11} style={{ color: "rgba(255,255,255,0.3)" }} />;
-  if (pct > 0) return (
-    <span className="flex items-center gap-0.5" style={{ color: "#00ff96", fontSize: 10, fontWeight: 700 }}>
-      <TrendingUp size={10} />+{pct.toFixed(0)}%
-    </span>
-  );
+function RarityDots({ rarity }: { rarity: string | null }) {
+  if (!rarity) return null;
+  const dots = RARITY_DOTS[rarity] ?? (rarity.includes("Rare") ? 3 : 1);
+  const max  = 5;
   return (
-    <span className="flex items-center gap-0.5" style={{ color: "#ff4444", fontSize: 10, fontWeight: 700 }}>
-      <TrendingDown size={10} />{pct.toFixed(0)}%
-    </span>
+    <div style={{ display:"flex", gap:2 }}>
+      {Array.from({ length: max }).map((_, i) => (
+        <div key={i} style={{
+          width: i < dots ? 5 : 4, height: i < dots ? 5 : 4, borderRadius:"50%",
+          background: i < dots ? "#FACC15" : "rgba(255,255,255,0.12)",
+          boxShadow: i < dots ? "0 0 3px rgba(250,204,21,0.5)" : "none",
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function PokeballLoader() {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14, padding:"64px 0" }}>
+      <div style={{ animation:"pb-spin 1s linear infinite", filter:"drop-shadow(0 0 12px rgba(238,21,21,0.5))" }}>
+        <svg width="52" height="52" viewBox="0 0 52 52">
+          <circle cx="26" cy="26" r="24" fill="#EE1515"/>
+          <path d="M 2 26 A 24 24 0 0 1 50 26 Z" fill="white"/>
+          <rect x="2" y="23.5" width="48" height="5" fill="#111"/>
+          <circle cx="26" cy="26" r="8" fill="#111"/>
+          <circle cx="26" cy="26" r="5" fill="white"/>
+          <circle cx="26" cy="26" r="2.5" fill="#eee" style={{ animation:"pb-pulse 1s ease-in-out infinite" }}/>
+        </svg>
+      </div>
+      <p style={{ color:"rgba(255,255,255,0.35)", fontSize:13 }}>Karten werden geladen...</p>
+      <style>{`@keyframes pb-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pb-pulse{0%,100%{opacity:1}50%{opacity:0.2}}`}</style>
+    </div>
   );
 }
 
 function CardItem({ card }: { card: Card }) {
-  const typeColor = card.types?.[0] ? (TYPE_COLORS[card.types[0]] || "#c864ff") : "#c864ff";
-  const imgUrl = card.image_url || `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
+  const typeConf  = TYPES.find(t => t.id === card.types?.[0]);
+  const typeColor = typeConf?.color || "#475569";
+  const typeGlow  = typeConf?.glow  || "transparent";
+  const imgUrl    = card.image_url || `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
+  const change    = card.price_avg7 && card.price_avg30 && card.price_avg30 > 0
+    ? ((card.price_avg7 - card.price_avg30) / card.price_avg30) * 100 : null;
 
   return (
-    <div
-      className="group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1.5"
-      style={{
-        background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
-        border: `1px solid ${typeColor}25`,
-        boxShadow: `0 0 20px ${typeColor}10`,
-      }}
+    <div style={{ background:"rgba(255,255,255,0.04)", border:`1px solid ${typeColor}25`, borderRadius:16, overflow:"hidden", cursor:"pointer", position:"relative", transition:"transform .2s, box-shadow .2s" }}
+      onMouseEnter={e=>{ (e.currentTarget as HTMLDivElement).style.transform="translateY(-5px)"; (e.currentTarget as HTMLDivElement).style.boxShadow=`0 8px 28px ${typeGlow},0 0 0 1px ${typeColor}40`; }}
+      onMouseLeave={e=>{ (e.currentTarget as HTMLDivElement).style.transform="translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow="none"; }}
     >
-      {/* Holo shimmer */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"
-        style={{
-          background: "linear-gradient(125deg, transparent 20%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.06) 55%, transparent 80%)",
-        }}
-      />
-
-      {/* Card image */}
-      <div className="relative" style={{ aspectRatio: "2.5/3.5", background: "rgba(0,0,0,0.3)" }}>
-        {imgUrl ? (
-          <img
-            src={imgUrl}
-            alt={card.name}
-            className="w-full h-full object-contain p-2"
-            loading="lazy"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ color: "rgba(255,255,255,0.1)", fontSize: 40 }}>
-            ◎
+      {/* Image */}
+      <div style={{ background:`linear-gradient(180deg,${typeColor}10,rgba(0,0,0,0.4))`, aspectRatio:"2.5/3.5", position:"relative" }}>
+        <img src={imgUrl} alt={card.name} style={{ width:"100%", height:"100%", objectFit:"contain", padding:6 }} loading="lazy"
+          onError={e=>{(e.target as HTMLImageElement).style.display="none"}} />
+        {typeConf && (
+          <div style={{ position:"absolute", top:6, left:6, padding:"2px 7px", borderRadius:6, background:`${typeColor}30`, border:`1px solid ${typeColor}60`, fontSize:9, fontWeight:700, color:typeColor, backdropFilter:"blur(4px)" }}>
+            {typeConf.emoji} {typeConf.label}
           </div>
         )}
-
-        {/* Type glow at bottom of image */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none"
-          style={{ background: `linear-gradient(0deg, ${typeColor}20, transparent)` }}
-        />
-
-        {/* Wishlist button - top right corner overlay */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-          <WishlistButton cardId={card.id} />
-        </div>
-
-        {/* Rarity badge */}
         {card.rarity && (
-          <div
-            className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md"
-            style={{
-              background: "rgba(0,0,0,0.7)",
-              border: `1px solid ${typeColor}40`,
-              color: typeColor,
-              fontSize: 9,
-              fontWeight: 700,
-              backdropFilter: "blur(4px)",
-            }}
-          >
+          <div style={{ position:"absolute", top:6, right:6, padding:"2px 6px", borderRadius:5, background:"rgba(0,0,0,0.65)", fontSize:8, fontWeight:700, color:"rgba(255,255,255,0.55)" }}>
             {card.rarity}
           </div>
         )}
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:36, background:`linear-gradient(0deg,${typeColor}30,transparent)`, pointerEvents:"none" }} />
       </div>
 
-      {/* Card info */}
-      <div className="p-3">
-        {/* Type pill */}
-        {card.types?.[0] && (
-          <div className="flex items-center gap-1 mb-1.5">
-            <span
-              className="px-2 py-0.5 rounded-full text-white"
-              style={{ background: `${typeColor}30`, border: `1px solid ${typeColor}50`, fontSize: 9, fontWeight: 700 }}
-            >
-              {card.types[0]}
-            </span>
-          </div>
-        )}
-
-        <p className="font-bold text-white mb-0.5 leading-tight" style={{ fontSize: 13 }}>
-          {card.name}
-        </p>
-        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginBottom: 8 }}>
-          {card.set_id?.toUpperCase()} · #{card.number}
-        </p>
-
-        {/* Price */}
-        <div className="flex items-center justify-between">
+      {/* Info */}
+      <div style={{ padding:"10px 12px" }}>
+        <p style={{ fontWeight:700, fontSize:13, color:"white", marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{card.name}</p>
+        <p style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginBottom:6 }}>{card.set_id?.toUpperCase()} · #{card.number}</p>
+        <div style={{ marginBottom:8 }}><RarityDots rarity={card.rarity} /></div>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div>
-            {card.price_market ? (
-              <>
-                <p className="font-black" style={{ color: "#00ffff", fontSize: 16, lineHeight: 1 }}>
-                  {card.price_market.toFixed(2)}€
-                </p>
-                <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 9, marginTop: 1 }}>Marktpreis</p>
-              </>
-            ) : card.price_low ? (
-              <>
-                <p className="font-black" style={{ color: "#00ff96", fontSize: 16, lineHeight: 1 }}>
-                  ab {card.price_low.toFixed(2)}€
-                </p>
-                <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 9, marginTop: 1 }}>Mindestpreis</p>
-              </>
-            ) : (
-              <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 12 }}>Kein Preis</p>
-            )}
+            {card.price_market
+              ? <p style={{ fontFamily:"Poppins,sans-serif", fontWeight:900, fontSize:16, color:"#00E5FF", lineHeight:1 }}>{card.price_market.toFixed(2)}€</p>
+              : card.price_low
+              ? <p style={{ fontFamily:"Poppins,sans-serif", fontWeight:900, fontSize:14, color:"#22C55E", lineHeight:1 }}>ab {card.price_low.toFixed(2)}€</p>
+              : <p style={{ fontSize:11, color:"rgba(255,255,255,0.2)" }}>Kein Preis</p>
+            }
           </div>
-          <PriceTrend avg7={card.price_avg7} avg30={card.price_avg30} />
+          {change !== null && (
+            <div style={{ display:"flex", alignItems:"center", gap:2, fontSize:10, fontWeight:700, color:change>=0?"#22C55E":"#EE1515" }}>
+              {change >= 0 ? <TrendingUp size={10}/> : <TrendingDown size={10}/>}
+              {Math.abs(change).toFixed(1)}%
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -163,189 +122,108 @@ function CardItem({ card }: { card: Card }) {
 }
 
 export default function PreischeckPage() {
-  const [query, setQuery] = useState("");
-  const [cards, setCards] = useState<Card[]>([]);
-  const [sets, setSets] = useState<CardSet[]>([]);
-  const [selectedSet, setSelectedSet] = useState("");
-  const [sortBy, setSortBy] = useState("price_desc");
-  const [loading, setLoading] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [searched, setSearched] = useState(false);
-
+  const [query,        setQuery]        = useState("");
+  const [cards,        setCards]        = useState<Card[]>([]);
+  const [sets,         setSets]         = useState<CardSet[]>([]);
+  const [selectedSet,  setSelectedSet]  = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [sortBy,       setSortBy]       = useState("price_desc");
+  const [loading,      setLoading]      = useState(false);
+  const [searched,     setSearched]     = useState(false);
   const debouncedQuery = useDebounce(query, 350);
 
-  useEffect(() => {
-    fetch("/api/cards/sets").then(r => r.json()).then(d => setSets(d.sets || []));
-  }, []);
+  useEffect(() => { fetch("/api/cards/sets").then(r=>r.json()).then(d=>setSets(d.sets||[])); }, []);
 
   useEffect(() => {
-    if (debouncedQuery.length < 2 && !selectedSet) {
-      setCards([]);
-      setSearched(false);
-      return;
-    }
+    if (debouncedQuery.length < 2 && !selectedSet && !selectedType) { setCards([]); setSearched(false); return; }
     search();
-  }, [debouncedQuery, selectedSet, sortBy]);
+  }, [debouncedQuery, selectedSet, selectedType, sortBy]);
 
   async function search() {
-    setLoading(true);
-    setSearched(true);
+    setLoading(true); setSearched(true);
     try {
-      const params = new URLSearchParams();
-      if (debouncedQuery) params.set("q", debouncedQuery);
-      if (selectedSet) params.set("set", selectedSet);
-      params.set("sort", sortBy);
-      params.set("limit", "48");
-      const res = await fetch(`/api/cards/search?${params}`);
-      const data = await res.json();
+      const p = new URLSearchParams();
+      if (debouncedQuery) p.set("q", debouncedQuery);
+      if (selectedSet)    p.set("set", selectedSet);
+      if (selectedType)   p.set("type", selectedType);
+      p.set("sort", sortBy); p.set("limit", "48");
+      const data = await fetch(`/api/cards/search?${p}`).then(r=>r.json());
       setCards(data.cards || []);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: "linear-gradient(180deg, #080010 0%, #0d0020 50%, #050010 100%)", color: "white" }}
-    >
-      {/* Header */}
-      <div
-        className="sticky top-14 z-30"
-        style={{
-          background: "rgba(8,0,16,0.95)",
-          backdropFilter: "blur(20px)",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-        }}
-      >
-        <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(0,255,255,0.5), transparent)" }} />
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          {/* Title row */}
-          <div className="flex items-center justify-between mb-3">
+    <div style={{ minHeight:"100vh", color:"white" }}>
+      {/* Sticky search header */}
+      <div style={{ position:"sticky", top:88, zIndex:30, background:"rgba(10,10,10,0.96)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ height:1, background:"linear-gradient(90deg,transparent,rgba(0,229,255,0.5),transparent)" }} />
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"14px 20px" }}>
+          <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12 }}>
             <div>
-              <h1 className="font-black" style={{
-                fontSize: 22, background: "linear-gradient(135deg, #ffffff, #00ffff)",
-                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em",
-              }}>
-                Preischeck
-              </h1>
-              <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11 }}>
-                {cards.length > 0 ? `${cards.length} Karten gefunden` : "Über 22.000 Karten durchsuchen"}
-              </p>
+              <h1 style={{ fontFamily:"Poppins,sans-serif", fontWeight:900, fontSize:22, letterSpacing:"-0.02em", background:"linear-gradient(135deg,#fff,#00E5FF)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Preischeck</h1>
+              <p style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>{cards.length > 0 ? `${cards.length} Karten` : "22.271 Karten · Live Cardmarket EUR"}</p>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl transition-all"
-              style={{
-                background: showFilters ? "rgba(0,255,255,0.1)" : "rgba(255,255,255,0.05)",
-                border: `1px solid ${showFilters ? "rgba(0,255,255,0.3)" : "rgba(255,255,255,0.1)"}`,
-                color: showFilters ? "#00ffff" : "rgba(255,255,255,0.5)",
-                fontSize: 13, cursor: "pointer",
-              }}
-            >
-              <SlidersHorizontal size={14} />
-              <span className="hidden sm:inline">Filter</span>
-            </button>
-          </div>
-
-          {/* Search bar */}
-          <div className="relative">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: "rgba(255,255,255,0.35)" }} />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Kartenname eingeben... (z.B. Charizard, Pikachu)"
-              className="w-full pl-11 pr-10 py-3 rounded-xl focus:outline-none transition-all"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: query ? "1px solid rgba(0,255,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
-                color: "white", fontSize: 14,
-                boxShadow: query ? "0 0 16px rgba(0,255,255,0.1)" : "none",
-              }}
-            />
-            {query && (
-              <button onClick={() => setQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-                style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer" }}>
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          {/* Filters */}
-          {showFilters && (
-            <div className="flex flex-wrap gap-3 mt-3">
-              <select
-                value={selectedSet}
-                onChange={(e) => setSelectedSet(e.target.value)}
-                className="px-3 py-2 rounded-xl focus:outline-none"
-                style={{
-                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-                  color: "white", fontSize: 13, cursor: "pointer",
-                }}
-              >
+            <div style={{ display:"flex", gap:8 }}>
+              <select value={selectedSet} onChange={e=>setSelectedSet(e.target.value)} style={{ padding:"6px 10px", borderRadius:8, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"white", fontSize:12, cursor:"pointer" }}>
                 <option value="">Alle Sets</option>
-                {sets.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {sets.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-2 rounded-xl focus:outline-none"
-                style={{
-                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
-                  color: "white", fontSize: 13, cursor: "pointer",
-                }}
-              >
-                <option value="price_desc">Preis: Hoch → Niedrig</option>
-                <option value="price_asc">Preis: Niedrig → Hoch</option>
-                <option value="name_asc">Name A → Z</option>
-                <option value="trend_desc">Größter Preisanstieg</option>
+              <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{ padding:"6px 10px", borderRadius:8, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"white", fontSize:12, cursor:"pointer" }}>
+                <option value="price_desc">Preis ↓</option>
+                <option value="price_asc">Preis ↑</option>
+                <option value="name_asc">Name A→Z</option>
+                <option value="trend_desc">Trend ↑</option>
               </select>
             </div>
-          )}
+          </div>
+
+          {/* Search */}
+          <div style={{ position:"relative", marginBottom:10 }}>
+            <Search size={15} style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", color:"rgba(255,255,255,0.35)", pointerEvents:"none" }} />
+            <input type="text" value={query} onChange={e=>setQuery(e.target.value)}
+              placeholder="Kartenname… z.B. Charizard, Pikachu, Mewtwo"
+              style={{ width:"100%", paddingLeft:40, paddingRight:36, paddingTop:10, paddingBottom:10, borderRadius:10, background:"rgba(255,255,255,0.06)", border:query?"1px solid rgba(0,229,255,0.4)":"1px solid rgba(255,255,255,0.1)", color:"white", fontSize:14, outline:"none" }} />
+            {query && <button onClick={()=>setQuery("")} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"rgba(255,255,255,0.3)", cursor:"pointer" }}><X size={13}/></button>}
+          </div>
+
+          {/* Type filter chips */}
+          <div style={{ display:"flex", gap:5, overflowX:"auto", paddingBottom:2 }}>
+            <button onClick={()=>setSelectedType("")} style={{ padding:"4px 12px", borderRadius:20, border:"none", cursor:"pointer", background:!selectedType?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.05)", color:!selectedType?"white":"rgba(255,255,255,0.4)", fontSize:11, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>Alle</button>
+            {TYPES.map(t=>(
+              <button key={t.id} onClick={()=>setSelectedType(selectedType===t.id?"":t.id)} style={{ padding:"4px 10px", borderRadius:20, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, background:selectedType===t.id?`${t.color}25`:"rgba(255,255,255,0.04)", border:`1px solid ${selectedType===t.id?t.color+"60":"rgba(255,255,255,0.08)"}`, color:selectedType===t.id?t.color:"rgba(255,255,255,0.4)", fontSize:11, fontWeight:600, boxShadow:selectedType===t.id?`0 0 8px ${t.glow}`:"none" }}>
+                {t.emoji} {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Empty state */}
+      {/* Results */}
+      <div style={{ maxWidth:1200, margin:"0 auto", padding:"24px 20px" }}>
         {!searched && (
-          <div className="text-center py-20">
-            <div style={{ fontSize: 60, marginBottom: 16, filter: "drop-shadow(0 0 20px rgba(0,255,255,0.3))" }}>🔍</div>
-            <h2 className="text-xl font-bold text-white mb-2">Karte suchen</h2>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>
-              Mindestens 2 Zeichen eingeben oder ein Set auswählen
-            </p>
+          <div style={{ textAlign:"center", padding:"64px 0" }}>
+            <div style={{ fontSize:52, marginBottom:14, filter:"drop-shadow(0 0 20px rgba(0,229,255,0.3))" }}>🔍</div>
+            <h2 style={{ fontFamily:"Poppins,sans-serif", fontWeight:800, fontSize:20, color:"white", marginBottom:6 }}>Karte suchen</h2>
+            <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14, marginBottom:28 }}>Name eingeben oder Typ wählen</p>
+            <div style={{ display:"flex", gap:8, justifyContent:"center", flexWrap:"wrap", maxWidth:500, margin:"0 auto" }}>
+              {TYPES.slice(0,6).map(t=>(
+                <button key={t.id} onClick={()=>setSelectedType(t.id)} style={{ padding:"9px 16px", borderRadius:12, cursor:"pointer", background:`${t.color}15`, border:`1px solid ${t.color}40`, color:t.color, fontSize:13, fontWeight:600 }}>
+                  {t.emoji} {t.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
-
-        {/* Loading skeletons */}
-        {loading && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="rounded-2xl animate-pulse"
-                style={{ background: "rgba(255,255,255,0.05)", aspectRatio: "2.5/3.5" }} />
-            ))}
-          </div>
-        )}
-
-        {/* Results */}
+        {loading && <PokeballLoader />}
         {!loading && searched && cards.length === 0 && (
-          <div className="text-center py-20">
-            <div style={{ fontSize: 50, marginBottom: 16 }}>😕</div>
-            <h2 className="text-lg font-bold text-white mb-2">Keine Karten gefunden</h2>
-            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>Anderen Suchbegriff oder anderes Set ausprobieren</p>
+          <div style={{ textAlign:"center", padding:"64px 0" }}>
+            <div style={{ fontSize:44, marginBottom:12 }}>😕</div>
+            <p style={{ fontFamily:"Poppins,sans-serif", fontWeight:700, fontSize:18, color:"white" }}>Keine Karten gefunden</p>
           </div>
         )}
-
         {!loading && cards.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {cards.map((card) => (
-              <CardItem key={card.id} card={card} />
-            ))}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))", gap:14 }}>
+            {cards.map(card=><CardItem key={card.id} card={card}/>)}
           </div>
         )}
       </div>
