@@ -6,7 +6,15 @@ interface Props {
   intensity?: "low" | "medium" | "high";
 }
 
-const COLORS = ["#EE1515", "#FACC15", "#A855F7", "#22D3EE"];
+const COLORS = [
+  { r:249, g:115, b:22  },  // fire orange
+  { r:59,  g:130, b:246 },  // water blue
+  { r:168, g:85,  b:247 },  // psychic purple
+  { r:250, g:204, b:21  },  // lightning gold
+  { r:34,  g:197, b:94  },  // grass green
+  { r:0,   g:229, b:255 },  // cyan
+  { r:238, g:21,  b:21  },  // pokémon red
+];
 
 export default function BackgroundCanvas({ intensity = "medium" }: Props) {
   const ref   = useRef<HTMLCanvasElement>(null);
@@ -18,141 +26,148 @@ export default function BackgroundCanvas({ intensity = "medium" }: Props) {
     const ctx = el.getContext("2d") as CanvasRenderingContext2D;
     if (!ctx) return;
 
-    const COUNT = intensity === "low" ? 60 : intensity === "high" ? 140 : 100;
+    const ORB_COUNT  = intensity === "low" ? 8 : intensity === "high" ? 18 : 12;
+    const STAR_COUNT = intensity === "low" ? 80 : intensity === "high" ? 180 : 130;
+
     let W = el.width  = window.innerWidth;
     let H = el.height = window.innerHeight;
     let raf = 0;
-    let lastBolt = Date.now();
-    let nextBolt = 8000 + Math.random() * 7000;
 
-    type P = { x:number;y:number;vx:number;vy:number;r:number;color:string;op:number;base:number;phase:number;glow:number };
-    type Bolt = { pts:{x:number;y:number}[];life:number;max:number };
+    type Orb = {
+      x:number; y:number; vx:number; vy:number;
+      r:number; color:{r:number;g:number;b:number};
+      op:number; phase:number; speed:number;
+    };
+    type Star = {
+      x:number; y:number; r:number; op:number;
+      phase:number; speed:number; twinkle:boolean;
+    };
 
-    const particles: P[] = Array.from({ length: COUNT }, () => {
-      const base = 0.07 + Math.random() * 0.18;
+    // Stars — mix of static and twinkling
+    const stars: Star[] = Array.from({ length: STAR_COUNT }, () => ({
+      x:       Math.random() * W,
+      y:       Math.random() * H,
+      r:       0.3 + Math.random() * 1.4,
+      op:      0.1 + Math.random() * 0.5,
+      phase:   Math.random() * Math.PI * 2,
+      speed:   0.004 + Math.random() * 0.012,
+      twinkle: Math.random() > 0.4,
+    }));
+
+    // Orbs — large soft glowing blobs, very low opacity
+    const orbs: Orb[] = Array.from({ length: ORB_COUNT }, () => {
+      const c = COLORS[Math.floor(Math.random() * COLORS.length)];
       return {
-        x:Math.random()*W, y:Math.random()*H,
-        vx:(Math.random()-.5)*.35, vy:(Math.random()-.5)*.35,
-        r:.8+Math.random()*2, color:COLORS[Math.floor(Math.random()*4)],
-        op:base, base, phase:Math.random()*Math.PI*2, glow:0,
+        x:     Math.random() * W,
+        y:     Math.random() * H,
+        vx:    (Math.random() - 0.5) * 0.18,
+        vy:    (Math.random() - 0.5) * 0.18,
+        r:     100 + Math.random() * 180,
+        color: c,
+        op:    0.025 + Math.random() * 0.045,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.003 + Math.random() * 0.007,
       };
     });
-    const bolts: Bolt[] = [];
-
-    // Realistic lightning: just 2-3 sharp kinks, not fractal swirls
-    function makeBolt(x1:number, y1:number, x2:number, y2:number): {x:number;y:number}[] {
-      const kinks = 2 + Math.floor(Math.random() * 2); // 2-3 kinks
-      const pts: {x:number;y:number}[] = [{x:x1,y:y1}];
-      for (let i = 1; i < kinks; i++) {
-        const t  = i / kinks;
-        const mx = x1 + (x2 - x1) * t + (Math.random() - 0.5) * 60;
-        const my = y1 + (y2 - y1) * t + (Math.random() - 0.5) * 30;
-        pts.push({x:mx, y:my});
-      }
-      pts.push({x:x2, y:y2});
-      return pts;
-    }
-
-    function spawnBolt() {
-      const x1 = 80 + Math.random() * (W - 160);
-      const x2 = x1 + (Math.random() - 0.5) * 120;
-      const y2 = 120 + Math.random() * (H * 0.55);
-      bolts.push({ pts: makeBolt(x1, 0, x2, y2), life: 0, max: 55 });
-
-      // 1-2 short branches from a random kink
-      const main = bolts[bolts.length - 1].pts;
-      const branchFrom = main[1 + Math.floor(Math.random() * (main.length - 2))];
-      const bLen = 1 + Math.floor(Math.random());
-      for (let b = 0; b < bLen; b++) {
-        const bx2 = branchFrom.x + (Math.random() - 0.5) * 80;
-        const by2 = branchFrom.y + 40 + Math.random() * 80;
-        bolts.push({ pts: makeBolt(branchFrom.x, branchFrom.y, bx2, by2), life: 0, max: 40 });
-      }
-
-      particles.forEach(p => {
-        if (Math.hypot(p.x - x1, p.y) < 220) p.glow = 1;
-      });
-    }
 
     function draw() {
-      ctx.clearRect(0, 0, W, H);
-      const now = Date.now();
-      if (now - lastBolt > nextBolt) {
-        spawnBolt();
-        lastBolt = now;
-        nextBolt = 8000 + Math.random() * 7000;
-      }
+      // Deep space background
+      ctx.fillStyle = "#0d0a1a";
+      ctx.fillRect(0, 0, W, H);
 
-      // Particles
-      particles.forEach(p => {
-        p.phase += .01;
-        let op = p.base * (Math.sin(p.phase) * .4 + .6);
-        const mdx = mouse.current.x - p.x;
-        const mdy = mouse.current.y - p.y;
-        const md  = Math.hypot(mdx, mdy);
-        if (md < 120 && md > 0) {
-          op = Math.min(.55, op * 1.8);
-          p.vx += (mdx / md) * .012;
-          p.vy += (mdy / md) * .012;
-        }
-        if (p.glow > 0) { op = Math.min(.65, op + p.glow * .45); p.glow *= .93; }
-        const spd = Math.hypot(p.vx, p.vy);
-        if (spd > .9) { p.vx *= .9/spd; p.vy *= .9/spd; }
-        p.vx *= .999; p.vy *= .999;
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < -5)   p.x = W + 5; if (p.x > W + 5) p.x = -5;
-        if (p.y < -5)   p.y = H + 5; if (p.y > H + 5) p.y = -5;
+      // ── Stars ──────────────────────────────────────────
+      stars.forEach(s => {
+        s.phase += s.speed;
+        const brightness = s.twinkle
+          ? s.op * (0.3 + Math.abs(Math.sin(s.phase)) * 0.7)
+          : s.op * (0.7 + Math.sin(s.phase) * 0.3);
 
-        ctx.save();
-        ctx.globalAlpha = op;
-        if (p.glow > .05) {
-          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
-          g.addColorStop(0, p.color); g.addColorStop(1, "transparent");
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r*5, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = brightness;
+        ctx.fillStyle   = "white";
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Occasional bright star with cross-flare
+        if (s.r > 1.1 && s.twinkle && brightness > s.op * 0.8) {
+          ctx.globalAlpha = brightness * 0.4;
+          ctx.strokeStyle = "white";
+          ctx.lineWidth   = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(s.x - s.r * 3, s.y);
+          ctx.lineTo(s.x + s.r * 3, s.y);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y - s.r * 3);
+          ctx.lineTo(s.x, s.y + s.r * 3);
+          ctx.stroke();
         }
-        ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-        ctx.restore();
       });
 
-      // Bolts
-      for (let i = bolts.length - 1; i >= 0; i--) {
-        const b = bolts[i]; b.life++;
-        if (b.life >= b.max) { bolts.splice(i, 1); continue; }
-        const t  = b.life / b.max;
-        const op = t < .15 ? t / .15 : 1 - (t - .15) / .85;
-        if (b.pts.length < 2) continue;
-        [
-          { c: "rgba(255,255,255,0.95)", w: 1.2 },
-          { c: "rgba(238,21,21,0.6)",   w: 3   },
-          { c: "rgba(238,21,21,0.15)",  w: 8   },
-        ].forEach(layer => {
-          ctx.save();
-          ctx.globalAlpha = op;
-          ctx.beginPath();
-          ctx.moveTo(b.pts[0].x, b.pts[0].y);
-          b.pts.forEach(pt => ctx.lineTo(pt.x, pt.y));
-          ctx.strokeStyle = layer.c;
-          ctx.lineWidth   = layer.w;
-          ctx.lineJoin    = "round";
-          ctx.lineCap     = "round";
-          ctx.shadowBlur  = 12;
-          ctx.shadowColor = "#EE1515";
-          ctx.stroke();
-          ctx.restore();
-        });
-      }
+      // ── Orbs ───────────────────────────────────────────
+      orbs.forEach(o => {
+        o.phase += o.speed;
+        o.x     += o.vx;
+        o.y     += o.vy;
 
+        // Mouse subtle repulsion
+        const mdx = o.x - mouse.current.x;
+        const mdy = o.y - mouse.current.y;
+        const md  = Math.hypot(mdx, mdy);
+        if (md < 300 && md > 0) {
+          const force = (300 - md) / 300 * 0.003;
+          o.vx += (mdx / md) * force;
+          o.vy += (mdy / md) * force;
+        }
+
+        // Speed limit + damping
+        const spd = Math.hypot(o.vx, o.vy);
+        if (spd > 0.4) { o.vx *= 0.4 / spd; o.vy *= 0.4 / spd; }
+        o.vx *= 0.999; o.vy *= 0.999;
+
+        // Wrap
+        if (o.x < -o.r) o.x = W + o.r;
+        if (o.x > W + o.r) o.x = -o.r;
+        if (o.y < -o.r) o.y = H + o.r;
+        if (o.y > H + o.r) o.y = -o.r;
+
+        const pulse = 0.6 + Math.sin(o.phase) * 0.4;
+        const op    = o.op * pulse;
+
+        // Outer soft glow
+        const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
+        g.addColorStop(0,   `rgba(${o.color.r},${o.color.g},${o.color.b},${op * 2.5})`);
+        g.addColorStop(0.4, `rgba(${o.color.r},${o.color.g},${o.color.b},${op})`);
+        g.addColorStop(1,   `rgba(${o.color.r},${o.color.g},${o.color.b},0)`);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle   = g;
+        ctx.beginPath();
+        ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.globalAlpha = 1;
       raf = requestAnimationFrame(draw);
     }
 
     draw();
 
-    const onResize  = () => { W = el.width = window.innerWidth; H = el.height = window.innerHeight; };
-    const onMove    = (e: MouseEvent) => { mouse.current = { x: e.clientX, y: e.clientY }; };
-    const onLeave   = () => { mouse.current = { x: -9999, y: -9999 }; };
+    const onResize = () => {
+      W = el.width  = window.innerWidth;
+      H = el.height = window.innerHeight;
+      // Redistribute stars on resize
+      stars.forEach(s => {
+        if (s.x > W) s.x = Math.random() * W;
+        if (s.y > H) s.y = Math.random() * H;
+      });
+    };
+    const onMove  = (e: MouseEvent) => { mouse.current = { x: e.clientX, y: e.clientY }; };
+    const onLeave = () => { mouse.current = { x: -9999, y: -9999 }; };
+
     window.addEventListener("resize",     onResize);
     window.addEventListener("mousemove",  onMove);
     window.addEventListener("mouseleave", onLeave);
+
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize",     onResize);
@@ -166,9 +181,14 @@ export default function BackgroundCanvas({ intensity = "medium" }: Props) {
       ref={ref}
       aria-hidden="true"
       style={{
-        position: "fixed", top: 0, left: 0,
-        width: "100vw", height: "100vh",
-        zIndex: 0, pointerEvents: "none", display: "block",
+        position:      "fixed",
+        top:           0,
+        left:          0,
+        width:         "100vw",
+        height:        "100vh",
+        zIndex:        0,
+        pointerEvents: "none",
+        display:       "block",
       }}
     />
   );

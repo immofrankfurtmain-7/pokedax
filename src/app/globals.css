@@ -345,7 +345,7 @@ main { font-family: var(--font-poppins), 'Poppins', sans-serif; font-weight: 800
 
 /* ── Canvas visibility fix ── */
 html {
-  background: #0A0A0A;
+  background: #0d0a1a;
 }
 body {
   background: transparent !important;
