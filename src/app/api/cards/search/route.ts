@@ -1,57 +1,62 @@
-﻿import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+﻿import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const query   = searchParams.get('q') ?? ''
-  const setId   = searchParams.get('set') ?? ''
-  const rarity  = searchParams.get('rarity') ?? ''
-  const type    = searchParams.get('type') ?? ''
-  const sortBy  = searchParams.get('sort') ?? 'price_market'
-  const sortDir = searchParams.get('dir') ?? 'desc'
-  const page    = parseInt(searchParams.get('page') ?? '1')
-  const limit   = 20
-  const offset  = (page - 1) * limit
-  const supabase = await createClient()
+export const revalidate = 0;
 
-  let dbQuery = supabase
-    .from('cards')
-    .select(
-      'id, name, number, rarity, types, image_url, price_market, price_avg1, price_avg7, price_avg30, set_id, sets!inner(id, name, series)',
-      { count: 'exact' }
-    )
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-  if (query.trim()) dbQuery = dbQuery.ilike('name', '%' + query.trim() + '%')
-  if (setId)  dbQuery = dbQuery.eq('set_id', setId)
-  if (rarity) dbQuery = dbQuery.eq('rarity', rarity)
-  if (type)   dbQuery = dbQuery.contains('types', [type])
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const q        = searchParams.get("q")        || "";
+  const set      = searchParams.get("set")       || "";
+  const type     = searchParams.get("type")      || "";
+  const category = searchParams.get("category")  || "";
+  const sort     = searchParams.get("sort")      || "price_desc";
+  const limit    = Math.min(parseInt(searchParams.get("limit") || "48"), 100);
 
-  const validSorts: Record<string, string> = {
-    price_market: 'price_market',
-    price_avg7:   'price_avg7',
-    trend:        'price_avg1',
-    name:         'name',
+  // All columns including new ones
+  const SELECT = `
+    id, name, name_de, set_id, number,
+    rarity, rarity_id, types, image_url,
+    price_market, price_low, price_avg7, price_avg30,
+    hp, category, stage, illustrator,
+    regulation_mark, is_holo, is_reverse_holo
+  `.replace(/\s+/g, " ").trim();
+
+  let query = supabase.from("cards").select(SELECT);
+
+  // Search in both EN and DE name
+  if (q) {
+    query = query.or(`name.ilike.%${q}%,name_de.ilike.%${q}%`);
   }
-  const sortColumn = validSorts[sortBy] ?? 'price_market'
 
-  dbQuery = dbQuery
-    .order(sortColumn, { ascending: sortDir === 'asc', nullsFirst: false })
-    .range(offset, offset + limit - 1)
+  // Filters
+  if (set)      query = query.eq("set_id", set);
+  if (type)     query = query.contains("types", [type]);
+  if (category) query = query.eq("category", category);
 
-  const { data: cards, count, error } = await dbQuery
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Only cards with a price
+  query = query.not("price_market", "is", null);
 
-  const cardsWithTrend = cards?.map(card => {
-    const trend = card.price_market && card.price_avg7
-      ? ((card.price_market - card.price_avg7) / card.price_avg7) * 100
-      : null
-    return { ...card, trend }
-  })
+  // Sort
+  switch (sort) {
+    case "price_asc":   query = query.order("price_market", { ascending: true });  break;
+    case "name_asc":    query = query.order("name",         { ascending: true });  break;
+    case "trend_desc":  query = query.order("price_avg7",   { ascending: false }); break;
+    default:            query = query.order("price_market", { ascending: false }); break;
+  }
 
-  return NextResponse.json({
-    cards: cardsWithTrend ?? [],
-    total: count ?? 0,
-    page,
-    pages: Math.ceil((count ?? 0) / limit),
-  })
+  query = query.limit(limit);
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Cards search error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ cards: data || [] });
 }
