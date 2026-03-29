@@ -1,14 +1,19 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
-import { Search, X, TrendingUp, TrendingDown } from "lucide-react";
+import { Search, X, TrendingUp, TrendingDown, ExternalLink } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import CardDetail from "@/components/ui/CardDetail";
 
 interface Card {
-  id: string; name: string; set_id: string; number: string;
-  rarity: string | null; types: string[] | null; image_url: string | null;
+  id: string; name: string; name_de?: string | null; set_id: string; number: string;
+  rarity: string | null; rarity_id?: string | null;
+  types: string[] | null; image_url: string | null;
   price_market: number | null; price_low: number | null;
   price_avg7: number | null; price_avg30: number | null;
+  hp?: number | null; category?: string | null; stage?: string | null;
+  illustrator?: string | null; regulation_mark?: string | null;
+  is_holo?: boolean | null; is_reverse_holo?: boolean | null;
 }
 interface CardSet { id: string; name: string; }
 
@@ -25,21 +30,38 @@ const TYPES = [
   { id:"Colorless", label:"Farblos",    emoji:"⭐", color:"#CBD5E1", glow:"rgba(203,213,225,0.3)" },
 ];
 
+const CATEGORIES = [
+  { id:"Pokemon", label:"Pokémon", emoji:"⚡" },
+  { id:"Trainer", label:"Trainer", emoji:"🎴" },
+  { id:"Energy",  label:"Energie", emoji:"✨" },
+];
+
 const RARITY_DOTS: Record<string,number> = {
-  "Common":1,"Uncommon":2,"Rare":3,"Rare Holo":4,"Rare Holo EX":5,"Ultra Rare":6,"Secret Rare":6,
+  "Common":1,"Uncommon":2,"Rare":3,"Rare Holo":4,"Rare Holo EX":5,
+  "Ultra Rare":5,"Hyper Rare":6,"Secret Rare":6,"Illustration Rare":5,
+  "Special Illustration Rare":6,
+};
+
+const REG_MARKS: Record<string,{label:string;color:string}> = {
+  "A":{label:"Standard A",color:"#22C55E"},
+  "B":{label:"Standard B",color:"#22C55E"},
+  "C":{label:"Standard C",color:"#22C55E"},
+  "D":{label:"Standard D",color:"#22C55E"},
+  "E":{label:"Standard E",color:"#22C55E"},
+  "F":{label:"Expanded F", color:"#3B82F6"},
+  "G":{label:"Standard G", color:"#22C55E"},
+  "H":{label:"Standard H", color:"#22C55E"},
 };
 
 function RarityDots({ rarity }: { rarity: string | null }) {
   if (!rarity) return null;
   const dots = RARITY_DOTS[rarity] ?? (rarity.includes("Rare") ? 3 : 1);
-  const max  = 5;
   return (
     <div style={{ display:"flex", gap:2 }}>
-      {Array.from({ length: max }).map((_, i) => (
+      {Array.from({ length: Math.min(dots, 6) }).map((_, i) => (
         <div key={i} style={{
-          width: i < dots ? 5 : 4, height: i < dots ? 5 : 4, borderRadius:"50%",
-          background: i < dots ? "#FACC15" : "rgba(255,255,255,0.12)",
-          boxShadow: i < dots ? "0 0 3px rgba(250,204,21,0.5)" : "none",
+          width:5, height:5, borderRadius:"50%",
+          background:"#FACC15", boxShadow:"0 0 3px rgba(250,204,21,0.5)",
         }} />
       ))}
     </div>
@@ -56,50 +78,57 @@ function PokeballLoader() {
           <rect x="2" y="23.5" width="48" height="5" fill="#111"/>
           <circle cx="26" cy="26" r="8" fill="#111"/>
           <circle cx="26" cy="26" r="5" fill="white"/>
-          <circle cx="26" cy="26" r="2.5" fill="#eee" style={{ animation:"pb-pulse 1s ease-in-out infinite" }}/>
         </svg>
       </div>
       <p style={{ color:"rgba(255,255,255,0.35)", fontSize:13 }}>Karten werden geladen...</p>
-      <style>{`@keyframes pb-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pb-pulse{0%,100%{opacity:1}50%{opacity:0.2}}`}</style>
+      <style>{`@keyframes pb-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
 
-function CardItem({ card }: { card: Card }) {
+function CardItem({ card, onClick }: { card: Card; onClick: () => void }) {
   const typeConf  = TYPES.find(t => t.id === card.types?.[0]);
   const typeColor = typeConf?.color || "#475569";
   const typeGlow  = typeConf?.glow  || "transparent";
   const imgUrl    = card.image_url || `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
+  const displayName = card.name_de || card.name;
+  const subName     = card.name_de ? card.name : null;
   const change    = card.price_avg7 && card.price_avg30 && card.price_avg30 > 0
     ? ((card.price_avg7 - card.price_avg30) / card.price_avg30) * 100 : null;
 
   return (
-    <div style={{ background:"rgba(255,255,255,0.04)", border:`1px solid ${typeColor}25`, borderRadius:16, overflow:"hidden", cursor:"pointer", position:"relative", transition:"transform .2s, box-shadow .2s" }}
-      onMouseEnter={e=>{ (e.currentTarget as HTMLDivElement).style.transform="translateY(-5px)"; (e.currentTarget as HTMLDivElement).style.boxShadow=`0 8px 28px ${typeGlow},0 0 0 1px ${typeColor}40`; }}
-      onMouseLeave={e=>{ (e.currentTarget as HTMLDivElement).style.transform="translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow="none"; }}
+    <div onClick={onClick} style={{
+      background:"rgba(255,255,255,0.04)", border:`1px solid ${typeColor}25`,
+      borderRadius:16, overflow:"hidden", cursor:"pointer", position:"relative",
+      transition:"transform .2s, box-shadow .2s",
+    }}
+    onMouseEnter={e=>{(e.currentTarget as HTMLDivElement).style.transform="translateY(-5px)";(e.currentTarget as HTMLDivElement).style.boxShadow=`0 8px 28px ${typeGlow},0 0 0 1px ${typeColor}40`;}}
+    onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.transform="translateY(0)";(e.currentTarget as HTMLDivElement).style.boxShadow="none";}}
     >
-      {/* Image */}
       <div style={{ background:`linear-gradient(180deg,${typeColor}10,rgba(0,0,0,0.4))`, aspectRatio:"2.5/3.5", position:"relative" }}>
-        <img src={imgUrl} alt={card.name} style={{ width:"100%", height:"100%", objectFit:"contain", padding:6 }} loading="lazy"
+        <img src={imgUrl} alt={displayName} style={{ width:"100%", height:"100%", objectFit:"contain", padding:6 }} loading="lazy"
           onError={e=>{(e.target as HTMLImageElement).style.display="none"}} />
         {typeConf && (
-          <div style={{ position:"absolute", top:6, left:6, padding:"2px 7px", borderRadius:6, background:`${typeColor}30`, border:`1px solid ${typeColor}60`, fontSize:9, fontWeight:700, color:typeColor, backdropFilter:"blur(4px)" }}>
+          <div style={{ position:"absolute", top:6, left:6, padding:"2px 7px", borderRadius:6, background:`${typeColor}30`, border:`1px solid ${typeColor}60`, fontSize:9, fontWeight:700, color:typeColor }}>
             {typeConf.emoji} {typeConf.label}
           </div>
         )}
-        {card.rarity && (
-          <div style={{ position:"absolute", top:6, right:6, padding:"2px 6px", borderRadius:5, background:"rgba(0,0,0,0.65)", fontSize:8, fontWeight:700, color:"rgba(255,255,255,0.55)" }}>
-            {card.rarity}
+        {card.regulation_mark && REG_MARKS[card.regulation_mark] && (
+          <div style={{ position:"absolute", top:6, right:6, width:18, height:18, borderRadius:"50%", background:REG_MARKS[card.regulation_mark].color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:"#000" }}>
+            {card.regulation_mark}
           </div>
+        )}
+        {card.is_holo && (
+          <div style={{ position:"absolute", bottom:6, left:6, padding:"1px 5px", borderRadius:4, background:"rgba(250,204,21,0.2)", border:"1px solid rgba(250,204,21,0.4)", fontSize:8, fontWeight:700, color:"#FACC15" }}>HOLO</div>
         )}
         <div style={{ position:"absolute", bottom:0, left:0, right:0, height:36, background:`linear-gradient(0deg,${typeColor}30,transparent)`, pointerEvents:"none" }} />
       </div>
 
-      {/* Info */}
       <div style={{ padding:"10px 12px" }}>
-        <p style={{ fontWeight:700, fontSize:13, color:"white", marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{card.name}</p>
-        <p style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginBottom:6 }}>{card.set_id?.toUpperCase()} · #{card.number}</p>
-        <div style={{ marginBottom:8 }}><RarityDots rarity={card.rarity} /></div>
+        <p style={{ fontWeight:700, fontSize:13, color:"white", marginBottom:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{displayName}</p>
+        {subName && <p style={{ fontSize:9, color:"rgba(255,255,255,0.25)", marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{subName}</p>}
+        <p style={{ fontSize:10, color:"rgba(255,255,255,0.3)", marginBottom:6 }}>{card.set_id?.toUpperCase()} · #{card.number}{card.hp ? ` · HP ${card.hp}` : ""}</p>
+        <div style={{ marginBottom:6 }}><RarityDots rarity={card.rarity} /></div>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div>
             {card.price_market
@@ -127,17 +156,21 @@ export default function PreischeckPage() {
   const [sets,         setSets]         = useState<CardSet[]>([]);
   const [selectedSet,  setSelectedSet]  = useState("");
   const [selectedType, setSelectedType] = useState("");
+  const [selectedCat,  setSelectedCat]  = useState("");
   const [sortBy,       setSortBy]       = useState("price_desc");
   const [loading,      setLoading]      = useState(false);
   const [searched,     setSearched]     = useState(false);
+  const [selected,     setSelected]     = useState<Card | null>(null);
   const debouncedQuery = useDebounce(query, 350);
 
   useEffect(() => { fetch("/api/cards/sets").then(r=>r.json()).then(d=>setSets(d.sets||[])); }, []);
 
   useEffect(() => {
-    if (debouncedQuery.length < 2 && !selectedSet && !selectedType) { setCards([]); setSearched(false); return; }
+    if (debouncedQuery.length < 2 && !selectedSet && !selectedType && !selectedCat) {
+      setCards([]); setSearched(false); return;
+    }
     search();
-  }, [debouncedQuery, selectedSet, selectedType, sortBy]);
+  }, [debouncedQuery, selectedSet, selectedType, selectedCat, sortBy]);
 
   async function search() {
     setLoading(true); setSearched(true);
@@ -146,6 +179,7 @@ export default function PreischeckPage() {
       if (debouncedQuery) p.set("q", debouncedQuery);
       if (selectedSet)    p.set("set", selectedSet);
       if (selectedType)   p.set("type", selectedType);
+      if (selectedCat)    p.set("category", selectedCat);
       p.set("sort", sortBy); p.set("limit", "48");
       const data = await fetch(`/api/cards/search?${p}`).then(r=>r.json());
       setCards(data.cards || []);
@@ -154,14 +188,19 @@ export default function PreischeckPage() {
 
   return (
     <div style={{ minHeight:"100vh", color:"white" }}>
-      {/* Sticky search header */}
-      <div style={{ position:"sticky", top:88, zIndex:30, background:"rgba(10,10,10,0.96)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+      {/* Card Detail Modal */}
+      {selected && (
+        <CardDetail card={selected} onClose={() => setSelected(null)} />
+      )}
+
+      {/* Sticky header */}
+      <div style={{ position:"sticky", top:132, zIndex:30, background:"rgba(10,10,10,0.96)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
         <div style={{ height:1, background:"linear-gradient(90deg,transparent,rgba(0,229,255,0.5),transparent)" }} />
         <div style={{ maxWidth:1200, margin:"0 auto", padding:"14px 20px" }}>
           <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:12 }}>
             <div>
               <h1 style={{ fontFamily:"Poppins,sans-serif", fontWeight:900, fontSize:22, letterSpacing:"-0.02em", background:"linear-gradient(135deg,#fff,#00E5FF)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Preischeck</h1>
-              <p style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>{cards.length > 0 ? `${cards.length} Karten` : "22.271 Karten · Live Cardmarket EUR"}</p>
+              <p style={{ color:"rgba(255,255,255,0.3)", fontSize:11 }}>{cards.length > 0 ? `${cards.length} Karten` : "Live Cardmarket EUR"}</p>
             </div>
             <div style={{ display:"flex", gap:8 }}>
               <select value={selectedSet} onChange={e=>setSelectedSet(e.target.value)} style={{ padding:"6px 10px", borderRadius:8, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"white", fontSize:12, cursor:"pointer" }}>
@@ -181,14 +220,22 @@ export default function PreischeckPage() {
           <div style={{ position:"relative", marginBottom:10 }}>
             <Search size={15} style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", color:"rgba(255,255,255,0.35)", pointerEvents:"none" }} />
             <input type="text" value={query} onChange={e=>setQuery(e.target.value)}
-              placeholder="Kartenname… z.B. Charizard, Pikachu, Mewtwo"
+              placeholder="Kartenname auf Deutsch oder Englisch… z.B. Glurak, Charizard"
               style={{ width:"100%", paddingLeft:40, paddingRight:36, paddingTop:10, paddingBottom:10, borderRadius:10, background:"rgba(255,255,255,0.06)", border:query?"1px solid rgba(0,229,255,0.4)":"1px solid rgba(255,255,255,0.1)", color:"white", fontSize:14, outline:"none" }} />
             {query && <button onClick={()=>setQuery("")} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"rgba(255,255,255,0.3)", cursor:"pointer" }}><X size={13}/></button>}
           </div>
 
-          {/* Type filter chips */}
+          {/* Filters row */}
           <div style={{ display:"flex", gap:5, overflowX:"auto", paddingBottom:2 }}>
-            <button onClick={()=>setSelectedType("")} style={{ padding:"4px 12px", borderRadius:20, border:"none", cursor:"pointer", background:!selectedType?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.05)", color:!selectedType?"white":"rgba(255,255,255,0.4)", fontSize:11, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>Alle</button>
+            {/* Category filter */}
+            <button onClick={()=>setSelectedCat("")} style={{ padding:"4px 10px", borderRadius:20, border:"none", cursor:"pointer", background:!selectedCat?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.04)", color:!selectedCat?"white":"rgba(255,255,255,0.4)", fontSize:11, fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>Alle</button>
+            {CATEGORIES.map(c=>(
+              <button key={c.id} onClick={()=>setSelectedCat(selectedCat===c.id?"":c.id)} style={{ padding:"4px 10px", borderRadius:20, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, background:selectedCat===c.id?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.04)", border:`1px solid ${selectedCat===c.id?"rgba(255,255,255,0.3)":"rgba(255,255,255,0.08)"}`, color:selectedCat===c.id?"white":"rgba(255,255,255,0.4)", fontSize:11, fontWeight:600 }}>
+                {c.emoji} {c.label}
+              </button>
+            ))}
+            <div style={{ width:1, background:"rgba(255,255,255,0.1)", flexShrink:0, margin:"0 4px" }} />
+            {/* Type filter */}
             {TYPES.map(t=>(
               <button key={t.id} onClick={()=>setSelectedType(selectedType===t.id?"":t.id)} style={{ padding:"4px 10px", borderRadius:20, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, background:selectedType===t.id?`${t.color}25`:"rgba(255,255,255,0.04)", border:`1px solid ${selectedType===t.id?t.color+"60":"rgba(255,255,255,0.08)"}`, color:selectedType===t.id?t.color:"rgba(255,255,255,0.4)", fontSize:11, fontWeight:600, boxShadow:selectedType===t.id?`0 0 8px ${t.glow}`:"none" }}>
                 {t.emoji} {t.label}
@@ -204,7 +251,7 @@ export default function PreischeckPage() {
           <div style={{ textAlign:"center", padding:"64px 0" }}>
             <div style={{ fontSize:52, marginBottom:14, filter:"drop-shadow(0 0 20px rgba(0,229,255,0.3))" }}>🔍</div>
             <h2 style={{ fontFamily:"Poppins,sans-serif", fontWeight:800, fontSize:20, color:"white", marginBottom:6 }}>Karte suchen</h2>
-            <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14, marginBottom:28 }}>Name eingeben oder Typ wählen</p>
+            <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14, marginBottom:28 }}>Name auf Deutsch oder Englisch eingeben, oder Typ/Kategorie wählen</p>
             <div style={{ display:"flex", gap:8, justifyContent:"center", flexWrap:"wrap", maxWidth:500, margin:"0 auto" }}>
               {TYPES.slice(0,6).map(t=>(
                 <button key={t.id} onClick={()=>setSelectedType(t.id)} style={{ padding:"9px 16px", borderRadius:12, cursor:"pointer", background:`${t.color}15`, border:`1px solid ${t.color}40`, color:t.color, fontSize:13, fontWeight:600 }}>
@@ -223,7 +270,7 @@ export default function PreischeckPage() {
         )}
         {!loading && cards.length > 0 && (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))", gap:14 }}>
-            {cards.map(card=><CardItem key={card.id} card={card}/>)}
+            {cards.map(card=><CardItem key={card.id} card={card} onClick={()=>setSelected(card)}/>)}
           </div>
         )}
       </div>
