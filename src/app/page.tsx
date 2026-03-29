@@ -5,6 +5,7 @@ import ForumSection from "@/components/forum/ForumSection";
 import PremiumSection from "@/components/premium/PremiumSection";
 import OnlineUsers from "@/components/ui/OnlineUsers";
 import MewtwoSilhouette from "@/components/ui/MewtwoSilhouette";
+import StatsBar from "@/components/ui/StatsBar";
 import type { TrendingCard } from "@/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -104,33 +105,9 @@ export default async function HomePage() {
         </div>
 
         {/* Stats bar */}
-        <div style={{
-          display: "flex", flexWrap: "wrap", justifyContent: "center",
-          border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16,
-          overflow: "hidden", background: "rgba(17,17,17,0.85)",
-          maxWidth: 640, margin: "0 auto",
-        }}>
-          {[
-            { val: "98.420", label: "Karten in DB" },
-            { val: "2.841",  label: "Aktive Nutzer" },
-            { val: "1.247",  label: "Scans heute"   },
-            { val: "18.330", label: "Forum-Posts"   },
-          ].map((s, i, arr) => (
-            <div key={s.label} style={{
-              flex: "1 1 120px", padding: "18px 16px", textAlign: "center",
-              borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none",
-            }}>
-              <div style={{ fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 22, color: "#F8FAFC" }}>
-                {s.val}
-              </div>
-              <div style={{ fontSize: 10, fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 3 }}>
-                {s.label}
-              </div>
-            </div>
-          ))}
-        </div>
+        <StatsBar />
 
-        {/* Feature pills */}
+        {/* Feature pills{/* Feature pills */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 24 }}>
           {["Live-Preise von Cardmarket", "KI-Karten-Scanner", "Fake-Check & Grading", "Realtime Preis-Alerts"].map(f => (
             <span key={f} style={{
