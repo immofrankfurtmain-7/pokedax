@@ -27,7 +27,7 @@ const PLANS = [
   {
     id:       "premium",
     name:     "Premium",
-    price:    "7,99€",
+    price:    "6,99€",
     period:   "pro Monat",
     color:    "#FACC15",
     badge:    "BELIEBTESTE WAHL",

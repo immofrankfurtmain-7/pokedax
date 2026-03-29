@@ -134,7 +134,7 @@ export default function PremiumGate({
           }}
         >
           <Crown size={16} />
-          {upgrading ? "Wird geladen..." : "Premium – 7,99€/Mo"}
+          {upgrading ? "Wird geladen..." : "Premium – 6,99€/Mo"}
         </button>
 
         <Link

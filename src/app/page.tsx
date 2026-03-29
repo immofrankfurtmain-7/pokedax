@@ -76,7 +76,7 @@ export default async function HomePage() {
             src="/pokedax-logo.png"
             alt="PokéDax"
             style={{
-              height: "clamp(140px, 22vw, 260px)",
+              height: "clamp(180px, 28vw, 320px)",
               width: "auto",
               filter: "drop-shadow(0 0 40px rgba(250,204,21,0.6)) drop-shadow(0 0 80px rgba(238,21,21,0.4))",
               display: "block",
@@ -140,23 +140,7 @@ export default async function HomePage() {
       </section>
 
       {/* ── TRENDING CARDS ── */}
-      <section style={{ padding: "48px 20px", maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
-          <div>
-            <div className="section-eyebrow" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <TrendingUp size={12} />
-              Trending jetzt
-            </div>
-            <h2 style={{ fontFamily: "Poppins, sans-serif", fontSize: "clamp(22px, 3vw, 30px)", fontWeight: 800, color: "#F8FAFC", letterSpacing: "-0.02em" }}>
-              Meistgesuchte Karten
-            </h2>
-          </div>
-          <Link href="/preischeck" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, color: "#475569", textDecoration: "none" }}>
-            Alle ansehen <ArrowRight size={14} />
-          </Link>
-        </div>
-        <TrendingGrid cards={trendingCards} />
-      </section>
+      <TrendingGrid cards={trendingCards} />
 
       {/* ── FORUM SECTION ── */}
       <ForumSection />

@@ -139,7 +139,7 @@ h1, h2, h3, h4, h5 {
 @media (max-width: 768px) {
   .bottom-nav { display: flex; }
   body { padding-bottom: 64px; }
-  .pikachu-left, .pikachu-right { bottom: 72px; width: 60px; }
+  .pikachu-left, .pikachu-right { bottom: 80px; width: 70px; }
 }
 .bottom-nav-item {
   flex: 1;
