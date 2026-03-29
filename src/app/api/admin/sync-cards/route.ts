@@ -1,85 +1,133 @@
-// src/app/api/admin/sync-cards/route.ts
-export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+﻿import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+// Admin-only: requires ADMIN_SECRET header
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
-const BASE_URL = 'https://api.tcgdex.net/v2/en'
+const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 
-export async function GET(req: Request) {
-  const secret = req.headers.get('x-admin-secret')
-  if (secret !== process.env.ADMIN_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+interface TCGdexCard {
+  id:       string;
+  name:     string;
+  image?:   string;
+  types?:   string[];
+  rarity?:  string;
+  hp?:      number;
+  category: string;
+  variants?: { holo: boolean; reverse: boolean; normal: boolean };
+}
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { searchParams } = new URL(req.url)
-  const setId = searchParams.get('setId')
-
-  if (!setId) {
-    return NextResponse.json({ error: 'setId required' }, { status: 400 })
-  }
-
+async function fetchCardFromTCGdex(setId: string, localId: string): Promise<TCGdexCard | null> {
   try {
-    // Set-Daten laden (enthält alle Karten direkt)
-    const res = await fetch(`${BASE_URL}/sets/${setId}`, { cache: 'no-store' })
-    if (!res.ok) {
-      return NextResponse.json({ error: `Set ${setId} not found` }, { status: 404 })
-    }
-    const setData = await res.json()
-
-    // Set speichern
-    await supabase.from('sets').upsert({
-      id:           setData.id,
-      name:         setData.name,
-      series:       setData.serie?.name ?? null,
-      total:        setData.cardCount?.total ?? null,
-      release_date: setData.releaseDate ?? null,
-      symbol_url:   setData.symbol ?? null,
-      logo_url:     setData.logo ?? null,
-      updated_at:   new Date().toISOString(),
-    })
-
-    if (!setData.cards?.length) {
-      return NextResponse.json({ success: true, sets: 1, cards: 0 })
-    }
-
-    // Alle Karten des Sets in einem Batch speichern
-    const cards = setData.cards.map((card: any) => ({
-      id:         `${setId}-${card.localId}`,
-      set_id:     setId,
-      name:       card.name,
-      number:     card.localId,
-      rarity:     card.rarity ?? null,
-      types:      card.types ?? [],
-      supertype:  card.supertype ?? null,
-      image_url:  card.image ? `${card.image}/low.webp` : null,
-      updated_at: new Date().toISOString(),
-    }))
-
-    // In Batches von 100 in Supabase speichern
-    const batchSize = 100
-    let saved = 0
-    for (let i = 0; i < cards.length; i += batchSize) {
-      const batch = cards.slice(i, i + batchSize)
-      await supabase.from('cards').upsert(batch)
-      saved += batch.length
-      await sleep(100)
-    }
-
-    return NextResponse.json({
-      success: true,
-      sets:    1,
-      cards:   saved,
-    })
-
-  } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    const res = await fetch(`${TCGDEX_BASE}/sets/${setId}/${localId}`, {
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
   }
+}
+
+export async function POST(request: NextRequest) {
+  // Auth check
+  const secret = request.headers.get("x-admin-secret");
+  if (secret !== process.env.ADMIN_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { offset = 0, limit = 50 } = await request.json().catch(() => ({}));
+
+  // Fetch cards that are missing types or rarity
+  const { data: cards, error } = await supabase
+    .from("cards")
+    .select("id, set_id, number, types, rarity, image_url")
+    .or("types.is.null,rarity.is.null")
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!cards || cards.length === 0) {
+    return NextResponse.json({ message: "Alle Karten haben bereits Types/Rarity", updated: 0 });
+  }
+
+  let updated = 0;
+  let failed  = 0;
+  const results: string[] = [];
+
+  for (const card of cards) {
+    const setId   = card.set_id;
+    const localId = card.number;
+    if (!setId || !localId) { failed++; continue; }
+
+    const tcg = await fetchCardFromTCGdex(setId, localId);
+    if (!tcg) {
+      // Try alternative format: some cards use number without leading zeros
+      const altId = String(parseInt(localId) || localId);
+      const tcg2  = altId !== localId ? await fetchCardFromTCGdex(setId, altId) : null;
+      if (!tcg2) { failed++; continue; }
+      Object.assign(tcg || {}, tcg2);
+    }
+
+    if (!tcg) { failed++; continue; }
+
+    const updates: Record<string, unknown> = {};
+
+    if (!card.types && tcg.types && tcg.types.length > 0) {
+      updates.types = tcg.types;
+    }
+    if (!card.rarity && tcg.rarity) {
+      updates.rarity = tcg.rarity;
+    }
+    if (!card.image_url && tcg.image) {
+      updates.image_url = `${tcg.image}/low.webp`;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await supabase.from("cards").update(updates).eq("id", card.id);
+      updated++;
+      results.push(`✓ ${card.id}: ${JSON.stringify(updates)}`);
+    }
+
+    // Small delay to avoid rate limiting
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  return NextResponse.json({
+    total:    cards.length,
+    updated,
+    failed,
+    offset,
+    limit,
+    results:  results.slice(0, 20), // first 20 for logging
+    nextOffset: offset + limit,
+    hasMore: cards.length === limit,
+  });
+}
+
+// GET: stats on how many cards need updating
+export async function GET(request: NextRequest) {
+  const secret = request.headers.get("x-admin-secret");
+  if (secret !== process.env.ADMIN_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const [missingTypes, missingRarity, missingImages, total] = await Promise.all([
+    supabase.from("cards").select("*", { count: "exact", head: true }).is("types", null),
+    supabase.from("cards").select("*", { count: "exact", head: true }).is("rarity", null),
+    supabase.from("cards").select("*", { count: "exact", head: true }).is("image_url", null),
+    supabase.from("cards").select("*", { count: "exact", head: true }),
+  ]);
+
+  return NextResponse.json({
+    total:         total.count,
+    missingTypes:  missingTypes.count,
+    missingRarity: missingRarity.count,
+    missingImages: missingImages.count,
+  });
 }

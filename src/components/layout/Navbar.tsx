@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Search, LayoutDashboard, MessageSquare, Gamepad2, Zap,
+  Search, LayoutDashboard, MessageSquare, Gamepad2, Zap, TrendingUp,
   Menu, X, ChevronRight, LogOut, Home, Crown,
   Shield, Star, Camera
 } from "lucide-react";
@@ -17,6 +17,7 @@ const NAV = [
   { href: "/forum",      label: "Forum",      icon: MessageSquare,  color: "#22C55E" },
   { href: "/spiel",      label: "Spiel",      icon: Gamepad2,       color: "#FACC15" },
   { href: "/scanner",    label: "Scanner",    icon: Camera,         color: "#F97316" },
+  { href: "/top-movers", label: "Top Movers", icon: TrendingUp,     color: "#22C55E" },
 ];
 
 const BOTTOM_NAV = [
@@ -24,6 +25,7 @@ const BOTTOM_NAV = [
   { href: "/preischeck", label: "Preise",   icon: Search        },
   { href: "/scanner",    label: "Scanner",  icon: Camera        },
   { href: "/forum",      label: "Forum",    icon: MessageSquare },
+  { href: "/top-movers", label: "Top Movers", icon: TrendingUp },
   { href: "/dashboard",  label: "Profil",   icon: LayoutDashboard },
 ];
 
@@ -134,15 +136,19 @@ export default function Navbar() {
                 )}
                 <div style={{ position: "relative" }}>
                   {profile.avatar_url ? (
+                    <Link href={`/profil/${profile.username}`} style={{ display: "flex" }}>
                     <img src={profile.avatar_url} alt={profile.username}
-                      style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", border: `2px solid ${roleColor}` }} />
+                      style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", border: `2px solid ${roleColor}`, cursor: "pointer" }} />
+                  </Link>
                   ) : (
+                    <Link href={`/profil/${profile.username}`} style={{ display: "flex" }}>
                     <div style={{
                       width: 30, height: 30, borderRadius: "50%",
                       background: `${roleColor}20`, border: `2px solid ${roleColor}`,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontWeight: 700, fontSize: 12, color: roleColor,
+                      fontWeight: 700, fontSize: 12, color: roleColor, cursor: "pointer",
                     }}>{profile.username?.[0]?.toUpperCase()}</div>
+                  </Link>
                   )}
                 </div>
                 <span style={{ fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 600, color: roleColor }}>
