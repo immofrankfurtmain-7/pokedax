@@ -3,6 +3,7 @@ import { Poppins, Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import PriceTicker from "@/components/ui/PriceTicker";
 import FloatingPikachu from "@/components/ui/FloatingPikachu";
 import BackgroundCanvas from "@/components/ui/BackgroundCanvas";
 

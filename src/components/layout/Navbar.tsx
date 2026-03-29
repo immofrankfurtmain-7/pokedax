@@ -81,8 +81,8 @@ export default function Navbar() {
     <>
       {/* ── Top Navbar ── */}
       <nav className="sticky-header" style={{ height: 100 }}>
-        {/* Red top line */}
-        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #EE1515 30%, #EE1515 70%, transparent)" }} />
+        {/* Pokemon-style top accent - dual color */}
+        <div style={{ height: 3, background: "linear-gradient(90deg, transparent, #EE1515 20%, #FACC15 50%, #EE1515 80%, transparent)" }} />
 
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px", height: 98, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {/* Logo */}

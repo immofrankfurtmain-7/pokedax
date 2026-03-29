@@ -119,31 +119,23 @@ function CardRow({ card, rank }: { card: Card; rank: number }) {
 export default async function TopMoversPage() {
   const supabase = await createClient();
 
-  // Gainers: biggest % increase avg30 → avg7
-  const { data: gainers } = await supabase
-    .from("cards")
-    .select("id, name, set_id, number, rarity, types, image_url, price_market, price_avg7, price_avg30")
-    .not("price_avg7",  "is", null)
-    .not("price_avg30", "is", null)
-    .not("price_market","is", null)
-    .gt("price_avg30", 2) // filter out cents
-    .gt("price_market", 2)
-    .order("price_avg7",  { ascending: false })
-    .limit(200);
+  // Fetch cards with price data - safe with error handling
+  let allCards: Card[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("cards")
+      .select("id, name, set_id, number, rarity, types, image_url, price_market, price_avg7, price_avg30")
+      .not("price_market", "is", null)
+      .gt("price_market", 1)
+      .limit(500);
+    if (!error && data) allCards = data;
+  } catch (e) {
+    console.error("Top movers fetch error:", e);
+  }
 
-  // Losers
-  const { data: allCards } = await supabase
-    .from("cards")
-    .select("id, name, set_id, number, rarity, types, image_url, price_market, price_avg7, price_avg30")
-    .not("price_avg7",  "is", null)
-    .not("price_avg30", "is", null)
-    .not("price_market","is", null)
-    .gt("price_avg30", 2)
-    .gt("price_market", 2)
-    .limit(500);
-
-  // Calculate % change and sort
-  const withPct = (allCards || [])
+  // Calculate % change and sort - only cards with both price fields
+  const withPct = allCards
+    .filter(c => c.price_avg7 && c.price_avg30 && c.price_avg30 > 0)
     .map(c => ({ ...c, pct: getPct(c.price_avg7, c.price_avg30) ?? 0 }))
     .filter(c => Math.abs(c.pct) > 0.5);
 
