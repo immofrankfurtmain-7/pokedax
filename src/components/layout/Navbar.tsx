@@ -105,7 +105,7 @@ export default function Navbar() {
                 <Link key={href} href={href} style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "6px 12px", borderRadius: 8,
-                  fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: 500,
+                  fontFamily: '"Luckiest Guy", Inter, sans-serif', fontSize: 13, fontWeight: 400,
                   color: active ? color : "rgba(255,255,255,0.5)",
                   background: active ? `${color}15` : "transparent",
                   border: `1px solid ${active ? color + "30" : "transparent"}`,
@@ -209,7 +209,7 @@ export default function Navbar() {
       <div ref={drawerRef} style={{
         position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 49,
         width: 290,
-        background: "linear-gradient(180deg, #111111 0%, #0A0A0A 100%)",
+        background: "linear-gradient(180deg, #0d0a1a 0%, #0a0818 100%)",
         borderLeft: "1px solid rgba(255,255,255,0.08)",
         boxShadow: "-24px 0 60px rgba(0,0,0,0.9)",
         transform: open ? "translateX(0)" : "translateX(100%)",
