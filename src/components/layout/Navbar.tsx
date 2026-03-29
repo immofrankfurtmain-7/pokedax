@@ -122,6 +122,16 @@ export default function Navbar() {
             {/* Desktop user */}
             {user && profile ? (
               <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="hidden-mobile">
+                {!profile?.is_premium && (
+                  <Link href="/dashboard/premium" style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700,
+                    background: "linear-gradient(135deg, #FACC15, #f59e0b)",
+                    color: "#000", textDecoration: "none",
+                    fontFamily: "Poppins, sans-serif",
+                    boxShadow: "0 0 10px rgba(250,204,21,0.25)",
+                  }}>👑 Premium</Link>
+                )}
                 <div style={{ position: "relative" }}>
                   {profile.avatar_url ? (
                     <img src={profile.avatar_url} alt={profile.username}
@@ -144,7 +154,15 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 6 }} className="hidden-mobile">
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }} className="hidden-mobile">
+                <Link href="/dashboard/premium" style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                  background: "linear-gradient(135deg, #FACC15, #f59e0b)",
+                  color: "#000", textDecoration: "none",
+                  fontFamily: "Poppins, sans-serif",
+                  boxShadow: "0 0 12px rgba(250,204,21,0.3)",
+                }}>👑 Premium</Link>
                 <Link href="/auth/login" style={{
                   padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500,
                   color: "rgba(255,255,255,0.5)", border: "1px solid rgba(255,255,255,0.12)",
