@@ -16,9 +16,10 @@ export const metadata: Metadata = {
 };
 
 interface Card {
-  id: string; name: string; set_id: string; number: string;
+  id: string; name: string; name_de?: string | null; set_id: string; number: string;
   rarity: string | null; types: string[] | null; image_url: string | null;
   price_market: number | null; price_avg7: number | null; price_avg30: number | null;
+  price_low: number | null; pct?: number;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -68,7 +69,7 @@ function CardRow({ card, rank }: { card: Card; rank: number }) {
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 15, color: "white", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {card.name}
+          {card.name_de || card.name}
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{card.set_id?.toUpperCase()} · #{card.number}</span>
@@ -122,25 +123,42 @@ export default async function TopMoversPage() {
   // Fetch cards with price data - safe with error handling
   let allCards: Card[] = [];
   try {
+    // Fetch cards with prices - try to get ones with trend data first
     const { data, error } = await supabase
       .from("cards")
-      .select("id, name, set_id, number, rarity, types, image_url, price_market, price_avg7, price_avg30")
+      .select("id, name, name_de, set_id, number, rarity, types, image_url, price_market, price_avg7, price_avg30, price_low")
       .not("price_market", "is", null)
-      .gt("price_market", 1)
+      .gt("price_market", 2)
+      .order("price_market", { ascending: false })
       .limit(500);
     if (!error && data) allCards = data;
   } catch (e) {
     console.error("Top movers fetch error:", e);
   }
 
-  // Calculate % change and sort - only cards with both price fields
-  const withPct = allCards
+  // Cards WITH trend data (avg7 vs avg30)
+  const withTrend = allCards
     .filter(c => c.price_avg7 && c.price_avg30 && c.price_avg30 > 0)
     .map(c => ({ ...c, pct: getPct(c.price_avg7, c.price_avg30) ?? 0 }))
     .filter(c => Math.abs(c.pct) > 0.5);
 
-  const topGainers = [...withPct].sort((a, b) => b.pct - a.pct).slice(0, 20);
-  const topLosers  = [...withPct].sort((a, b) => a.pct - b.pct).slice(0, 10);
+  // Fallback: cards without trend data - use market vs low as rough indicator
+  const withoutTrend = allCards
+    .filter(c => !c.price_avg7 || !c.price_avg30)
+    .map(c => ({
+      ...c,
+      pct: c.price_market && c.price_low && c.price_low > 0
+        ? ((c.price_market - c.price_low) / c.price_low) * 100
+        : 0
+    }));
+
+  // Combine: prefer trend data, fill with fallback
+  const allWithPct = withTrend.length >= 10
+    ? withTrend
+    : [...withTrend, ...withoutTrend.filter(c => Math.abs(c.pct) > 1)];
+
+  const topGainers = [...allWithPct].sort((a, b) => b.pct - a.pct).slice(0, 20);
+  const topLosers  = [...allWithPct].sort((a, b) => a.pct - b.pct).slice(0, 10);
 
   return (
     <div style={{ minHeight: "100vh", color: "white" }}>
