@@ -81,8 +81,8 @@ export default function PriceTicker() {
     <div
       style={{
         position: "sticky",
-        top: 100, // below navbar
-        zIndex: 39,
+        top: 100,
+        zIndex: 41,
         height: 32,
         background: "rgba(8, 6, 18, 0.96)",
         backdropFilter: "blur(12px)",

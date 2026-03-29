@@ -31,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="de" className={`${poppins.variable} ${inter.variable}`}>
       <body>
         <Navbar />
+        <PriceTicker />
         <BackgroundCanvas intensity="medium" />
         <FloatingPikachu />
         <main>{children}</main>
