@@ -53,6 +53,61 @@ const REG_MARKS: Record<string,{label:string;color:string}> = {
   "H":{label:"Standard H", color:"#22C55E"},
 };
 
+function WishlistBtn({ cardId }: { cardId: string }) {
+  const [wished,  setWished]  = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    import("@/lib/supabase/client").then(({ createClient }) => {
+      const sb = createClient();
+      sb.auth.getUser().then(({ data: { user } }) => {
+        if (!user) return;
+        sb.from("user_wishlist")
+          .select("id").eq("user_id", user.id).eq("card_id", cardId).single()
+          .then(({ data }) => { if (data) setWished(true); });
+      });
+    });
+  }, [cardId]);
+
+  async function toggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const sb = createClient();
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { window.location.href = "/auth/login"; return; }
+      if (wished) {
+        await sb.from("user_wishlist").delete().eq("user_id", user.id).eq("card_id", cardId);
+        setWished(false);
+      } else {
+        await sb.from("user_wishlist").upsert({ user_id: user.id, card_id: cardId });
+        setWished(true);
+      }
+    } finally { setLoading(false); }
+  }
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={loading}
+      title={wished ? "Von Wunschliste entfernen" : "Zur Wunschliste"}
+      style={{
+        background: "none", border: "none", cursor: "pointer", padding: 2,
+        color: wished ? "#E84560" : "rgba(255,255,255,0.25)",
+        transition: "color .2s, transform .15s",
+        transform: loading ? "scale(0.8)" : "scale(1)",
+      }}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24"
+        fill={wished ? "currentColor" : "none"}
+        stroke="currentColor" strokeWidth="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+      </svg>
+    </button>
+  );
+}
+
 function RarityDots({ rarity }: { rarity: string | null }) {
   if (!rarity) return null;
   const dots = RARITY_DOTS[rarity] ?? (rarity.includes("Rare") ? 3 : 1);
