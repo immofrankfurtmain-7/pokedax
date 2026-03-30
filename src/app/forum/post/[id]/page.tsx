@@ -124,7 +124,9 @@ function UserInfo({ profile }: { profile: Post["profiles"] | Reply["profiles"] }
     <div>
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="font-bold text-white" style={{ fontSize: "13px" }}>
-          {profile.username}
+          <a href={`/profil/${profile.username}`} style={{ color:"inherit", textDecoration:"none" }}>
+            {profile.username}
+          </a>
         </span>
         {role && (
           <span

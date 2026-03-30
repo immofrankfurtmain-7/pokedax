@@ -291,7 +291,7 @@ function PostRow({ post, categoryId }: { post: Post; categoryId?: string }) {
             <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px" }}>
               von{" "}
               <span style={{ color: roleColor, fontWeight: 500 }}>
-                {post.profiles?.username || "Unbekannt"}
+                <a href={`/profil/${post.profiles?.username}`} style={{color:"inherit",textDecoration:"none"}}>{post.profiles?.username || "Unbekannt"}</a>
               </span>
               {roleLabel && (
                 <span

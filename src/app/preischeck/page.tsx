@@ -138,12 +138,15 @@ function CardItem({ card, onClick }: { card: Card; onClick: () => void }) {
               : <p style={{ fontSize:11, color:"rgba(255,255,255,0.2)" }}>Kein Preis</p>
             }
           </div>
-          {change !== null && (
-            <div style={{ display:"flex", alignItems:"center", gap:2, fontSize:10, fontWeight:700, color:change>=0?"#22C55E":"#EE1515" }}>
-              {change >= 0 ? <TrendingUp size={10}/> : <TrendingDown size={10}/>}
-              {Math.abs(change).toFixed(1)}%
-            </div>
-          )}
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            {change !== null && (
+              <div style={{ display:"flex", alignItems:"center", gap:2, fontSize:10, fontWeight:700, color:change>=0?"#22C55E":"#EE1515" }}>
+                {change >= 0 ? <TrendingUp size={10}/> : <TrendingDown size={10}/>}
+                {Math.abs(change).toFixed(1)}%
+              </div>
+            )}
+            <WishlistBtn cardId={card.id} />
+          </div>
         </div>
       </div>
     </div>
