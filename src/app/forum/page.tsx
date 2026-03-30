@@ -1,326 +1,73 @@
 ﻿"use client";
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { MessageSquare, TrendingUp, Pin, Lock, Flame, Eye, Heart } from "lucide-react";
-import ForumHeader from "@/components/forum/ForumHeader";
 
-interface Category {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  post_count: number;
-  sort_order: number;
-}
+const B0="#07070F",B1="#0C0C1A",B2="#101020",B3="#161628",B4="#1E1E38";
+const BR1="rgba(255,255,255,0.048)",BR2="rgba(255,255,255,0.080)";
+const T1="#EDEAF6",T2="#8A89A8",T3="#454462";
+const G="#E9A84B",G18="rgba(233,168,75,0.18)",G06="rgba(233,168,75,0.06)";
 
 interface Post {
-  id: string;
-  title: string;
-  category_id: string;
-  author_id: string;
-  reply_count: number;
-  upvotes: number;
-  view_count: number;
-  is_pinned: boolean;
-  is_locked: boolean;
-  is_hot: boolean;
-  created_at: string;
-  profiles: {
-    username: string;
-    avatar_url: string | null;
-    forum_role: string;
-    badge_trainer: boolean;
-    badge_gym_leader: boolean;
-    badge_elite4: boolean;
-    badge_champion: boolean;
-  };
+  id:string; title:string; content?:string; upvotes:number; created_at:string;
+  profiles?:{username:string};
+  forum_categories?:{name:string;color?:string};
 }
+interface Category { id:string; name:string; }
 
-const CATEGORY_STYLES: Record<string, { gradient: string; border: string; glow: string; type: string; rarity: string }> = {
-  marktplatz: {
-    gradient: "linear-gradient(135deg, #1a0533 0%, #2d0a52 50%, #1a0533 100%)",
-    border: "rgba(200, 100, 255, 0.6)",
-    glow: "rgba(200, 100, 255, 0.3)",
-    type: "Psychic",
-    rarity: "Rare Holo",
-  },
-  preise: {
-    gradient: "linear-gradient(135deg, #001a2e 0%, #003366 50%, #001a2e 100%)",
-    border: "rgba(0, 200, 255, 0.6)",
-    glow: "rgba(0, 200, 255, 0.3)",
-    type: "Water",
-    rarity: "Uncommon",
-  },
-  "fake-check": {
-    gradient: "linear-gradient(135deg, #1a0a00 0%, #3d1a00 50%, #1a0a00 100%)",
-    border: "rgba(255, 150, 0, 0.6)",
-    glow: "rgba(255, 150, 0, 0.3)",
-    type: "Fire",
-    rarity: "Rare",
-  },
-  news: {
-    gradient: "linear-gradient(135deg, #00150a 0%, #003320 50%, #00150a 100%)",
-    border: "rgba(0, 255, 150, 0.6)",
-    glow: "rgba(0, 255, 150, 0.3)",
-    type: "Grass",
-    rarity: "Common",
-  },
-  einsteiger: {
-    gradient: "linear-gradient(135deg, #1a1a00 0%, #333300 50%, #1a1a00 100%)",
-    border: "rgba(255, 220, 0, 0.6)",
-    glow: "rgba(255, 220, 0, 0.3)",
-    type: "Lightning",
-    rarity: "Common",
-  },
-  turniere: {
-    gradient: "linear-gradient(135deg, #1a0000 0%, #330000 50%, #1a0000 100%)",
-    border: "rgba(255, 60, 60, 0.6)",
-    glow: "rgba(255, 60, 60, 0.3)",
-    type: "Fighting",
-    rarity: "Rare Holo EX",
-  },
-  premium: {
-    gradient: "linear-gradient(135deg, #0a0014 0%, #1a003d 50%, #0a0014 100%)",
-    border: "rgba(255, 215, 0, 0.8)",
-    glow: "rgba(255, 215, 0, 0.4)",
-    type: "Dragon",
-    rarity: "Ultra Rare",
-  },
+const CAT_STYLE:Record<string,{c:string;bg:string;br:string}>={
+  Preise:    {c:G,      bg:"rgba(233,168,75,0.07)",  br:G18},
+  News:      {c:G,      bg:"rgba(233,168,75,0.07)",  br:G18},
+  Sammlung:  {c:"#4BBF82",bg:"rgba(75,191,130,0.07)",br:"rgba(75,191,130,0.15)"},
+  Strategie: {c:"#A855F7",bg:"rgba(168,85,247,0.07)",br:"rgba(168,85,247,0.15)"},
+  Tausch:    {c:"#38BDF8",bg:"rgba(56,189,248,0.07)",br:"rgba(56,189,248,0.15)"},
+  "Fake-Check":{c:"#3BBDB6",bg:"rgba(59,189,182,0.07)",br:"rgba(59,189,182,0.15)"},
 };
 
-const RARITY_DOTS: Record<string, number> = {
-  Common: 1,
-  Uncommon: 2,
-  Rare: 3,
-  "Rare Holo": 4,
-  "Rare Holo EX": 5,
-  "Ultra Rare": 6,
-};
-
-function HoloCard({ category }: { category: Category }) {
-  const style = CATEGORY_STYLES[category.id] || CATEGORY_STYLES["news"];
-  const dots = RARITY_DOTS[style.rarity] || 1;
-
-  return (
-    <Link href={`/forum?category=${category.id}`} className="block group">
-      <div
-        className="relative overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2"
-        style={{
-          background: style.gradient,
-          border: `1px solid ${style.border}`,
-          borderRadius: "12px",
-          boxShadow: `0 0 20px ${style.glow}, inset 0 0 40px rgba(0,0,0,0.3)`,
-          aspectRatio: "2.5/3.5",
-          minHeight: "240px",
-        }}
-      >
-        {/* Holo shimmer overlay */}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(125deg, transparent 20%, rgba(255,255,255,0.08) 40%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.08) 60%, transparent 80%)",
-            backgroundSize: "200% 200%",
-          }}
-        />
-
-        {/* Card top bar */}
-        <div
-          className="flex items-center justify-between px-3 pt-3 pb-1"
-          style={{ borderBottom: `1px solid ${style.border}40` }}
-        >
-          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: style.border, fontSize: "9px" }}>
-            {style.type} Type
-          </span>
-          <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)", fontSize: "9px" }}>
-            HP {Math.floor(category.post_count / 10) + 60}
-          </span>
-        </div>
-
-        {/* Icon area */}
-        <div className="flex items-center justify-center" style={{ height: "90px", position: "relative" }}>
-          <div
-            className="flex items-center justify-center text-4xl"
-            style={{
-              width: "72px",
-              height: "72px",
-              borderRadius: "50%",
-              background: `radial-gradient(circle, ${style.glow} 0%, transparent 70%)`,
-              border: `1px solid ${style.border}60`,
-              filter: "drop-shadow(0 0 12px " + style.glow + ")",
-            }}
-          >
-            {category.icon}
-          </div>
-        </div>
-
-        {/* Card name */}
-        <div className="px-3 pb-1">
-          <h3
-            className="font-bold text-white text-center"
-            style={{
-              fontSize: "13px",
-              textShadow: `0 0 10px ${style.glow}`,
-              letterSpacing: "0.05em",
-            }}
-          >
-            {category.name}
-          </h3>
-        </div>
-
-        {/* Divider */}
-        <div className="mx-3 my-1" style={{ height: "1px", background: `${style.border}40` }} />
-
-        {/* Description */}
-        <div className="px-3 pb-2">
-          <p
-            className="text-center"
-            style={{
-              color: "rgba(255,255,255,0.55)",
-              fontSize: "9px",
-              lineHeight: "1.4",
-            }}
-          >
-            {category.description}
-          </p>
-        </div>
-
-        {/* Stats */}
-        <div className="px-3 pb-2">
-          <div
-            className="flex items-center justify-between px-2 py-1 rounded"
-            style={{ background: "rgba(0,0,0,0.3)", border: `1px solid ${style.border}30` }}
-          >
-            <div className="flex items-center gap-1">
-              <MessageSquare size={8} style={{ color: style.border }} />
-              <span style={{ color: style.border, fontSize: "9px", fontWeight: 600 }}>
-                {category.post_count.toLocaleString()}
-              </span>
-            </div>
-            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px" }}>Beiträge</span>
-          </div>
-        </div>
-
-        {/* Rarity dots */}
-        <div className="flex justify-center gap-1 pb-2">
-          {Array.from({ length: dots }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: i === dots - 1 ? "6px" : "5px",
-                height: i === dots - 1 ? "6px" : "5px",
-                borderRadius: "50%",
-                background: i === dots - 1 ? style.border : `${style.border}70`,
-                boxShadow: i === dots - 1 ? `0 0 4px ${style.glow}` : "none",
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Bottom rarity text */}
-        <div
-          className="absolute bottom-2 left-0 right-0 text-center"
-          style={{ color: "rgba(255,255,255,0.3)", fontSize: "8px" }}
-        >
-          {style.rarity}
-        </div>
-      </div>
-    </Link>
-  );
+function timeAgo(dateStr:string):string {
+  const diff=Date.now()-new Date(dateStr).getTime();
+  const m=Math.floor(diff/60000);
+  if(m<1)return"Gerade eben";
+  if(m<60)return`vor ${m} Min.`;
+  const h=Math.floor(m/60);
+  if(h<24)return`vor ${h} Std.`;
+  return`vor ${Math.floor(h/24)} Tagen`;
 }
 
-function PostRow({ post, categoryId }: { post: Post; categoryId?: string }) {
-  const style = categoryId ? CATEGORY_STYLES[categoryId] || CATEGORY_STYLES["news"] : CATEGORY_STYLES["news"];
-  const role = post.profiles?.forum_role;
-  const roleColor =
-    role === "admin" ? "#ff4444" : role === "moderator" ? "#00ccff" : "rgba(255,255,255,0.4)";
-  const roleLabel = role === "admin" ? "ADMIN" : role === "moderator" ? "MOD" : null;
+function ThreadRow({post}:{post:Post}) {
+  const cat=post.forum_categories?.name??"Allgemein";
+  const cs=CAT_STYLE[cat]??{c:T2,bg:"rgba(255,255,255,0.05)",br:BR2};
+  const author=post.profiles?.username??"Anonym";
+  return(
+    <Link href={`/forum/post/${post.id}`} style={{textDecoration:"none"}}>
+      <div style={{
+        display:"flex",alignItems:"flex-start",gap:14,
+        padding:"18px 24px",
+        borderBottom:`1px solid rgba(255,255,255,0.038)`,
+        transition:"background .1s",cursor:"pointer",
+      }}
+      onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.015)";}}
+      onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
+        {/* Avatar */}
+        <div style={{
+          width:32,height:32,borderRadius:9,
+          background:B4,border:`1px solid ${BR2}`,
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontSize:12,fontWeight:600,color:T2,flexShrink:0,marginTop:1,
+        }}>{author[0]?.toUpperCase()}</div>
 
-  return (
-    <Link href={`/forum/post/${post.id}`} className="block group">
-      <div
-        className="relative flex items-center gap-3 p-3 rounded-lg transition-all duration-200"
-        style={{
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          marginBottom: "6px",
-        }}
-      >
-        {/* Hover glow */}
-        <div
-          className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-          style={{ background: `linear-gradient(90deg, ${style.glow}15, transparent)` }}
-        />
-
-        {/* Badges */}
-        <div className="flex gap-1 shrink-0">
-          {post.is_pinned && (
-            <span title="Angeheftet">
-              <Pin size={12} style={{ color: "#00ffff" }} />
-            </span>
-          )}
-          {post.is_locked && (
-            <span title="Gesperrt">
-              <Lock size={12} style={{ color: "#ff8800" }} />
-            </span>
-          )}
-          {post.is_hot && (
-            <span title="Hot">
-              <Flame size={12} style={{ color: "#ff4444" }} />
-            </span>
-          )}
-          {!post.is_pinned && !post.is_locked && !post.is_hot && (
-            <div style={{ width: 12 }} />
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p
-              className="font-medium truncate group-hover:text-white transition-colors"
-              style={{ color: "rgba(255,255,255,0.85)", fontSize: "13px" }}
-            >
-              {post.title}
-            </p>
+        {/* Body */}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
+            <span style={{fontSize:12,fontWeight:500,color:T1}}>{author}</span>
+            <span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:cs.bg,color:cs.c,border:`1px solid ${cs.br}`,letterSpacing:".04em"}}>{cat}</span>
+            <span style={{fontSize:10,color:T3,marginLeft:"auto"}}>{timeAgo(post.created_at)}</span>
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px" }}>
-              von{" "}
-              <span style={{ color: roleColor, fontWeight: 500 }}>
-                <a href={`/profil/${post.profiles?.username}`} style={{color:"inherit",textDecoration:"none"}}>{post.profiles?.username || "Unbekannt"}</a>
-              </span>
-              {roleLabel && (
-                <span
-                  className="ml-1 px-1 rounded"
-                  style={{ background: `${roleColor}22`, color: roleColor, fontSize: "9px", fontWeight: 700 }}
-                >
-                  {roleLabel}
-                </span>
-              )}
+          <div style={{fontSize:13.5,fontWeight:500,color:T1,marginBottom:4,letterSpacing:"-.013em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{post.title}</div>
+          <div style={{display:"flex",gap:12}}>
+            <span style={{fontSize:10,color:T3,display:"flex",alignItems:"center",gap:3}}>
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M10 2H2C1.4 2 1 2.4 1 3v5c0 .6.4 1 1 1h1l1.5 1.5L6 9h4c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1z"/></svg>
+              {post.upvotes??0}
             </span>
-            <span style={{ color: "rgba(255,255,255,0.2)", fontSize: "11px" }}>
-              {new Date(post.created_at).toLocaleDateString("de-DE")}
-            </span>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="flex items-center gap-1">
-            <MessageSquare size={11} style={{ color: "rgba(255,255,255,0.3)" }} />
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>{post.reply_count}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Heart size={11} style={{ color: "rgba(255,255,255,0.3)" }} />
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>{post.upvotes}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Eye size={11} style={{ color: "rgba(255,255,255,0.3)" }} />
-            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>{post.view_count}</span>
           </div>
         </div>
       </div>
@@ -329,265 +76,88 @@ function PostRow({ post, categoryId }: { post: Post; categoryId?: string }) {
 }
 
 export default function ForumPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [recentPosts, setRecentPosts] = useState<Post[]>([]);
-  const [hotPosts, setHotPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [categoryPosts, setCategoryPosts] = useState<Post[]>([]);
+  const [posts,setPosts]=useState<Post[]>([]);
+  const [cats,setCats]=useState<Category[]>([]);
+  const [activeCat,setActiveCat]=useState("alle");
+  const [loading,setLoading]=useState(true);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const cat = params.get("category");
-    if (cat) setActiveCategory(cat);
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (activeCategory) loadCategoryPosts(activeCategory);
-    else setCategoryPosts([]);
-  }, [activeCategory]);
-
-  async function loadData() {
-    setLoading(true);
-    try {
-      const [catRes, recentRes, hotRes] = await Promise.all([
-        fetch("/api/forum/categories"),
-        fetch("/api/forum/posts?limit=8&sort=recent"),
-        fetch("/api/forum/posts?limit=5&sort=hot"),
-      ]);
-      const [catData, recentData, hotData] = await Promise.all([
-        catRes.json(),
-        recentRes.json(),
-        hotRes.json(),
-      ]);
-      setCategories(catData.categories || []);
-      setRecentPosts(recentData.posts || []);
-      setHotPosts(hotData.posts || []);
-    } finally {
-      setLoading(false);
+  useEffect(()=>{
+    async function load(){
+      setLoading(true);
+      try{
+        const {createClient}=await import("@/lib/supabase/client");
+        const sb=createClient();
+        const [postsRes,catsRes]=await Promise.all([
+          sb.from("forum_posts")
+            .select("id,title,upvotes,created_at,profiles(username),forum_categories(name)")
+            .order("created_at",{ascending:false}).limit(40),
+          sb.from("forum_categories").select("id,name").order("name"),
+        ]);
+        setPosts(postsRes.data as Post[]??[]);
+        setCats(catsRes.data??[]);
+      }finally{setLoading(false);}
     }
-  }
+    load();
+  },[]);
 
-  async function loadCategoryPosts(catId: string) {
-    const res = await fetch(`/api/forum/posts?category=${catId}&limit=15`);
-    const data = await res.json();
-    setCategoryPosts(data.posts || []);
-  }
+  const filtered=activeCat==="alle"?posts:posts.filter(p=>p.forum_categories?.name===activeCat);
 
-  // Sum up total posts across all categories
-  const totalPosts = categories.reduce((sum, c) => sum + (c.post_count || 0), 0);
+  return(
+    <div style={{minHeight:"80vh",color:T1}}>
+      <div style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
 
-  return (
-    <>
-    <ForumHeader postCount={totalPosts} />
-    <div
-      className="min-h-screen"
-      style={{
-        background: "linear-gradient(180deg, #080010 0%, #0d0020 50%, #050010 100%)",
-        color: "white",
-      }}
-    >
-      {/* Starfield bg */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            "radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 100%), radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.1) 0%, transparent 100%), radial-gradient(1px 1px at 50% 60%, rgba(255,255,255,0.12) 0%, transparent 100%), radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,0.08) 0%, transparent 100%)",
-          backgroundSize: "400px 400px, 300px 300px, 500px 500px, 350px 350px",
-        }}
-      />
-
-      <div className="relative max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-10 text-center">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div
-              style={{
-                width: "40px",
-                height: "1px",
-                background: "linear-gradient(90deg, transparent, #00ffff)",
-              }}
-            />
-            <span style={{ color: "#00ffff", fontSize: "11px", letterSpacing: "0.3em", fontWeight: 600 }}>
-              POKÉDAX
-            </span>
-            <div
-              style={{
-                width: "40px",
-                height: "1px",
-                background: "linear-gradient(90deg, #00ffff, transparent)",
-              }}
-            />
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:28}}>
+          <div>
+            <h1 style={{fontSize:22,fontWeight:500,letterSpacing:"-.03em",color:T1,marginBottom:4}}>Forum</h1>
+            <p style={{fontSize:12,color:T3}}>{posts.length} Beiträge · Community</p>
           </div>
-          <h1
-            className="text-4xl font-black mb-2"
-            style={{
-              background: "linear-gradient(135deg, #ffffff 0%, #c8a0ff 50%, #00ffff 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Community Forum
-          </h1>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px" }}>
-            Tausche, diskutiere und werde Teil der deutschen Pokémon TCG Community
-          </p>
+          <Link href="/forum/new" style={{
+            padding:"9px 18px",borderRadius:9,
+            background:G,color:"#09070E",
+            fontSize:12.5,fontWeight:600,textDecoration:"none",
+            boxShadow:"0 2px 12px rgba(233,168,75,0.2)",
+          }}>+ Beitrag erstellen</Link>
         </div>
 
-        {/* Category Cards Grid */}
-        <div className="mb-10">
-          <h2
-            className="text-sm font-bold uppercase tracking-widest mb-4"
-            style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.2em" }}
-          >
-            Kategorien
-          </h2>
-          {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl animate-pulse"
-                  style={{ background: "rgba(255,255,255,0.05)", aspectRatio: "2.5/3.5", minHeight: "240px" }}
-                />
-              ))}
+        {/* Category tabs */}
+        <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+          {["alle",...cats.map(c=>c.name)].map(cat=>{
+            const active=activeCat===cat;
+            const cs=cat!=="alle"?CAT_STYLE[cat]:null;
+            return(
+              <button key={cat} onClick={()=>setActiveCat(cat)} style={{
+                padding:"5px 14px",borderRadius:7,fontSize:11.5,fontWeight:500,cursor:"pointer",
+                background:active?(cs?cs.bg:G06):"transparent",
+                color:active?(cs?cs.c:G):T3,
+                border:`1px solid ${active?(cs?cs.br:G18):BR1}`,
+                transition:"all .12s",
+              }}>
+                {cat==="alle"?"Alle Kategorien":cat}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Thread list */}
+        <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:20,overflow:"hidden"}}>
+          {loading?(
+            <div style={{padding:"48px",textAlign:"center",color:T3}}>Laden…</div>
+          ):filtered.length===0?(
+            <div style={{padding:"48px",textAlign:"center"}}>
+              <div style={{fontSize:13,color:T3,marginBottom:12}}>Noch keine Beiträge in dieser Kategorie</div>
+              <Link href="/forum/new" style={{fontSize:12,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-              {categories.map((cat) => (
-                <div
-                  key={cat.id}
-                  onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-                  className="cursor-pointer"
-                >
-                  <div
-                    style={{
-                      outline: activeCategory === cat.id
-                        ? `2px solid ${CATEGORY_STYLES[cat.id]?.border || "#00ffff"}`
-                        : "none",
-                      outlineOffset: "3px",
-                      borderRadius: "14px",
-                    }}
-                  >
-                    <HoloCard category={cat} />
-                  </div>
-                </div>
-              ))}
+          ):(
+            filtered.map(post=><ThreadRow key={post.id} post={post}/>)
+          )}
+          {!loading&&filtered.length>0&&(
+            <div style={{padding:"13px 24px",borderTop:`1px solid ${BR1}`,fontSize:12,color:T3}}>
+              {filtered.length} Beiträge
             </div>
           )}
         </div>
-
-        {/* Category posts (when selected) */}
-        {activeCategory && categoryPosts.length > 0 && (
-          <div className="mb-10">
-            <div className="flex items-center justify-between mb-4">
-              <h2
-                className="text-sm font-bold uppercase tracking-widest"
-                style={{ color: CATEGORY_STYLES[activeCategory]?.border || "#00ffff", letterSpacing: "0.2em" }}
-              >
-                {categories.find((c) => c.id === activeCategory)?.name || activeCategory}
-              </h2>
-              <Link
-                href={`/forum/new?category=${activeCategory}`}
-                className="px-3 py-1 rounded-full text-xs font-bold transition-all"
-                style={{
-                  background: `${CATEGORY_STYLES[activeCategory]?.glow || "rgba(0,255,255,0.1)"}`,
-                  border: `1px solid ${CATEGORY_STYLES[activeCategory]?.border || "#00ffff"}`,
-                  color: CATEGORY_STYLES[activeCategory]?.border || "#00ffff",
-                }}
-              >
-                + Neuer Beitrag
-              </Link>
-            </div>
-            <div>
-              {categoryPosts.map((post) => (
-                <PostRow key={post.id} post={post} categoryId={activeCategory} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Two column layout: Recent + Hot */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Posts */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={14} style={{ color: "#00ffff" }} />
-              <h2
-                className="text-sm font-bold uppercase tracking-widest"
-                style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.2em" }}
-              >
-                Neueste Beiträge
-              </h2>
-            </div>
-            <div>
-              {loading
-                ? Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="rounded-lg mb-2 animate-pulse"
-                      style={{ background: "rgba(255,255,255,0.04)", height: "52px" }}
-                    />
-                  ))
-                : recentPosts.map((post) => (
-                    <PostRow key={post.id} post={post} categoryId={post.category_id} />
-                  ))}
-            </div>
-          </div>
-
-          {/* Hot Posts + New Post CTA */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Flame size={14} style={{ color: "#ff4444" }} />
-              <h2
-                className="text-sm font-bold uppercase tracking-widest"
-                style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.2em" }}
-              >
-                Trending
-              </h2>
-            </div>
-            <div className="mb-6">
-              {loading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="rounded-lg mb-2 animate-pulse"
-                      style={{ background: "rgba(255,255,255,0.04)", height: "52px" }}
-                    />
-                  ))
-                : hotPosts.map((post) => (
-                    <PostRow key={post.id} post={post} categoryId={post.category_id} />
-                  ))}
-            </div>
-
-            {/* New Post CTA */}
-            <Link href="/forum/new">
-              <div
-                className="relative overflow-hidden rounded-xl p-4 cursor-pointer group transition-all duration-300 hover:-translate-y-1"
-                style={{
-                  background: "linear-gradient(135deg, #1a0533 0%, #2d0a52 100%)",
-                  border: "1px solid rgba(200, 100, 255, 0.4)",
-                  boxShadow: "0 0 20px rgba(200, 100, 255, 0.15)",
-                }}
-              >
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ background: "linear-gradient(135deg, rgba(200,100,255,0.1), transparent)" }}
-                />
-                <p className="font-bold text-white mb-1" style={{ fontSize: "14px" }}>
-                  Beitrag erstellen
-                </p>
-                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>
-                  Teile deine Gedanken mit der Community
-                </p>
-              </div>
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
-    </>
   );
 }
