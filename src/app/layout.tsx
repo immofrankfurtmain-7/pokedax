@@ -22,12 +22,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de" className={inter.variable}>
-      <body>
+      <body style={{ margin: 0 }}>
+        {/* Canvas sits behind everything at z-index 0 */}
         <BackgroundCanvas intensity="medium" />
-        <Navbar />
-        <PriceTicker />
-        <main>{children}</main>
-        <Footer />
+        {/* All page content needs z-index > 0 to appear above canvas */}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <Navbar />
+          <PriceTicker />
+          <main>{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   );
