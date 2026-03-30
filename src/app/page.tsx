@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-const G = "#E8B02F";           // edleres, wärmeres Gold
+const G = "#E8B02F";
 const G20 = "rgba(232,176,47,0.20)";
 const G12 = "rgba(232,176,47,0.12)";
 const G07 = "rgba(232,176,47,0.07)";
@@ -161,7 +161,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PRICING – die gewünschten Abo-Boxen */}
+      {/* PRICING – die Abo-Boxen */}
       <section style={{ padding: "60px 24px", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
 
