@@ -136,12 +136,12 @@ export default function Navbar() {
                 )}
                 <div style={{ position: "relative" }}>
                   {profile.avatar_url ? (
-                    <Link href={`/profil/${profile.username}`} style={{ display: "flex" }}>
+                    <Link href="/dashboard" style={{ display: "flex" }}>
                     <img src={profile.avatar_url} alt={profile.username}
                       style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", border: `2px solid ${roleColor}`, cursor: "pointer" }} />
                   </Link>
                   ) : (
-                    <Link href={`/profil/${profile.username}`} style={{ display: "flex" }}>
+                    <Link href="/dashboard" style={{ display: "flex" }}>
                     <div style={{
                       width: 30, height: 30, borderRadius: "50%",
                       background: `${roleColor}20`, border: `2px solid ${roleColor}`,
