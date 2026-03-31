@@ -30,7 +30,6 @@ const TYPE_COLOR: Record<string, string> = {
 };
 
 export default function HomePage() {
-  // Dummy-Daten – später durch echte Supabase-Abfragen ersetzen
   const stats = { cards: 22271, users: 3841, scans: 1247, forum: 18330 };
   const cards = [
     { id: 1, name: "Glurak ex", set_id: "SV01", number: "006", price_market: 189.90, types: ["Fire"] },
@@ -139,7 +138,6 @@ export default function HomePage() {
       {/* SCANNER + PORTFOLIO */}
       <section style={{ padding: "40px 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          {/* Scanner */}
           <div style={{ background: B2, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 32 }}>
             <h2 style={{ fontSize: 22, marginBottom: 12 }}>Foto machen. Preis wissen.</h2>
             <div style={{
@@ -153,7 +151,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Portfolio */}
           <div style={{ background: B2, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 32 }}>
             <div style={{ fontSize: 42, fontWeight: 550, letterSpacing: "-0.04em" }}>2.847€</div>
             <p style={{ color: "#4AC18A", marginTop: 8 }}>+18,4 % in 30 Tagen</p>
@@ -165,14 +162,12 @@ export default function HomePage() {
       <section style={{ padding: "60px 24px", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
 
-          {/* Free */}
           <div style={{ background: B2, border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: 32 }}>
             <div style={{ fontSize: 13, color: "#888" }}>Free</div>
             <div style={{ fontSize: 36, fontWeight: 550, margin: "12px 0" }}>0€</div>
             <button style={{ width: "100%", padding: 14, borderRadius: 12, background: "#222", color: "#aaa" }}>Kostenlos starten</button>
           </div>
 
-          {/* Premium */}
           <div style={{
             background: B2,
             border: "2px solid #E8B02F",
@@ -199,7 +194,6 @@ export default function HomePage() {
             <button style={{ width: "100%", padding: 14, borderRadius: 12, background: "#E8B02F", color: "#0A0800", fontWeight: 600 }}>Premium werden</button>
           </div>
 
-          {/* Händler */}
           <div style={{ background: B2, border: "1px solid rgba(232,176,47,0.3)", borderRadius: 20, padding: 32 }}>
             <div style={{ fontSize: 13, color: "#E8B02F", marginBottom: 8 }}>Händler</div>
             <div style={{ fontSize: 36, fontWeight: 550 }}>19,99€</div>
