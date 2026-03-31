@@ -93,13 +93,7 @@ export default function ForumPage() {
             .order("created_at",{ascending:false}).limit(40),
           sb.from("forum_categories").select("id,name").order("name"),
         ]);
-        setPosts(
-  (postsRes?.data ?? []).map((p: any) => ({
-    ...p,
-    profiles: p.profiles?.[0] || { username: "Anonym" }
-  })) as Post[]
-);
-
+        setPosts(postsRes.data as Post[]??[]);
         setCats(catsRes.data??[]);
       }finally{setLoading(false);}
     }
