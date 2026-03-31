@@ -21,12 +21,10 @@ const TYPE_COLORS: Record<string, string> = {
   Colorless: "#CBD5E1",
 };
 
-// Section divider
 const Divider = () => (
   <div style={{ height: 1, background: "rgba(255,255,255,0.055)", margin: "0 24px" }} />
 );
 
-// Feature row for pricing
 function Feat({ text, off }: { text: string; off?: boolean }) {
   return (
     <div style={{
@@ -209,7 +207,6 @@ export default async function HomePage() {
           </Link>
         </div>
 
-        {/* Stats Bar */}
         <div style={{
           display: "inline-grid",
           gridTemplateColumns: "repeat(4, 1fr)",
