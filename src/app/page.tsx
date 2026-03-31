@@ -161,7 +161,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PRICING – die Abo-Boxen */}
+      {/* PRICING – Abo-Boxen */}
       <section style={{ padding: "60px 24px", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
 
