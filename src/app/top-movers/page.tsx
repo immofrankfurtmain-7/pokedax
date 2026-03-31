@@ -1,138 +1,239 @@
-﻿"use client";
-import { useState, useEffect } from "react";
+﻿import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { TrendingUp, TrendingDown, ArrowLeft, Flame, ExternalLink } from "lucide-react";
+import type { Metadata } from "next";
 
-const B1="#0C0C1A",B2="#101020",B3="#161628";
-const BR1="rgba(255,255,255,0.048)",BR2="rgba(255,255,255,0.080)";
-const T1="#EDEAF6",T2="#8A89A8",T3="#454462";
-const G="#E9A84B";
-const GREEN="#4BBF82",RED="#E04558";
+export const revalidate = 3600; // stündlich neu
+
+export const metadata: Metadata = {
+  title: "Top Movers – Größte Preisbewegungen | PokéDax",
+  description: "Pokémon TCG Karten mit den größten Preisveränderungen heute. Live Cardmarket EUR Preise – täglich aktualisiert.",
+  openGraph: {
+    title:       "Top Movers – Pokémon TCG Preisbewegungen",
+    description: "Welche Karten steigen gerade? Live Cardmarket EUR Daten.",
+    type:        "website",
+  },
+};
 
 interface Card {
-  id:string;name:string;name_de?:string|null;set_id:string;number:string;
-  image_url:string|null;price_market:number|null;price_avg7:number|null;price_avg30:number|null;
-  types?:string[]|null;rarity?:string|null;
+  id: string; name: string; name_de?: string | null; set_id: string; number: string;
+  rarity: string | null; types: string[] | null; image_url: string | null;
+  price_market: number | null; price_avg7: number | null; price_avg30: number | null;
+  price_low: number | null; pct?: number;
 }
 
-function Sparkline({pct,up}:{pct:number;up:boolean}) {
-  const color=up?GREEN:RED;
-  const path=up
-    ?"M0 20 C10 18,20 15,30 12 S45 8,60 5"
-    :"M0 5 C10 7,20 10,30 14 S45 18,60 20";
-  return(
-    <svg width="60" height="24" viewBox="0 0 60 24" fill="none">
-      <path d={path} stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
+const TYPE_COLORS: Record<string, string> = {
+  Fire:"#F97316", Water:"#3B82F6", Grass:"#22C55E", Lightning:"#FACC15",
+  Psychic:"#A855F7", Fighting:"#EF4444", Darkness:"#6B7280", Metal:"#9CA3AF",
+  Dragon:"#7C3AED", Colorless:"#CBD5E1",
+};
+
+function getPct(avg7: number | null, avg30: number | null): number | null {
+  if (!avg7 || !avg30 || avg30 === 0) return null;
+  return ((avg7 - avg30) / avg30) * 100;
+}
+
+function CardRow({ card, rank }: { card: Card; rank: number }) {
+  const pct      = getPct(card.price_avg7, card.price_avg30);
+  const positive = (pct ?? 0) >= 0;
+  const typeColor = card.types?.[0] ? (TYPE_COLORS[card.types[0]] || "#475569") : "#475569";
+  const imgUrl   = card.image_url || `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 16, padding: "14px 20px",
+      background: "rgba(255,255,255,0.03)", border: `1px solid ${typeColor}18`,
+      borderRadius: 14, marginBottom: 8, transition: "all .2s",
+    }}
+    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLDivElement).style.borderColor = typeColor + "35"; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.03)"; (e.currentTarget as HTMLDivElement).style.borderColor = typeColor + "18"; }}
+    >
+      {/* Rank */}
+      <div style={{
+        width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: rank <= 3 ? "rgba(250,204,21,0.15)" : "rgba(255,255,255,0.05)",
+        border: rank <= 3 ? "1px solid rgba(250,204,21,0.3)" : "1px solid rgba(255,255,255,0.08)",
+        fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 14,
+        color: rank <= 3 ? "#FACC15" : "rgba(255,255,255,0.4)",
+      }}>#{rank}</div>
+
+      {/* Image */}
+      <div style={{ width: 44, height: 60, borderRadius: 6, overflow: "hidden", flexShrink: 0, background: `${typeColor}15` }}>
+        <img src={imgUrl} alt={card.name}
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+        />
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 700, fontSize: 15, color: "white", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {card.name_de || card.name}
+        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{card.set_id?.toUpperCase()} · #{card.number}</span>
+          {card.rarity && (
+            <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}>
+              {card.rarity}
+            </span>
+          )}
+          {card.types?.[0] && (
+            <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: `${typeColor}20`, color: typeColor }}>
+              {card.types[0]}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Price + Change */}
+      <div style={{ textAlign: "right", flexShrink: 0 }}>
+        <p style={{ fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: 18, color: "#00E5FF", lineHeight: 1, marginBottom: 4 }}>
+          {card.price_market?.toFixed(2)}€
+        </p>
+        {pct !== null && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, fontSize: 13, fontWeight: 700, color: positive ? "#22C55E" : "#EE1515" }}>
+            {positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+            {positive ? "+" : ""}{pct.toFixed(1)}%
+          </div>
+        )}
+        {card.price_avg30 && (
+          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>
+            vs. 30T Ø {card.price_avg30.toFixed(2)}€
+          </p>
+        )}
+      </div>
+
+      {/* Cardmarket link */}
+      <a
+        href={`https://www.cardmarket.com/de/Pokemon/Cards?searchString=${encodeURIComponent(card.name)}`}
+        target="_blank" rel="noreferrer"
+        style={{ color: "rgba(255,255,255,0.2)", flexShrink: 0, display: "flex" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <ExternalLink size={14} />
+      </a>
+    </div>
   );
 }
 
-export default function TopMoversPage() {
-  const [cards,setCards]=useState<Card[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [period,setPeriod]=useState<"7d"|"30d">("7d");
+export default async function TopMoversPage() {
+  const supabase = await createClient();
 
-  useEffect(()=>{
-    async function load(){
-      setLoading(true);
-      try{
-        const {createClient}=await import("@/lib/supabase/client");
-        const sb=createClient();
-        const {data}=await sb.from("cards")
-          .select("id,name,name_de,set_id,number,image_url,price_market,price_avg7,price_avg30,types,rarity")
-          .not("price_market","is",null)
-          .gt("price_market",1)
-          .order("price_market",{ascending:false})
-          .limit(50);
-        setCards(data??[]);
-      }finally{setLoading(false);}
-    }
-    load();
-  },[]);
-
-  const withPct=cards.map(c=>{
-    const base=period==="7d"?c.price_avg7:c.price_avg30;
-    const pct=base&&base>0?((c.price_market??0)-base)/base*100:null;
-    return{...c,pct};
-  }).filter(c=>c.pct!==null).sort((a,b)=>Math.abs(b.pct!)-Math.abs(a.pct!));
-
-  const gainers=withPct.filter(c=>(c.pct??0)>=0).slice(0,15);
-  const losers=withPct.filter(c=>(c.pct??0)<0).slice(0,15);
-
-  function CardRow({card}:{card:typeof withPct[0]}) {
-    const img=card.image_url??`https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
-    const name=card.name_de??card.name;
-    const up=(card.pct??0)>=0;
-    return(
-      <Link href={`/preischeck?q=${encodeURIComponent(card.name)}`} style={{textDecoration:"none"}}>
-        <div style={{
-          display:"flex",alignItems:"center",gap:12,
-          padding:"12px 20px",
-          borderBottom:`1px solid rgba(255,255,255,0.038)`,
-          transition:"background .1s",cursor:"pointer",
-        }}
-        onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.015)";}}
-        onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img} alt={name} width={36} height={50} style={{objectFit:"contain",borderRadius:4,flexShrink:0}}/>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:12.5,fontWeight:500,color:T1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{name}</div>
-            <div style={{fontSize:9.5,color:T3,marginTop:1}}>{card.set_id.toUpperCase()}</div>
-          </div>
-          <Sparkline pct={card.pct!} up={up}/>
-          <div style={{textAlign:"right",minWidth:52}}>
-            <div style={{fontSize:11,fontWeight:600,color:up?GREEN:RED}}>{up?"+":""}{card.pct!.toFixed(1)}%</div>
-            <div style={{fontSize:11,fontWeight:500,fontFamily:"'DM Mono',monospace",color:G,marginTop:1}}>{Number(card.price_market).toFixed(2)}€</div>
-          </div>
-        </div>
-      </Link>
-    );
+  // Fetch cards with price data - safe with error handling
+  let allCards: Card[] = [];
+  try {
+    // Fetch cards with prices - try to get ones with trend data first
+    const { data, error } = await supabase
+      .from("cards")
+      .select("id, name, name_de, set_id, number, rarity, types, image_url, price_market, price_avg7, price_avg30, price_low")
+      .not("price_market", "is", null)
+      .gt("price_market", 2)
+      .order("price_market", { ascending: false })
+      .limit(500);
+    if (!error && data) allCards = data;
+  } catch (e) {
+    console.error("Top movers fetch error:", e);
   }
 
-  return(
-    <div style={{minHeight:"80vh",color:T1}}>
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"32px 24px"}}>
+  // Cards WITH trend data (avg7 vs avg30)
+  const withTrend = allCards
+    .filter(c => c.price_avg7 && c.price_avg30 && c.price_avg30 > 0)
+    .map(c => ({ ...c, pct: getPct(c.price_avg7, c.price_avg30) ?? 0 }))
+    .filter(c => Math.abs(c.pct) > 0.5);
 
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:28}}>
-          <div>
-            <h1 style={{fontSize:22,fontWeight:500,letterSpacing:"-.03em",color:T1,marginBottom:4}}>Top Movers</h1>
-            <p style={{fontSize:12,color:T3}}>Größte Preisbewegungen · Cardmarket EUR</p>
-          </div>
-          <div style={{display:"flex",gap:3,background:B2,border:`1px solid ${BR2}`,borderRadius:9,padding:3}}>
-            {(["7d","30d"] as const).map(p=>(
-              <button key={p} onClick={()=>setPeriod(p)} style={{
-                padding:"5px 14px",borderRadius:6,fontSize:11,fontWeight:500,cursor:"pointer",border:"none",
-                background:period===p?B3:B2,color:period===p?T1:T3,
-                transition:"all .12s",
-              }}>{p==="7d"?"7 Tage":"30 Tage"}</button>
-            ))}
+  // Fallback: cards without trend data - use market vs low as rough indicator
+  const withoutTrend = allCards
+    .filter(c => !c.price_avg7 || !c.price_avg30)
+    .map(c => ({
+      ...c,
+      pct: c.price_market && c.price_low && c.price_low > 0
+        ? ((c.price_market - c.price_low) / c.price_low) * 100
+        : 0
+    }));
+
+  // Combine: prefer trend data, fill with fallback
+  const allWithPct = withTrend.length >= 10
+    ? withTrend
+    : [...withTrend, ...withoutTrend.filter(c => Math.abs(c.pct) > 1)];
+
+  const topGainers = [...allWithPct].sort((a, b) => b.pct - a.pct).slice(0, 20);
+  const topLosers  = [...allWithPct].sort((a, b) => a.pct - b.pct).slice(0, 10);
+
+  return (
+    <div style={{ minHeight: "100vh", color: "white" }}>
+      {/* Header */}
+      <div style={{ background: "rgba(10,10,10,0.95)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "20px 20px 16px", position: "sticky", top: 88, zIndex: 30 }}>
+        <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(34,197,94,0.5), transparent)", marginBottom: 16 }} />
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "rgba(255,255,255,0.3)", fontSize: 13, textDecoration: "none", marginBottom: 12 }}>
+            <ArrowLeft size={14} /> Startseite
+          </Link>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <Flame size={14} style={{ color: "#EE1515" }} />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#EE1515", letterSpacing: "0.15em", textTransform: "uppercase" }}>Live Cardmarket EUR</span>
+              </div>
+              <h1 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 900, fontSize: "clamp(24px, 4vw, 36px)", letterSpacing: "-0.02em" }}>
+                Top Movers
+              </h1>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, marginTop: 4 }}>
+                Größte Preisbewegungen · 7-Tage vs. 30-Tage Durchschnitt
+              </p>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", marginBottom: 2 }}>Stündlich aktualisiert</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)" }}>{topGainers.length + topLosers.length} Karten analysiert</div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {loading?(
-          <div style={{textAlign:"center",padding:"64px",color:T3}}>Lade Daten…</div>
-        ):(
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            {/* Gainers */}
-            <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:20,overflow:"hidden"}}>
-              <div style={{padding:"16px 20px",borderBottom:`1px solid ${BR1}`}}>
-                <div style={{fontSize:13,fontWeight:500,color:GREEN}}>▲ Größte Gewinner</div>
-                <div style={{fontSize:10,color:T3,marginTop:2}}>{period==="7d"?"7 Tage":"30 Tage"} · {gainers.length} Karten</div>
-              </div>
-              {gainers.length>0
-                ?gainers.map(c=><CardRow key={c.id} card={c}/>)
-                :<div style={{padding:"32px",textAlign:"center",color:T3,fontSize:12}}>Keine Daten für diesen Zeitraum</div>}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 20px" }}>
+
+        {/* Top Gainers */}
+        <div style={{ marginBottom: 48 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <div style={{ width: 4, height: 24, borderRadius: 2, background: "#22C55E" }} />
+            <div>
+              <h2 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 20, color: "white" }}>
+                🚀 Größte Gewinner
+              </h2>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>Stärkste Preissteigerung der letzten 7 Tage</p>
             </div>
-            {/* Losers */}
-            <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:20,overflow:"hidden"}}>
-              <div style={{padding:"16px 20px",borderBottom:`1px solid ${BR1}`}}>
-                <div style={{fontSize:13,fontWeight:500,color:RED}}>▼ Größte Verlierer</div>
-                <div style={{fontSize:10,color:T3,marginTop:2}}>{period==="7d"?"7 Tage":"30 Tage"} · {losers.length} Karten</div>
-              </div>
-              {losers.length>0
-                ?losers.map(c=><CardRow key={c.id} card={c}/>)
-                :<div style={{padding:"32px",textAlign:"center",color:T3,fontSize:12}}>Keine Daten für diesen Zeitraum</div>}
+          </div>
+
+          {topGainers.length === 0 ? (
+            <div style={{ padding: "40px 0", textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 14 }}>
+              Noch keine Daten verfügbar
             </div>
+          ) : (
+            topGainers.map((card, i) => (
+              <Link key={card.id} href={`/preischeck?q=${encodeURIComponent(card.name)}`} style={{ display: "block", textDecoration: "none" }}>
+                <CardRow card={card} rank={i + 1} />
+              </Link>
+            ))
+          )}
+        </div>
+
+        {/* Top Losers */}
+        {topLosers.length > 0 && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+              <div style={{ width: 4, height: 24, borderRadius: 2, background: "#EE1515" }} />
+              <div>
+                <h2 style={{ fontFamily: "Poppins, sans-serif", fontWeight: 800, fontSize: 20, color: "white" }}>
+                  📉 Stärkste Verlierer
+                </h2>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>Stärkster Preisrückgang der letzten 7 Tage</p>
+              </div>
+            </div>
+            {topLosers.map((card, i) => (
+              <Link key={card.id} href={`/preischeck?q=${encodeURIComponent(card.name)}`} style={{ display: "block", textDecoration: "none" }}>
+                <CardRow card={card} rank={i + 1} />
+              </Link>
+            ))}
           </div>
         )}
       </div>

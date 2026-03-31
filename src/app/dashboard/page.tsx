@@ -1,191 +1,245 @@
 ﻿"use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import {
+  TrendingUp, TrendingDown, Heart, Package,
+  Bell, Crown, Settings, ExternalLink, Plus
+} from "lucide-react";
 
-const B1="#0C0C1A",B2="#101020",B3="#161628",B4="#1E1E38";
-const BR1="rgba(255,255,255,0.048)",BR2="rgba(255,255,255,0.080)";
-const T1="#EDEAF6",T2="#8A89A8",T3="#454462";
-const G="#E9A84B",G18="rgba(233,168,75,0.18)",G06="rgba(233,168,75,0.06)";
-const GREEN="#4BBF82",RED="#E04558";
-
+interface Profile {
+  id: string; username: string; avatar_url?: string;
+  is_premium: boolean; created_at: string;
+}
 interface CollectionCard {
-  id:string;card_id:string;quantity:number;condition?:string;
-  cards?:{name:string;name_de?:string;image_url?:string;price_market?:number;set_id:string;number:string};
+  id: string; quantity: number;
+  cards: { name: string; name_de?: string; image_url?: string; price_market?: number; set_id: string; number: string; };
+}
+interface WishlistCard {
+  id: string;
+  cards: { name: string; name_de?: string; image_url?: string; price_market?: number; set_id: string; number: string; };
 }
 
-function StatCard({label,value,sub,color}:{label:string;value:string;sub?:string;color?:string}) {
-  return(
-    <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:14,padding:"16px 18px"}}>
-      <div style={{fontSize:9.5,color:T3,marginBottom:6,letterSpacing:".04em",textTransform:"uppercase",fontWeight:600}}>{label}</div>
-      <div style={{fontSize:24,fontWeight:550,letterSpacing:"-.035em",color:color??T1,lineHeight:1}}>{value}</div>
-      {sub&&<div style={{fontSize:10,color:T3,marginTop:4}}>{sub}</div>}
-    </div>
-  );
-}
+const STAT_CARDS = [
+  { key: "portfolio",  label: "Portfolio-Wert",   color: "#FACC15", icon: <TrendingUp size={18}/> },
+  { key: "cards",      label: "Karten",            color: "#00E5FF", icon: <Package size={18}/>    },
+  { key: "wishlist",   label: "Wunschliste",       color: "#A855F7", icon: <Heart size={18}/>      },
+  { key: "scans",      label: "Scans heute",       color: "#22C55E", icon: <Bell size={18}/>       },
+];
 
 export default function DashboardPage() {
-  const [user,setUser]=useState<any>(null);
-  const [profile,setProfile]=useState<any>(null);
-  const [collection,setCollection]=useState<CollectionCard[]>([]);
-  const [wishlist,setWishlist]=useState<any[]>([]);
-  const [tab,setTab]=useState<"sammlung"|"wunschliste"|"scans">("sammlung");
-  const [loading,setLoading]=useState(true);
+  const [profile,    setProfile]    = useState<Profile | null>(null);
+  const [collection, setCollection] = useState<CollectionCard[]>([]);
+  const [wishlist,   setWishlist]   = useState<WishlistCard[]>([]);
+  const [scansToday, setScansToday] = useState(0);
+  const [loading,    setLoading]    = useState(true);
 
-  useEffect(()=>{
-    async function load(){
-      const {createClient}=await import("@/lib/supabase/client");
-      const sb=createClient();
-      const {data:{user}}=await sb.auth.getUser();
-      if(!user){window.location.href="/auth/login";return;}
-      setUser(user);
-      const [profRes,colRes,wishRes]=await Promise.all([
-        sb.from("profiles").select("*").eq("id",user.id).single(),
-        sb.from("user_collection").select("*,cards(name,name_de,image_url,price_market,set_id,number)").eq("user_id",user.id).limit(40),
-        sb.from("user_wishlist").select("*,cards(name,name_de,image_url,price_market,set_id,number)").eq("user_id",user.id).limit(40),
+  useEffect(() => {
+    const sb = createClient();
+    sb.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) { setLoading(false); return; }
+
+      const [profRes, colRes, wishRes, scanRes] = await Promise.all([
+        sb.from("profiles").select("*").eq("id", user.id).single(),
+        sb.from("user_collection")
+          .select("id, quantity, cards(name, name_de, image_url, price_market, set_id, number)")
+          .eq("user_id", user.id).limit(12),
+        sb.from("user_wishlist")
+          .select("id, cards(name, name_de, image_url, price_market, set_id, number)")
+          .eq("user_id", user.id).limit(8),
+        sb.from("scan_logs")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .gte("created_at", new Date().toISOString().split("T")[0]),
       ]);
-      setProfile(profRes.data);
-      setCollection(colRes.data??[]);
-      setWishlist(wishRes.data??[]);
+
+      if (profRes.data)  setProfile(profRes.data);
+      if (colRes.data)   setCollection(colRes.data as any);
+      if (wishRes.data)  setWishlist(wishRes.data as any);
+      if (scanRes.count) setScansToday(scanRes.count);
       setLoading(false);
-    }
-    load();
-  },[]);
+    });
+  }, []);
 
-  const totalValue=collection.reduce((acc,c)=>acc+(c.cards?.price_market??0)*(c.quantity??1),0);
-  const wishValue=wishlist.reduce((acc,w)=>acc+(w.cards?.price_market??0),0);
+  const portfolioValue = collection.reduce((sum, c) => {
+    return sum + (c.cards?.price_market || 0) * (c.quantity || 1);
+  }, 0);
 
-  if(loading)return(
-    <div style={{minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center",color:T3}}>
-      Lade Dashboard…
+  const stats = {
+    portfolio: `${portfolioValue.toFixed(0)}€`,
+    cards:     collection.length.toString(),
+    wishlist:  wishlist.length.toString(),
+    scans:     scansToday.toString(),
+  };
+
+  const accentColor = profile?.is_premium ? "#FACC15" : "#00E5FF";
+
+  if (loading) return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"60vh" }}>
+      <div style={{ animation:"spin 1s linear infinite", width:40, height:40 }}>
+        <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#EE1515"/><path d="M2 20 A18 18 0 0 1 38 20Z" fill="white"/><rect x="2" y="18" width="36" height="4" fill="#111"/><circle cx="20" cy="20" r="6" fill="#111"/><circle cx="20" cy="20" r="3.5" fill="white"/></svg>
+      </div>
+      <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 
-  return(
-    <div style={{minHeight:"80vh",color:T1}}>
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"32px 24px"}}>
+  if (!profile) return (
+    <div style={{ textAlign:"center", padding:"80px 20px", color:"white" }}>
+      <p style={{ marginBottom:16, color:"rgba(255,255,255,0.4)" }}>Du bist nicht eingeloggt.</p>
+      <Link href="/auth/login" style={{ padding:"10px 24px", borderRadius:12, background:"#EE1515", color:"white", textDecoration:"none", fontWeight:700 }}>Einloggen</Link>
+    </div>
+  );
 
-        {/* Header with user card */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:12,marginBottom:28,alignItems:"start"}}>
-          <div>
-            <h1 style={{fontSize:22,fontWeight:500,letterSpacing:"-.03em",color:T1,marginBottom:4}}>
-              Willkommen, {profile?.username??user?.email?.split("@")[0]}
-            </h1>
-            <p style={{fontSize:12,color:T3}}>
-              {profile?.is_premium?"✦ Premium-Mitglied":"Free-Mitglied"} · Mitglied seit {new Date(user?.created_at).toLocaleDateString("de-DE",{month:"long",year:"numeric"})}
-            </p>
-          </div>
-          {!profile?.is_premium&&(
-            <Link href="/dashboard/premium" style={{
-              padding:"9px 18px",borderRadius:9,
-              background:G06,color:G,border:`1px solid ${G18}`,
-              fontSize:12,fontWeight:500,textDecoration:"none",whiteSpace:"nowrap",
-            }}>✦ Premium werden</Link>
-          )}
-        </div>
+  return (
+    <div style={{ minHeight:"100vh", color:"white" }}>
+      <div style={{ height:2, background:`linear-gradient(90deg,transparent,${accentColor},transparent)` }} />
+      <div style={{ maxWidth:1100, margin:"0 auto", padding:"32px 20px" }}>
 
-        {/* Stats row */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:24}}>
-          <StatCard label="Sammlungswert" value={`${totalValue.toFixed(0)}€`} color={G}/>
-          <StatCard label="Karten gesamt" value={collection.reduce((a,c)=>a+(c.quantity??1),0).toString()}/>
-          <StatCard label="Wunschliste" value={`${wishValue.toFixed(0)}€`} sub={`${wishlist.length} Karten`}/>
-          <StatCard label="Sets" value={new Set(collection.map(c=>c.cards?.set_id)).size.toString()} sub="verschiedene Sets"/>
-        </div>
-
-        {/* Sparkline */}
-        <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"18px 20px",marginBottom:20}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:32, flexWrap:"wrap", gap:12 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={profile.username}
+                style={{ width:64, height:64, borderRadius:"50%", border:`3px solid ${accentColor}`, boxShadow:`0 0 20px ${accentColor}40` }} />
+            ) : (
+              <div style={{ width:64, height:64, borderRadius:"50%", background:`${accentColor}20`, border:`3px solid ${accentColor}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, fontWeight:900, color:accentColor, fontFamily:"Poppins,sans-serif" }}>
+                {profile.username?.[0]?.toUpperCase()}
+              </div>
+            )}
             <div>
-              <div style={{fontSize:10,color:T3,marginBottom:2}}>Portfolio-Entwicklung</div>
-              <div style={{fontSize:26,fontWeight:550,letterSpacing:"-.04em",color:T1}}>{totalValue.toFixed(0)}€</div>
+              <h1 style={{ fontFamily:"Poppins,sans-serif", fontWeight:900, fontSize:24, letterSpacing:"-0.02em", marginBottom:4 }}>
+                Hey, {profile.username}! 👋
+              </h1>
+              <div style={{ display:"flex", gap:8 }}>
+                {profile.is_premium && (
+                  <span style={{ display:"flex", alignItems:"center", gap:4, padding:"2px 10px", borderRadius:20, background:"rgba(250,204,21,0.15)", border:"1px solid rgba(250,204,21,0.3)", color:"#FACC15", fontSize:11, fontWeight:700 }}>
+                    <Crown size={10}/> Premium
+                  </span>
+                )}
+                <Link href={`/profil/${profile.username}`} style={{ display:"flex", alignItems:"center", gap:4, padding:"2px 10px", borderRadius:20, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.5)", fontSize:11, textDecoration:"none" }}>
+                  <ExternalLink size={10}/> Öffentliches Profil
+                </Link>
+              </div>
             </div>
-            <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:5,fontSize:11,fontWeight:500,color:GREEN,background:"rgba(75,191,130,0.08)",border:"1px solid rgba(75,191,130,0.15)"}}>▲ +0,0% · 30T</div>
           </div>
-          <svg width="100%" height="48" viewBox="0 0 600 48" preserveAspectRatio="none">
-            <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#E9A84B" stopOpacity=".18"/><stop offset="100%" stopColor="#E9A84B" stopOpacity="0"/></linearGradient></defs>
-            <path d="M0 38 C80 36,140 32,200 26 S280 18,340 14 S420 8,480 5 S560 2,600 1 L600 48 L0 48Z" fill="url(#dg)"/>
-            <path d="M0 38 C80 36,140 32,200 26 S280 18,340 14 S420 8,480 5 S560 2,600 1" fill="none" stroke="#E9A84B" strokeWidth="1.5" opacity=".65"/>
-          </svg>
+          <Link href="/dashboard/settings" style={{ display:"flex", alignItems:"center", gap:6, padding:"8px 16px", borderRadius:10, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.12)", color:"rgba(255,255,255,0.6)", fontSize:13, fontWeight:600, textDecoration:"none" }}>
+            <Settings size={14}/> Einstellungen
+          </Link>
         </div>
 
-        {/* Tabs */}
-        <div style={{display:"flex",gap:3,marginBottom:16}}>
-          {(["sammlung","wunschliste","scans"] as const).map(t=>(
-            <button key={t} onClick={()=>setTab(t)} style={{
-              padding:"6px 16px",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer",border:"none",
-              background:tab===t?B3:B2,color:tab===t?T1:T3,
-              transition:"all .12s",
-            }}>
-              {t==="sammlung"?"Sammlung":t==="wunschliste"?"Wunschliste":"Scan-Verlauf"}
-              {t==="sammlung"&&collection.length>0&&<span style={{marginLeft:6,fontSize:10,color:T3}}>({collection.length})</span>}
-              {t==="wunschliste"&&wishlist.length>0&&<span style={{marginLeft:6,fontSize:10,color:T3}}>({wishlist.length})</span>}
-            </button>
+        {/* Stats */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12, marginBottom:32 }}>
+          {STAT_CARDS.map(s => (
+            <div key={s.key} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)", borderRadius:16, padding:"16px 18px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                <div style={{ width:32, height:32, borderRadius:8, background:`${s.color}15`, border:`1px solid ${s.color}25`, display:"flex", alignItems:"center", justifyContent:"center", color:s.color }}>
+                  {s.icon}
+                </div>
+                <span style={{ fontSize:11, fontWeight:600, color:"rgba(255,255,255,0.35)", textTransform:"uppercase", letterSpacing:"0.08em" }}>{s.label}</span>
+              </div>
+              <div style={{ fontFamily:"Poppins,sans-serif", fontWeight:900, fontSize:28, color:s.color, letterSpacing:"-0.02em" }}>
+                {stats[s.key as keyof typeof stats]}
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Content */}
-        {tab==="sammlung"&&(
-          collection.length===0?(
-            <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"48px",textAlign:"center"}}>
-              <div style={{fontSize:14,color:T3,marginBottom:12}}>Sammlung ist noch leer</div>
-              <Link href="/scanner" style={{fontSize:12,color:G,textDecoration:"none"}}>Karte scannen um zu beginnen →</Link>
+        {/* Premium CTA if not premium */}
+        {!profile.is_premium && (
+          <div style={{ background:"linear-gradient(135deg,rgba(250,204,21,0.08),rgba(255,255,255,0.02))", border:"1px solid rgba(250,204,21,0.25)", borderRadius:16, padding:"16px 20px", marginBottom:24, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+            <div>
+              <p style={{ fontFamily:"Poppins,sans-serif", fontWeight:700, fontSize:15, color:"white", marginBottom:2 }}>Upgrade auf Premium</p>
+              <p style={{ fontSize:12, color:"rgba(255,255,255,0.4)" }}>Unlimitierter Scanner, Portfolio-Charts, Preis-Alerts und mehr</p>
             </div>
-          ):(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
-              {collection.map(item=>{
-                const card=item.cards;
-                if(!card)return null;
-                const img=card.image_url??`https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
-                return(
-                  <div key={item.id} style={{background:B2,border:`1px solid ${BR1}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{aspectRatio:"3/4",background:B1,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={card.name_de??card.name} style={{width:"100%",height:"100%",objectFit:"contain",padding:4}}/>
-                      {item.quantity>1&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.7)",color:T1,fontSize:9,fontWeight:600,padding:"2px 5px",borderRadius:4}}>×{item.quantity}</div>}
-                    </div>
-                    <div style={{padding:"9px 11px 11px"}}>
-                      <div style={{fontSize:11.5,fontWeight:500,color:T1,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{card.name_de??card.name}</div>
-                      <div style={{fontSize:13,fontWeight:550,fontFamily:"'DM Mono',monospace",color:G}}>{card.price_market?`${card.price_market.toFixed(2)}€`:"–"}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-        {tab==="wunschliste"&&(
-          wishlist.length===0?(
-            <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"48px",textAlign:"center"}}>
-              <div style={{fontSize:14,color:T3,marginBottom:12}}>Wunschliste ist leer</div>
-              <Link href="/preischeck" style={{fontSize:12,color:G,textDecoration:"none"}}>Karten suchen und hinzufügen →</Link>
-            </div>
-          ):(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
-              {wishlist.map(item=>{
-                const card=item.cards;
-                if(!card)return null;
-                const img=card.image_url??`https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
-                return(
-                  <div key={item.id} style={{background:B2,border:`1px solid ${BR1}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{aspectRatio:"3/4",background:B1,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={card.name_de??card.name} style={{width:"100%",height:"100%",objectFit:"contain",padding:4}}/>
-                    </div>
-                    <div style={{padding:"9px 11px 11px"}}>
-                      <div style={{fontSize:11.5,fontWeight:500,color:T1,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{card.name_de??card.name}</div>
-                      <div style={{fontSize:13,fontWeight:550,fontFamily:"'DM Mono',monospace",color:G}}>{card.price_market?`${card.price_market.toFixed(2)}€`:"–"}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-        {tab==="scans"&&(
-          <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"48px",textAlign:"center"}}>
-            <div style={{fontSize:14,color:T3,marginBottom:12}}>Scan-Verlauf</div>
-            <Link href="/scanner" style={{fontSize:12,color:G,textDecoration:"none"}}>Karte jetzt scannen →</Link>
+            <Link href="/dashboard/premium" style={{ padding:"9px 20px", borderRadius:10, background:"linear-gradient(135deg,#FACC15,#f59e0b)", color:"#000", fontFamily:"Poppins,sans-serif", fontWeight:800, fontSize:13, textDecoration:"none", whiteSpace:"nowrap" }}>
+              👑 6,99€/Mo
+            </Link>
           </div>
         )}
+
+        {/* Collection */}
+        <div style={{ marginBottom:28 }}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+            <h2 style={{ fontFamily:"Poppins,sans-serif", fontWeight:800, fontSize:18, color:"white" }}>
+              🃏 Meine Sammlung
+            </h2>
+            <Link href="/preischeck" style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:8, background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.5)", fontSize:12, textDecoration:"none" }}>
+              <Plus size={12}/> Karte hinzufügen
+            </Link>
+          </div>
+
+          {collection.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"32px 0", border:"1px dashed rgba(255,255,255,0.1)", borderRadius:16 }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>🃏</div>
+              <p style={{ color:"rgba(255,255,255,0.3)", fontSize:14 }}>Noch keine Karten in deiner Sammlung</p>
+              <Link href="/preischeck" style={{ display:"inline-block", marginTop:12, padding:"8px 20px", borderRadius:10, background:"#EE1515", color:"white", textDecoration:"none", fontSize:13, fontWeight:700 }}>
+                Karten suchen
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))", gap:10 }}>
+              {collection.map(c => {
+                const card = c.cards;
+                const imgUrl = card?.image_url || `https://assets.tcgdex.net/en/${card?.set_id}/${card?.number}/low.webp`;
+                return (
+                  <div key={c.id} style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, overflow:"hidden" }}>
+                    <img src={imgUrl} alt={card?.name_de || card?.name}
+                      style={{ width:"100%", aspectRatio:"2.5/3.5", objectFit:"contain", padding:4 }}
+                      onError={e => { (e.target as HTMLImageElement).style.opacity="0.2"; }}
+                    />
+                    <div style={{ padding:"6px 8px" }}>
+                      <p style={{ fontSize:10, fontWeight:700, color:"white", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {card?.name_de || card?.name}
+                      </p>
+                      <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        <span style={{ fontSize:9, color:"rgba(255,255,255,0.3)" }}>×{c.quantity}</span>
+                        {card?.price_market && <span style={{ fontSize:9, color:"#00E5FF", fontWeight:700 }}>{card.price_market.toFixed(2)}€</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Wishlist */}
+        <div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+            <h2 style={{ fontFamily:"Poppins,sans-serif", fontWeight:800, fontSize:18, color:"white" }}>
+              ❤️ Wunschliste
+            </h2>
+          </div>
+
+          {wishlist.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"24px 0", border:"1px dashed rgba(255,255,255,0.08)", borderRadius:16 }}>
+              <p style={{ color:"rgba(255,255,255,0.25)", fontSize:13 }}>Noch keine Karten auf der Wunschliste</p>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))", gap:10 }}>
+              {wishlist.map(w => {
+                const card = w.cards;
+                const imgUrl = card?.image_url || `https://assets.tcgdex.net/en/${card?.set_id}/${card?.number}/low.webp`;
+                return (
+                  <div key={w.id} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(168,85,247,0.2)", borderRadius:12, overflow:"hidden" }}>
+                    <img src={imgUrl} alt={card?.name}
+                      style={{ width:"100%", aspectRatio:"2.5/3.5", objectFit:"contain", padding:4 }}
+                      onError={e => { (e.target as HTMLImageElement).style.opacity="0.2"; }}
+                    />
+                    <div style={{ padding:"6px 8px" }}>
+                      <p style={{ fontSize:10, fontWeight:700, color:"white", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {card?.name_de || card?.name}
+                      </p>
+                      {card?.price_market && <span style={{ fontSize:9, color:"#A855F7", fontWeight:700 }}>{card.price_market.toFixed(2)}€</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

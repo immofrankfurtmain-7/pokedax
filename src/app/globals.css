@@ -4,72 +4,109 @@
 @tailwind utilities;
 
 :root {
-  --b0: #07070F;
-  --b1: #0C0C1A;
-  --b2: #101020;
-  --b3: #161628;
-  --b4: #1E1E38;
-  --br1: rgba(255,255,255,0.048);
-  --br2: rgba(255,255,255,0.080);
-  --br3: rgba(255,255,255,0.125);
-  --t1: #EDEAF6;
-  --t2: #8A89A8;
-  --t3: #454462;
-  --g:   #E9A84B;
-  --g30: rgba(233,168,75,0.30);
-  --g18: rgba(233,168,75,0.18);
-  --g10: rgba(233,168,75,0.10);
-  --g06: rgba(233,168,75,0.06);
-  --g03: rgba(233,168,75,0.03);
-  --green: #4BBF82;
-  --red:   #E04558;
-  --cyan:  #3BBDB6;
-  --ease: cubic-bezier(0.16,1,0.3,1);
-  /* legacy aliases */
-  --bg-base: var(--b0);
-  --bg-1: var(--b1);
-  --bg-2: var(--b2);
-  --bg-3: var(--b3);
-  --bg-4: var(--b4);
-  --br-1: var(--br1);
-  --br-2: var(--br2);
-  --br-3: var(--br3);
-  --tx-1: var(--t1);
-  --tx-2: var(--t2);
-  --tx-3: var(--t3);
-  --gold: var(--g);
-  --gold-18: var(--g18);
-  --gold-06: var(--g06);
+  /* ── Backgrounds (5 levels) ── */
+  --bg-base:  #080810;
+  --bg-1:     #0D0D1A;
+  --bg-2:     #111122;
+  --bg-3:     #181830;
+  --bg-4:     #20203C;
+
+  /* ── Borders ── */
+  --br-1: rgba(255,255,255,0.050);
+  --br-2: rgba(255,255,255,0.085);
+  --br-3: rgba(255,255,255,0.130);
+
+  /* ── Text ── */
+  --tx-1: #EDEAF6;
+  --tx-2: #8C8BAA;
+  --tx-3: #474664;
+
+  /* ── Gold (single accent, 5 intensities) ── */
+  --gold:     #E9A84B;
+  --gold-30:  rgba(233,168,75,0.30);
+  --gold-18:  rgba(233,168,75,0.18);
+  --gold-10:  rgba(233,168,75,0.10);
+  --gold-06:  rgba(233,168,75,0.06);
+
+  /* ── Semantic ── */
+  --green:  #4DBF85;
+  --red:    #E8495A;
+  --cyan:   #3DBFB8;
+
+  /* ── TCG Type Colors ── */
+  --type-fire:      #F97316;
+  --type-water:     #38BDF8;
+  --type-grass:     #4ADE80;
+  --type-lightning: #E9A84B;
+  --type-psychic:   #A855F7;
+  --type-fighting:  #EF4444;
+  --type-darkness:  #6B7280;
+  --type-metal:     #9CA3AF;
+  --type-dragon:    #7C3AED;
+  --type-colorless: #CBD5E1;
+
+  /* ── Radius ── */
+  --r-sm:  6px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-xl:  20px;
+  --r-2xl: 28px;
+
+  /* ── Legacy aliases (for components not yet migrated) ── */
+  --bg:      var(--bg-base);
+  --bg2:     var(--bg-2);
+  --bg3:     var(--bg-3);
+  --bg4:     var(--bg-4);
+  --text:    var(--tx-1);
+  --text2:   var(--tx-2);
+  --text3:   var(--tx-3);
+  --border:  var(--br-1);
+  --border2: var(--br-2);
+  --border3: var(--br-3);
+  --purple:  #A855F7;
 }
 
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+* { box-sizing: border-box; }
+
 body {
-  background: var(--b0);
-  color: var(--t1);
+  background-color: var(--bg-base);
+  color: var(--tx-1);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "kern" 1, "liga" 1;
 }
-::-webkit-scrollbar { width: 5px; height: 5px; }
+
+/* Pokéball loader animation */
+@keyframes pokeball-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes pokeball-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+/* Ticker scroll */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Blink */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.25; }
+}
+
+/* Count-up helper */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--br2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--br3); }
-
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-@keyframes ticker-scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-@keyframes fade-up { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-@keyframes price-flash {
-  0%,100%{background:transparent}
-  50%{background:rgba(233,168,75,0.12)}
-}
-
-/* Global section divider */
-.section-divider {
-  height: 1px;
-  background: var(--br1);
-  margin: 0 24px;
-}
+::-webkit-scrollbar-thumb { background: var(--br-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--br-3); }
