@@ -1,160 +1,146 @@
 ﻿"use client";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
+import { motion } from "framer-motion";
 
-const B0="#07070F",B1="#0C0C1A",B2="#101020",B3="#161628",B4="#1E1E38";
-const BR1="rgba(255,255,255,0.048)",BR2="rgba(255,255,255,0.080)";
-const T1="#EDEAF6",T2="#8A89A8",T3="#454462";
-const G="#E9A84B",G18="rgba(233,168,75,0.18)",G06="rgba(233,168,75,0.06)";
-
+// ── Type Definitions (sauber & realistisch für Supabase) ──
 interface Post {
-  id:string; title:string; content?:string; upvotes:number; created_at:string;
-  profiles?:{username:string};
-  forum_categories?:{name:string;color?:string};
-}
-interface Category { id:string; name:string; }
-
-const CAT_STYLE:Record<string,{c:string;bg:string;br:string}>={
-  Preise:    {c:G,      bg:"rgba(233,168,75,0.07)",  br:G18},
-  News:      {c:G,      bg:"rgba(233,168,75,0.07)",  br:G18},
-  Sammlung:  {c:"#4BBF82",bg:"rgba(75,191,130,0.07)",br:"rgba(75,191,130,0.15)"},
-  Strategie: {c:"#A855F7",bg:"rgba(168,85,247,0.07)",br:"rgba(168,85,247,0.15)"},
-  Tausch:    {c:"#38BDF8",bg:"rgba(56,189,248,0.07)",br:"rgba(56,189,248,0.15)"},
-  "Fake-Check":{c:"#3BBDB6",bg:"rgba(59,189,182,0.07)",br:"rgba(59,189,182,0.15)"},
-};
-
-function timeAgo(dateStr:string):string {
-  const diff=Date.now()-new Date(dateStr).getTime();
-  const m=Math.floor(diff/60000);
-  if(m<1)return"Gerade eben";
-  if(m<60)return`vor ${m} Min.`;
-  const h=Math.floor(m/60);
-  if(h<24)return`vor ${h} Std.`;
-  return`vor ${Math.floor(h/24)} Tagen`;
+  id: string;
+  title: string;
+  upvotes: number;
+  created_at: string;
+  profiles: { username: string } | null;           // ← wichtig: kann null oder Objekt sein
+  forum_categories: { name: string } | null;       // ← wichtig: kann null oder Objekt sein
 }
 
-function ThreadRow({post}:{post:Post}) {
-  const cat=post.forum_categories?.name??"Allgemein";
-  const cs=CAT_STYLE[cat]??{c:T2,bg:"rgba(255,255,255,0.05)",br:BR2};
-  const author=post.profiles?.username??"Anonym";
-  return(
-    <Link href={`/forum/post/${post.id}`} style={{textDecoration:"none"}}>
-      <div style={{
-        display:"flex",alignItems:"flex-start",gap:14,
-        padding:"18px 24px",
-        borderBottom:`1px solid rgba(255,255,255,0.038)`,
-        transition:"background .1s",cursor:"pointer",
-      }}
-      onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.015)";}}
-      onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
-        {/* Avatar */}
-        <div style={{
-          width:32,height:32,borderRadius:9,
-          background:B4,border:`1px solid ${BR2}`,
-          display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:12,fontWeight:600,color:T2,flexShrink:0,marginTop:1,
-        }}>{author[0]?.toUpperCase()}</div>
-
-        {/* Body */}
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
-            <span style={{fontSize:12,fontWeight:500,color:T1}}>{author}</span>
-            <span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:cs.bg,color:cs.c,border:`1px solid ${cs.br}`,letterSpacing:".04em"}}>{cat}</span>
-            <span style={{fontSize:10,color:T3,marginLeft:"auto"}}>{timeAgo(post.created_at)}</span>
-          </div>
-          <div style={{fontSize:13.5,fontWeight:500,color:T1,marginBottom:4,letterSpacing:"-.013em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{post.title}</div>
-          <div style={{display:"flex",gap:12}}>
-            <span style={{fontSize:10,color:T3,display:"flex",alignItems:"center",gap:3}}>
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M10 2H2C1.4 2 1 2.4 1 3v5c0 .6.4 1 1 1h1l1.5 1.5L6 9h4c.6 0 1-.4 1-1V3c0-.6-.4-1-1-1z"/></svg>
-              {post.upvotes??0}
-            </span>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
+interface Category {
+  id: string;
+  name: string;
 }
 
 export default function ForumPage() {
-  const [posts,setPosts]=useState<Post[]>([]);
-  const [cats,setCats]=useState<Category[]>([]);
-  const [activeCat,setActiveCat]=useState("alle");
-  const [loading,setLoading]=useState(true);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [cats, setCats] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(()=>{
-    async function load(){
-      setLoading(true);
-      try{
-        const {createClient}=await import("@/lib/supabase/client");
-        const sb=createClient();
-        const [postsRes,catsRes]=await Promise.all([
-          sb.from("forum_posts")
-            .select("id,title,upvotes,created_at,profiles(username),forum_categories(name)")
-            .order("created_at",{ascending:false}).limit(40),
-          sb.from("forum_categories").select("id,name").order("name"),
-        ]);
-        setPosts(postsRes.data as Post[]??[]);
-        setCats(catsRes.data??[]);
-      }finally{setLoading(false);}
+  useEffect(() => {
+    async function fetchForumData() {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const [postsRes, catsRes] = await Promise.all([
+        supabase
+          .from("forum_posts")
+          .select(`
+            id,
+            title,
+            upvotes,
+            created_at,
+            profiles (username),
+            forum_categories (name)
+          `)
+          .order("created_at", { ascending: false })
+          .limit(20),
+
+        supabase
+          .from("forum_categories")
+          .select("id, name")
+          .order("name"),
+      ]);
+
+      // Typ-Sicherheit: profiles und forum_categories sind bei Supabase oft Arrays → wir nehmen [0]
+      const typedPosts: Post[] = (postsRes.data ?? []).map((p: any) => ({
+        ...p,
+        profiles: p.profiles?.[0] ?? null,                    // Array → erstes Element oder null
+        forum_categories: p.forum_categories?.[0] ?? null,
+      }));
+
+      setPosts(typedPosts);
+      setCats(catsRes.data ?? []);
+      setLoading(false);
     }
-    load();
-  },[]);
 
-  const filtered=activeCat==="alle"?posts:posts.filter(p=>p.forum_categories?.name===activeCat);
+    fetchForumData();
+  }, []);
 
-  return(
-    <div style={{minHeight:"80vh",color:T1}}>
-      <div style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)]">
+        <div className="w-6 h-6 border-2 border-transparent border-t-[var(--g)] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:28}}>
+  return (
+    <div className="bg-[var(--bg-base)] min-h-screen pb-24">
+      <div className="max-w-4xl mx-auto px-6 pt-12">
+        <div className="flex items-end justify-between mb-10">
           <div>
-            <h1 style={{fontSize:22,fontWeight:500,letterSpacing:"-.03em",color:T1,marginBottom:4}}>Forum</h1>
-            <p style={{fontSize:12,color:T3}}>{posts.length} Beiträge · Community</p>
+            <h1 className="text-4xl font-light tracking-tight">Forum</h1>
+            <p className="text-[var(--tx-2)] mt-2">Diskussionen &amp; Erfahrungen der Community</p>
           </div>
-          <Link href="/forum/new" style={{
-            padding:"9px 18px",borderRadius:9,
-            background:G,color:"#09070E",
-            fontSize:12.5,fontWeight:600,textDecoration:"none",
-            boxShadow:"0 2px 12px rgba(233,168,75,0.2)",
-          }}>+ Beitrag erstellen</Link>
+          <Link
+            href="/forum/new"
+            className="px-6 py-3 bg-[var(--g)] text-[#0a0a0a] font-medium rounded-2xl hover:bg-[#f5c16e] transition-colors"
+          >
+            + Neuer Beitrag
+          </Link>
         </div>
 
-        {/* Category tabs */}
-        <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
-          {["alle",...cats.map(c=>c.name)].map(cat=>{
-            const active=activeCat===cat;
-            const cs=cat!=="alle"?CAT_STYLE[cat]:null;
-            return(
-              <button key={cat} onClick={()=>setActiveCat(cat)} style={{
-                padding:"5px 14px",borderRadius:7,fontSize:11.5,fontWeight:500,cursor:"pointer",
-                background:active?(cs?cs.bg:G06):"transparent",
-                color:active?(cs?cs.c:G):T3,
-                border:`1px solid ${active?(cs?cs.br:G18):BR1}`,
-                transition:"all .12s",
-              }}>
-                {cat==="alle"?"Alle Kategorien":cat}
-              </button>
-            );
-          })}
-        </div>
+        <div className="space-y-4">
+          {posts.length === 0 ? (
+            <div className="text-center py-20 text-[var(--tx-3)]">
+              Noch keine Beiträge vorhanden.
+            </div>
+          ) : (
+            posts.map((post) => {
+              const category = post.forum_categories?.name ?? "Allgemein";
+              const username = post.profiles?.username ?? "Anonym";
+              const timeAgo = new Date(post.created_at).toLocaleDateString("de-DE", {
+                day: "2-digit",
+                month: "short",
+              });
 
-        {/* Thread list */}
-        <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:20,overflow:"hidden"}}>
-          {loading?(
-            <div style={{padding:"48px",textAlign:"center",color:T3}}>Laden…</div>
-          ):filtered.length===0?(
-            <div style={{padding:"48px",textAlign:"center"}}>
-              <div style={{fontSize:13,color:T3,marginBottom:12}}>Noch keine Beiträge in dieser Kategorie</div>
-              <Link href="/forum/new" style={{fontSize:12,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
-            </div>
-          ):(
-            filtered.map(post=><ThreadRow key={post.id} post={post}/>)
-          )}
-          {!loading&&filtered.length>0&&(
-            <div style={{padding:"13px 24px",borderTop:`1px solid ${BR1}`,fontSize:12,color:T3}}>
-              {filtered.length} Beiträge
-            </div>
+              return (
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="group bg-[var(--bg-1)] border border-[var(--br-2)] hover:border-[var(--g18)] rounded-3xl p-8 transition-all"
+                >
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-2xl bg-[var(--bg-3)] flex items-center justify-center text-xs font-medium text-[var(--tx-2)]">
+                        {username[0]?.toUpperCase() ?? "?"}
+                      </div>
+                      <div>
+                        <span className="font-medium text-[var(--tx-1)]">{username}</span>
+                        <span className="text-[var(--tx-3)] ml-3 text-xs">{timeAgo}</span>
+                      </div>
+                    </div>
+
+                    <div className="px-4 py-1 text-xs font-medium bg-[var(--g06)] text-[var(--g)] rounded-full border border-[var(--g18)]">
+                      {category}
+                    </div>
+                  </div>
+
+                  <Link href={`/forum/post/${post.id}`} className="block mt-6 group-hover:text-[var(--g)] transition-colors">
+                    <h3 className="text-xl font-medium leading-snug tracking-[-0.2px]">{post.title}</h3>
+                  </Link>
+
+                  <div className="mt-6 flex items-center gap-6 text-xs text-[var(--tx-3)]">
+                    <div className="flex items-center gap-1.5">
+                      <span>↑</span>
+                      <span>{post.upvotes ?? 0}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
           )}
         </div>
       </div>
