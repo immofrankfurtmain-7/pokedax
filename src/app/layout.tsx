@@ -8,25 +8,23 @@ import BackgroundCanvas from "@/components/ui/BackgroundCanvas";
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
   variable: "--font-inter",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "PokéDax – Deutschlands #1 Pokémon TCG Plattform",
-  description: "Live Cardmarket EUR Preise, KI-Scanner, Portfolio und Community. Deutschlands größte Pokémon TCG Plattform.",
-  keywords: ["Pokémon TCG", "Preischeck", "Cardmarket", "Karten Scanner", "Portfolio"],
+  title: "PokéDax – Präzise Pokémon TCG Preise",
+  description: "Live Cardmarket EUR Preise. KI-Scanner. Portfolio. Minimal, edel, immer aktuell.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de" className={inter.variable}>
-      <body style={{ margin: 0 }}>
-        {/* Canvas sits behind everything at z-index 0 */}
+      <body className="bg-[var(--bg-base)] text-[var(--tx-1)] antialiased">
+        {/* Canvas stays behind everything */}
         <BackgroundCanvas intensity="medium" />
-        {/* All page content needs z-index > 0 to appear above canvas */}
-        <div style={{ position: "relative", zIndex: 1 }}>
+
+        <div className="relative z-10">
           <Navbar />
           <PriceTicker />
           <main>{children}</main>
