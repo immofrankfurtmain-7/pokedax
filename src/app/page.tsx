@@ -1,6 +1,9 @@
-﻿import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
+﻿"use client";
+
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { createClient } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
 
 const TYPE_COLORS: Record<string, string> = {
   Fire: "#F97316",
@@ -15,49 +18,12 @@ const TYPE_COLORS: Record<string, string> = {
   Colorless: "#CBD5E1",
 };
 
-async function getData() {
-  try {
-    const sb = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-    const [cardsRes, usersRes, forumCountRes, trendRes, forumRes] = await Promise.all([
-      sb.from("cards").select("*", { count: "exact", head: true }),
-      sb.from("profiles").select("*", { count: "exact", head: true }),
-      sb.from("forum_posts").select("*", { count: "exact", head: true }),
-      sb.from("cards")
-        .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg30,types,rarity")
-        .not("price_market", "is", null)
-        .gt("price_market", 5)
-        .order("price_market", { ascending: false })
-        .limit(8),
-      sb.from("forum_posts")
-        .select("id,title,upvotes,created_at,profiles(username),forum_categories(name)")
-        .order("created_at", { ascending: false })
-        .limit(4),
-    ]);
-
-    return {
-      stats: {
-        cards: cardsRes.count ?? 22271,
-        users: usersRes.count ?? 3841,
-        forum: forumCountRes.count ?? 18330,
-      },
-      cards: trendRes.data ?? [],
-      posts: forumRes.data ?? [],
-    };
-  } catch {
-    return {
-      stats: { cards: 22271, users: 3841, forum: 18330 },
-      cards: [],
-      posts: [],
-    };
-  }
-}
-
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.2 } },
+  visible: { 
+    opacity: 1, 
+    transition: { staggerChildren: 0.12, delayChildren: 0.2 } 
+  },
 };
 
 const itemVariants = {
@@ -65,11 +31,65 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-export default async function HomePage() {
-  const { stats, cards, posts } = await getData();
+export default function HomePage() {
+  const [data, setData] = useState<{
+    stats: { cards: number; users: number; forum: number };
+    cards: any[];
+    posts: any[];
+  }>({
+    stats: { cards: 22271, users: 3841, forum: 18330 },
+    cards: [],
+    posts: [],
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const sb = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // ← Anon Key für Client!
+        );
+
+        const [cardsRes, usersRes, forumCountRes, trendRes, forumRes] = await Promise.all([
+          sb.from("cards").select("*", { count: "exact", head: true }),
+          sb.from("profiles").select("*", { count: "exact", head: true }),
+          sb.from("forum_posts").select("*", { count: "exact", head: true }),
+          sb.from("cards")
+            .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg30,types,rarity")
+            .not("price_market", "is", null)
+            .gt("price_market", 5)
+            .order("price_market", { ascending: false })
+            .limit(8),
+          sb.from("forum_posts")
+            .select("id,title,upvotes,created_at,profiles(username),forum_categories(name)")
+            .order("created_at", { ascending: false })
+            .limit(4),
+        ]);
+
+        setData({
+          stats: {
+            cards: cardsRes.count ?? 22271,
+            users: usersRes.count ?? 3841,
+            forum: forumCountRes.count ?? 18330,
+          },
+          cards: trendRes.data ?? [],
+          posts: forumRes.data ?? [],
+        });
+      } catch (e) {
+        console.error("Failed to fetch homepage data", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  const { stats, cards, posts } = data;
 
   return (
-    <div className="bg-[var(--bg-base)] text-[var(--tx-1)]">
+    <div className="bg-[var(--bg-base)] text-[var(--tx-1)] min-h-screen">
       {/* HERO */}
       <section className="pt-28 pb-24 px-6 max-w-screen-2xl mx-auto">
         <motion.div
@@ -167,6 +187,7 @@ export default async function HomePage() {
               const img = card.image_url ?? `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
               const name = card.name_de ?? card.name;
               const price = card.price_market ? `${Number(card.price_market).toFixed(2)}€` : "—";
+
               return (
                 <motion.div
                   key={card.id}
@@ -175,11 +196,11 @@ export default async function HomePage() {
                   transition={{ type: "spring", stiffness: 400 }}
                   className="group bg-[var(--bg-1)] border border-[var(--br-1)] hover:border-[var(--g18)] rounded-3xl overflow-hidden"
                 >
-                  <div className="aspect-[3/4] bg-[var(--bg-2)] relative flex items-center justify-center">
+                  <div className="aspect-[3/4] bg-[var(--bg-2)] relative flex items-center justify-center overflow-hidden">
                     <img
                       src={img}
                       alt={name}
-                      className="w-full h-full object-contain p-4 transition-transform group-hover:scale-105"
+                      className="w-full h-full object-contain p-4 transition-transform group-hover:scale-105 duration-500"
                     />
                   </div>
                   <div className="px-5 py-5">
@@ -245,7 +266,6 @@ export default async function HomePage() {
                 ))}
               </div>
             </div>
-            {/* Sparkline placeholder – clean SVG */}
             <svg width="100%" height="110" viewBox="0 0 600 110" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-10">
               <path d="M0 85 Q120 70 240 55 Q360 45 480 30 Q600 18 600 18" stroke="var(--g)" strokeWidth="2" strokeOpacity="0.75" />
               <path d="M0 85 Q120 70 240 55 Q360 45 480 30 Q600 18 600 18 L600 110 L0 110 Z" fill="var(--g)" fillOpacity="0.08" />
@@ -298,7 +318,7 @@ export default async function HomePage() {
           </div>
 
           {/* Premium Tier */}
-          <div className="bg-[var(--bg-1)] border border-[var(--g18)] rounded-3xl p-8 flex flex-col relative">
+          <div className="bg-[var(--bg-1)] border border-[var(--g18)] rounded-3xl p-8 flex flex-col relative overflow-hidden">
             <div className="absolute -top-px left-1/2 -translate-x-1/2 bg-[var(--g)] text-[#0a0a0a] text-[10px] font-semibold tracking-widest px-6 py-1 rounded-b-2xl">BELIEBTESTE WAHL</div>
             <div className="uppercase text-xs tracking-widest text-[var(--g)]">Premium</div>
             <div className="mt-auto pt-8">
