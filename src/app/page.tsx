@@ -95,7 +95,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* ELEGANTER LIVE TICKER */}
+      {/* ELEGANTER LIVE TICKER – direkt unter der Navbar */}
       <div className="bg-[var(--bg-1)] border-b border-[var(--br-1)] py-3 overflow-hidden">
         <div className="max-w-screen-2xl mx-auto px-10 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
           <span className="font-medium tracking-widest">LIVE</span>
