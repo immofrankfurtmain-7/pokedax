@@ -42,7 +42,6 @@ async function getData() {
 export default async function HomePage() {
   const { stats, cards } = await getData();
 
-  return (
     {/* EDler LIVE TICKER – direkt unter der Navbar / über Stats */}
       <div className="bg-[var(--bg-1)] border-b border-[var(--br-1)] py-3 overflow-hidden">
         <div className="max-w-screen-2xl mx-auto px-10 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
