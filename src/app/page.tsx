@@ -44,13 +44,24 @@ export default async function HomePage() {
   return (
     <div className="bg-[var(--bg-base)] text-[var(--tx-1)]">
 
-      {/* HERO */}
+      {/* HERO mit edlem Live Ticker oben */}
       <section className="pt-32 pb-28 px-10 max-w-screen-2xl mx-auto">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-3xl border border-[var(--g)]/20 bg-[var(--g)]/5 text-[var(--g)] text-xs font-medium tracking-widest mb-12">
-            LIVE • CARDMARKET EUR • DEUTSCHLAND
+        
+        {/* Edler Live Ticker */}
+        <div className="mb-12">
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl py-3 px-8 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
+              <span className="font-medium tracking-widest">LIVE</span>
+              <span>Charizard ex • 312,80 € • ▲ 4,2 %</span>
+              <span>Gardevoir ex • 189,90 € • ▼ 1,8 %</span>
+              <span>Pikachu VMAX Rainbow • 142,80 € • ▲ 12,7 %</span>
+              <span>Umbreon ex • 134,50 € • ▲ 8,2 %</span>
+              <span>Dragonite ex • 98,40 € • ▼ 0,9 %</span>
+            </div>
           </div>
+        </div>
 
+        <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-[72px] font-light tracking-[-3.2px] leading-[1.04] mb-8">
             Deine Karten.<br />
             Ihr <span className="font-semibold text-[var(--g)]">wahrer</span> Wert.
@@ -95,18 +106,6 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* ELEGANTER LIVE TICKER – direkt unter der Navbar */}
-      <div className="bg-[var(--bg-1)] border-b border-[var(--br-1)] py-3 overflow-hidden">
-        <div className="max-w-screen-2xl mx-auto px-10 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
-          <span className="font-medium tracking-widest">LIVE</span>
-          <span>Charizard ex • 312,80 € • ▲ 4,2 %</span>
-          <span>Gardevoir ex • 189,90 € • ▼ 1,8 %</span>
-          <span>Pikachu VMAX Rainbow • 142,80 € • ▲ 12,7 %</span>
-          <span>Umbreon ex • 134,50 € • ▲ 8,2 %</span>
-          <span>Dragonite ex • 98,40 € • ▼ 0,9 %</span>
-        </div>
-      </div>
-
       {/* TRENDING */}
       <section className="px-10 pt-20 pb-20 max-w-screen-2xl mx-auto">
         <div className="flex justify-between items-baseline mb-10">
@@ -146,8 +145,6 @@ export default async function HomePage() {
 
       {/* SCANNER + PORTFOLIO */}
       <section className="px-10 pb-28 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-screen-2xl mx-auto">
-        
-        {/* Scanner */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-12 flex flex-col">
           <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">KI-SCANNER</div>
           <div className="text-4xl font-light tracking-tight mt-6">Foto machen.<br />Preis wissen.</div>
@@ -166,7 +163,6 @@ export default async function HomePage() {
           <Link href="/scanner" className="mt-10 block w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-center">Jetzt scannen</Link>
         </div>
 
-        {/* Portfolio */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-12">
           <div className="text-xs text-[var(--tx-3)]">DEIN PORTFOLIO</div>
           <div className="text-6xl font-light tracking-tighter mt-3">2.847,60 €</div>
