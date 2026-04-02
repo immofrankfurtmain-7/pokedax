@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+﻿// src/app/page.tsx
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 async function getData() {
@@ -94,7 +95,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* TRENDING */}
+      {/* TRENDING mit schönem Hover-Effekt */}
       <section className="px-10 pt-28 pb-20 max-w-screen-2xl mx-auto">
         <div className="flex justify-between items-baseline mb-10">
           <h2 className="text-2xl font-light tracking-tight">Meistgesucht</h2>
@@ -109,13 +110,13 @@ export default async function HomePage() {
               <Link
                 key={card.id}
                 href={`/preischeck?q=${encodeURIComponent(name)}`}
-                className="card bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl overflow-hidden"
+                className="group bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-6 hover:border-[var(--g18)] hover:shadow-2xl hover:shadow-[var(--g30)]"
               >
-                <div className="aspect-[3/4] bg-[var(--bg-2)] flex items-center justify-center p-8">
+                <div className="aspect-[3/4] bg-[var(--bg-2)] flex items-center justify-center p-8 relative overflow-hidden">
                   <img 
                     src={card.image_url ?? `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`} 
                     alt={name} 
-                    className="w-full h-full object-contain" 
+                    className="w-full h-full object-contain transition-transform duration-700 group-hover:scale-105" 
                   />
                 </div>
                 <div className="px-6 py-7">
@@ -178,7 +179,6 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          
           {/* Free */}
           <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-10 flex flex-col">
             <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">Free</div>
