@@ -39,7 +39,7 @@ export default function Navbar() {
             Premium
           </Link>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Button */}
           <button 
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden w-10 h-10 flex items-center justify-center text-[var(--tx-2)]"
