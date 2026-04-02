@@ -21,18 +21,17 @@ export default function PriceTicker() {
   const [cards, setCards] = useState<TickerCard[]>(FALLBACK);
   const [paused, setPaused] = useState(false);
 
-  // Optional: echte Daten später laden
   useEffect(() => {
-    // fetch("/api/stats/ticker") ... später
+    // Hier später echte API-Daten laden
   }, []);
 
   const items = [...cards, ...cards];
 
   return (
-    <div className="bg-[var(--bg-1)] border-b border-[var(--br-1)] py-2.5 overflow-hidden">
-      <div className="max-w-screen-2xl mx-auto px-10 flex items-center gap-10 text-xs text-[var(--g)] whitespace-nowrap overflow-hidden">
+    <div className="bg-[var(--bg-1)] border-b border-[var(--br-1)] py-2 overflow-hidden">
+      <div className="max-w-screen-2xl mx-auto px-10 flex items-center gap-10 text-[13px] text-[var(--g)] whitespace-nowrap overflow-hidden">
         
-        <span className="font-medium tracking-[2px] text-[var(--g)]">LIVE</span>
+        <span className="font-medium tracking-[1.5px] text-[var(--g)]">LIVE</span>
 
         <div 
           className="flex items-center gap-10 animate-ticker"
@@ -41,10 +40,10 @@ export default function PriceTicker() {
           onMouseLeave={() => setPaused(false)}
         >
           {items.map((card, i) => (
-            <span key={`${card.name}-${i}`} className="flex items-center gap-6 flex-shrink-0">
+            <span key={`${card.name}-${i}`} className="flex items-center gap-5 flex-shrink-0">
               <span className="font-medium">{card.name}</span>
               <span className="text-[var(--tx-3)] text-xs">{card.set}</span>
-              <span className="price">{card.price.toFixed(2)} €</span>
+              <span className="price text-[13px]">{card.price.toFixed(2)} €</span>
               <span className={`flex items-center gap-1 text-xs ${card.change >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {card.change >= 0 ? "▲" : "▼"} {Math.abs(card.change)}%
               </span>
@@ -59,7 +58,7 @@ export default function PriceTicker() {
           to { transform: translateX(-50%); }
         }
         .animate-ticker {
-          animation: ticker 45s linear infinite;
+          animation: ticker 55s linear infinite;
         }
       `}</style>
     </div>
