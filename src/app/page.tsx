@@ -1,5 +1,4 @@
-﻿// src/app/page.tsx
-import Link from "next/link";
+﻿import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 async function getData() {
@@ -51,7 +50,7 @@ export default async function HomePage() {
             LIVE • CARDMARKET EUR • DEUTSCHLAND
           </div>
 
-          <h1 className="hero-title mb-8">
+          <h1 className="text-[72px] font-light tracking-[-3.2px] leading-[1.04] mb-8">
             Deine Karten.<br />
             Ihr <span className="font-semibold text-[var(--g)]">wahrer</span> Wert.
           </h1>
@@ -135,14 +134,14 @@ export default async function HomePage() {
       {/* SCANNER + PORTFOLIO */}
       <section className="px-10 pb-28 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-screen-2xl mx-auto">
         
-        {/* Scanner mit großem Upload-Bereich */}
+        {/* Scanner */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-12 flex flex-col">
           <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">KI-SCANNER</div>
           <div className="text-4xl font-light tracking-tight mt-6">Foto machen.<br />Preis wissen.</div>
           <p className="text-[var(--tx-2)] mt-8 max-w-xs">Die KI erkennt deine Karte in Sekunden und zeigt den aktuellen Cardmarket-Wert.</p>
 
           <div className="mt-10 border border-dashed border-[var(--br-2)] rounded-3xl h-64 flex flex-col items-center justify-center gap-4 hover:border-[var(--g18)] transition-colors">
-            <div className="w-12 h-12 rounded-2xl bg-[var(--g06)] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--g06)] flex items-center justify-center text-3xl">
               📸
             </div>
             <div className="text-center">
@@ -171,7 +170,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* PRICING – Abo Preisboxen */}
+      {/* PRICING */}
       <section className="px-10 pb-32 max-w-screen-2xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-light tracking-tight">Mitgliedschaft</h2>
@@ -195,7 +194,7 @@ export default async function HomePage() {
             <Link href="/auth/register" className="mt-12 block w-full py-5 border border-[var(--br-2)] hover:border-[var(--tx-1)] rounded-3xl text-center text-sm font-medium">Kostenlos starten</Link>
           </div>
 
-          {/* Premium – hervorgehoben */}
+          {/* Premium */}
           <div className="bg-[var(--bg-1)] border border-[var(--g18)] rounded-3xl p-10 flex flex-col relative scale-[1.03]">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[var(--g)] text-black text-xs font-bold tracking-widest px-8 py-1 rounded-full">BELIEBTESTE WAHL</div>
             
@@ -226,7 +225,7 @@ export default async function HomePage() {
               <div>Eigene Shop-Seite</div>
               <div>API-Zugang (Beta)</div>
             </div>
-            <Link href="/dashboard/premium?plan=dealer" className="mt-12 block w-full py-5 border border-[var(--g18)] hover:bg-[var(--g06)] text-[var(--g)] rounded-3xl text-center">Händler werden</a>
+            <Link href="/dashboard/premium?plan=dealer" className="mt-12 block w-full py-5 border border-[var(--g18)] hover:bg-[var(--g06)] text-[var(--g)] rounded-3xl text-center">Händler werden</Link>
           </div>
         </div>
       </section>
