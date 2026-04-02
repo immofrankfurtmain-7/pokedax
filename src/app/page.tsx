@@ -43,6 +43,17 @@ export default async function HomePage() {
 
   return (
     <div className="bg-[var(--bg-base)] text-[var(--tx-1)]">
+{/* EDler LIVE TICKER – direkt unter der Navbar / über Stats */}
+      <div className="bg-[var(--bg-1)] border-b border-[var(--br-1)] py-3 overflow-hidden">
+        <div className="max-w-screen-2xl mx-auto px-10 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
+          <span className="font-medium tracking-widest">LIVE</span>
+          <span>Charizard ex • 312,80 € • ▲ 4,2 %</span>
+          <span>Gardevoir ex • 189,90 € • ▼ 1,8 %</span>
+          <span>Pikachu VMAX Rainbow • 142,80 € • ▲ 12,7 %</span>
+          <span>Umbreon ex • 134,50 € • ▲ 8,2 %</span>
+          <span>Dragonite ex • 98,40 € • ▼ 0,9 %</span>
+        </div>
+      </div>
 
       {/* HERO */}
       <section className="pt-32 pb-28 px-10 max-w-screen-2xl mx-auto">

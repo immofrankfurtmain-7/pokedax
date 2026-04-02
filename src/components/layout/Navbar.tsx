@@ -10,13 +10,14 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-[var(--br-1)] bg-[var(--bg-base)]">
       <div className="max-w-screen-2xl mx-auto px-10 py-6 flex items-center justify-between">
         
-        {/* Logo */}
-        <div className="font-medium text-2xl tracking-[-1px] text-[var(--g)]">
+        {/* Logo - klickbar zur Startseite */}
+        <Link href="/" className="font-medium text-2xl tracking-[-1px] text-[var(--g)] hover:text-[#f5c16e] transition-colors">
           PokéDax
-        </div>
+        </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8 text-sm text-[var(--tx-2)]">
+          <Link href="/" className="hover:text-[var(--tx-1)] transition-colors">Home</Link>
           <Link href="/preischeck" className="hover:text-[var(--tx-1)] transition-colors">Preischeck</Link>
           <Link href="/scanner" className="hover:text-[var(--tx-1)] transition-colors">Scanner</Link>
           <Link href="/portfolio" className="hover:text-[var(--tx-1)] transition-colors">Portfolio</Link>
@@ -52,6 +53,7 @@ export default function Navbar() {
       {isOpen && (
         <div className="md:hidden border-t border-[var(--br-1)] bg-[var(--bg-1)]">
           <div className="flex flex-col px-10 py-6 gap-6 text-sm">
+            <Link href="/" className="hover:text-[var(--tx-1)]">Home</Link>
             <Link href="/preischeck" className="hover:text-[var(--tx-1)]">Preischeck</Link>
             <Link href="/scanner" className="hover:text-[var(--tx-1)]">Scanner</Link>
             <Link href="/portfolio" className="hover:text-[var(--tx-1)]">Portfolio</Link>
