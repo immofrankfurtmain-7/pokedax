@@ -44,12 +44,12 @@ export default async function HomePage() {
   return (
     <div className="bg-[var(--bg-base)] text-[var(--tx-1)]">
 
-      {/* HERO mit edlem Live Ticker oben */}
+      {/* HERO */}
       <section className="pt-32 pb-28 px-10 max-w-screen-2xl mx-auto">
         
-        {/* Edler Live Ticker */}
+        {/* Edler Live Ticker – direkt unter der Navbar */}
         <div className="mb-12">
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-screen-2xl mx-auto px-10">
             <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl py-3 px-8 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
               <span className="font-medium tracking-widest">LIVE</span>
               <span>Charizard ex • 312,80 € • ▲ 4,2 %</span>
@@ -145,6 +145,8 @@ export default async function HomePage() {
 
       {/* SCANNER + PORTFOLIO */}
       <section className="px-10 pb-28 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-screen-2xl mx-auto">
+        
+        {/* Scanner */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-12 flex flex-col">
           <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">KI-SCANNER</div>
           <div className="text-4xl font-light tracking-tight mt-6">Foto machen.<br />Preis wissen.</div>
@@ -163,6 +165,7 @@ export default async function HomePage() {
           <Link href="/scanner" className="mt-10 block w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-center">Jetzt scannen</Link>
         </div>
 
+        {/* Portfolio */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-12">
           <div className="text-xs text-[var(--tx-3)]">DEIN PORTFOLIO</div>
           <div className="text-6xl font-light tracking-tighter mt-3">2.847,60 €</div>
