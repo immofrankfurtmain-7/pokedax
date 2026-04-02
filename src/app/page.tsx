@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+﻿// src/app/page.tsx
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 async function getData() {
@@ -42,6 +43,7 @@ export default async function HomePage() {
 
   return (
     <div className="bg-[var(--bg-base)] text-[var(--tx-1)]">
+      
       {/* HERO */}
       <section className="pt-32 pb-28 px-10 max-w-screen-2xl mx-auto">
         <div className="max-w-3xl mx-auto text-center">
@@ -60,8 +62,18 @@ export default async function HomePage() {
           </p>
 
           <div className="flex items-center justify-center gap-4 mt-16">
-            <Link href="/preischeck" className="px-10 py-5 bg-[var(--g)] text-black font-medium text-lg rounded-3xl hover:scale-105 active:scale-95 transition-transform">Preis checken</Link>
-            <Link href="/scanner" className="px-10 py-5 border border-[var(--br-2)] hover:border-[var(--g)] text-[var(--tx-2)] font-medium text-lg rounded-3xl transition-all">Karte scannen →</Link>
+            <Link 
+              href="/preischeck" 
+              className="px-10 py-5 bg-[var(--g)] text-black font-medium text-lg rounded-3xl hover:scale-105 active:scale-95 transition-transform"
+            >
+              Preis checken
+            </Link>
+            <Link 
+              href="/scanner" 
+              className="px-10 py-5 border border-[var(--br-2)] hover:border-[var(--g)] text-[var(--tx-2)] font-medium text-lg rounded-3xl transition-all"
+            >
+              Karte scannen →
+            </Link>
           </div>
         </div>
       </section>
@@ -101,11 +113,17 @@ export default async function HomePage() {
                 className="card bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl overflow-hidden"
               >
                 <div className="aspect-[3/4] bg-[var(--bg-2)] flex items-center justify-center p-8">
-                  <img src={card.image_url ?? `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`} alt={name} className="w-full h-full object-contain" />
+                  <img 
+                    src={card.image_url ?? `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`} 
+                    alt={name} 
+                    className="w-full h-full object-contain" 
+                  />
                 </div>
                 <div className="px-6 py-7">
                   <div className="font-medium line-clamp-1">{name}</div>
-                  <div className="text-xs text-[var(--tx-3)] mt-px">{String(card.set_id).toUpperCase()} · #{card.number}</div>
+                  <div className="text-xs text-[var(--tx-3)] mt-px">
+                    {String(card.set_id).toUpperCase()} · #{card.number}
+                  </div>
                   <div className="price mt-6">{price}</div>
                 </div>
               </Link>
@@ -116,19 +134,103 @@ export default async function HomePage() {
 
       {/* SCANNER + PORTFOLIO */}
       <section className="px-10 pb-28 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-screen-2xl mx-auto">
+        
+        {/* Scanner mit großem Upload-Bereich */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-12 flex flex-col">
           <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">KI-SCANNER</div>
           <div className="text-4xl font-light tracking-tight mt-6">Foto machen.<br />Preis wissen.</div>
           <p className="text-[var(--tx-2)] mt-8 max-w-xs">Die KI erkennt deine Karte in Sekunden und zeigt den aktuellen Cardmarket-Wert.</p>
-          <Link href="/scanner" className="mt-auto pt-12 block w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-center">Jetzt scannen</Link>
+
+          <div className="mt-10 border border-dashed border-[var(--br-2)] rounded-3xl h-64 flex flex-col items-center justify-center gap-4 hover:border-[var(--g18)] transition-colors">
+            <div className="w-12 h-12 rounded-2xl bg-[var(--g06)] flex items-center justify-center">
+              📸
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-[var(--tx-2)]">Foto oder Karte ablegen</div>
+              <div className="text-xs text-[var(--tx-3)] mt-1">oder klicken zum Hochladen</div>
+            </div>
+          </div>
+
+          <Link href="/scanner" className="mt-10 block w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-center">Jetzt scannen</Link>
         </div>
 
+        {/* Portfolio */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-12">
           <div className="text-xs text-[var(--tx-3)]">DEIN PORTFOLIO</div>
           <div className="text-6xl font-light tracking-tighter mt-3">2.847,60 €</div>
           <div className="mt-3 text-emerald-400 text-sm">▲ +18,4 % · 30 Tage</div>
+
+          <div className="mt-12 h-52 flex items-end">
+            <svg width="100%" height="140" viewBox="0 0 600 140" fill="none">
+              <path d="M0 120 Q80 100 160 95 Q240 70 320 65 Q400 45 480 40 Q560 25 600 20" 
+                    stroke="var(--g)" strokeWidth="2.5" strokeOpacity="0.85" fill="none"/>
+              <path d="M0 120 Q80 100 160 95 Q240 70 320 65 Q400 45 480 40 Q560 25 600 20 L600 140 L0 140 Z" 
+                    fill="var(--g)" fillOpacity="0.08"/>
+            </svg>
+          </div>
         </div>
       </section>
+
+      {/* PRICING – Abo Preisboxen */}
+      <section className="px-10 pb-32 max-w-screen-2xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-light tracking-tight">Mitgliedschaft</h2>
+          <p className="text-[var(--tx-2)] mt-2">Wähle deine Stufe</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          
+          {/* Free */}
+          <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-10 flex flex-col">
+            <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">Free</div>
+            <div className="mt-auto pt-8">
+              <div className="text-6xl font-light">0 €</div>
+              <div className="text-sm text-[var(--tx-3)] mt-1">für immer</div>
+            </div>
+            <div className="mt-12 space-y-4 text-sm text-[var(--tx-2)]">
+              <div>5 Scans pro Tag</div>
+              <div>Basis-Preischeck</div>
+              <div>Forum lesen</div>
+            </div>
+            <Link href="/auth/register" className="mt-12 block w-full py-5 border border-[var(--br-2)] hover:border-[var(--tx-1)] rounded-3xl text-center text-sm font-medium">Kostenlos starten</Link>
+          </div>
+
+          {/* Premium – hervorgehoben */}
+          <div className="bg-[var(--bg-1)] border border-[var(--g18)] rounded-3xl p-10 flex flex-col relative scale-[1.03]">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[var(--g)] text-black text-xs font-bold tracking-widest px-8 py-1 rounded-full">BELIEBTESTE WAHL</div>
+            
+            <div className="uppercase text-xs tracking-widest text-[var(--g)]">Premium</div>
+            <div className="mt-auto pt-8">
+              <div className="text-6xl font-light text-[var(--g)]">6,99 €</div>
+              <div className="text-sm text-[var(--tx-3)] mt-1">pro Monat</div>
+            </div>
+            <div className="mt-12 space-y-4 text-sm text-[var(--tx-2)]">
+              <div>Unlimitierter Scanner</div>
+              <div>Portfolio + Charts</div>
+              <div>Preis-Alerts</div>
+              <div>Exklusiv-Forum</div>
+            </div>
+            <Link href="/dashboard/premium" className="mt-12 block w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-center">Premium werden</Link>
+          </div>
+
+          {/* Händler */}
+          <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-10 flex flex-col">
+            <div className="uppercase text-xs tracking-widest text-[var(--g)]">Händler</div>
+            <div className="mt-auto pt-8">
+              <div className="text-6xl font-light">19,99 €</div>
+              <div className="text-sm text-[var(--tx-3)] mt-1">pro Monat</div>
+            </div>
+            <div className="mt-12 space-y-4 text-sm text-[var(--tx-2)]">
+              <div>Alles aus Premium</div>
+              <div>Verified Seller Badge</div>
+              <div>Eigene Shop-Seite</div>
+              <div>API-Zugang (Beta)</div>
+            </div>
+            <Link href="/dashboard/premium?plan=dealer" className="mt-12 block w-full py-5 border border-[var(--g18)] hover:bg-[var(--g06)] text-[var(--g)] rounded-3xl text-center">Händler werden</a>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
