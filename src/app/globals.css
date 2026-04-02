@@ -37,9 +37,3 @@ body {
   line-height: 1.04;
 }
 
-.price {
-  font-family: 'DM Mono', monospace;
-  font-size: 27px;
-  font-weight: 500;
-  color: var(--g);
-}
