@@ -46,22 +46,11 @@ export default async function HomePage() {
 
       {/* HERO */}
       <section className="pt-32 pb-28 px-10 max-w-screen-2xl mx-auto">
-        
-        {/* Edler Gold Live Ticker – direkt unter der Navbar */}
-        <div className="mb-12">
-          <div className="max-w-screen-2xl mx-auto px-10">
-            <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl py-3 px-8 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
-              <span className="font-medium tracking-widest">LIVE</span>
-              <span>Charizard ex • 312,80 € • ▲ 4,2 %</span>
-              <span>Gardevoir ex • 189,90 € • ▼ 1,8 %</span>
-              <span>Pikachu VMAX Rainbow • 142,80 € • ▲ 12,7 %</span>
-              <span>Umbreon ex • 134,50 € • ▲ 8,2 %</span>
-              <span>Dragonite ex • 98,40 € • ▼ 0,9 %</span>
-            </div>
-          </div>
-        </div>
-
         <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-3xl border border-[var(--g)]/20 bg-[var(--g)]/5 text-[var(--g)] text-xs font-medium tracking-widest mb-12">
+            LIVE • CARDMARKET EUR • DEUTSCHLAND
+          </div>
+
           <h1 className="text-[72px] font-light tracking-[-3.2px] leading-[1.04] mb-8">
             Deine Karten.<br />
             Ihr <span className="font-semibold text-[var(--g)]">wahrer</span> Wert.
@@ -103,6 +92,18 @@ export default async function HomePage() {
               <div className="text-xs text-[var(--tx-3)] mt-1 tracking-widest">{stat.l}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* EDler LIVE TICKER – direkt unter der Navbar / über Stats */}
+      <div className="bg-[var(--bg-1)] border-b border-[var(--br-1)] py-3 overflow-hidden">
+        <div className="max-w-screen-2xl mx-auto px-10 text-xs text-[var(--g)] flex items-center gap-8 whitespace-nowrap overflow-hidden">
+          <span className="font-medium tracking-widest">LIVE</span>
+          <span>Charizard ex • 312,80 € • ▲ 4,2 %</span>
+          <span>Gardevoir ex • 189,90 € • ▼ 1,8 %</span>
+          <span>Pikachu VMAX Rainbow • 142,80 € • ▲ 12,7 %</span>
+          <span>Umbreon ex • 134,50 € • ▲ 8,2 %</span>
+          <span>Dragonite ex • 98,40 € • ▼ 0,9 %</span>
         </div>
       </div>
 
@@ -187,8 +188,54 @@ export default async function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {/* Free, Premium, Händler – wie zuvor */}
-          {/* (Ich lasse sie hier aus Platzgründen weg – sie sind identisch mit der vorherigen Version) */}
+          {/* Free */}
+          <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-10 flex flex-col">
+            <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">Free</div>
+            <div className="mt-auto pt-8">
+              <div className="text-6xl font-light">0 €</div>
+              <div className="text-sm text-[var(--tx-3)] mt-1">für immer</div>
+            </div>
+            <div className="mt-12 space-y-4 text-sm text-[var(--tx-2)]">
+              <div>5 Scans pro Tag</div>
+              <div>Basis-Preischeck</div>
+              <div>Forum lesen</div>
+            </div>
+            <Link href="/auth/register" className="mt-12 block w-full py-5 border border-[var(--br-2)] hover:border-[var(--tx-1)] rounded-3xl text-center text-sm font-medium">Kostenlos starten</Link>
+          </div>
+
+          {/* Premium */}
+          <div className="bg-[var(--bg-1)] border border-[var(--g18)] rounded-3xl p-10 flex flex-col relative scale-[1.03]">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[var(--g)] text-black text-xs font-bold tracking-widest px-8 py-1 rounded-full">BELIEBTESTE WAHL</div>
+            
+            <div className="uppercase text-xs tracking-widest text-[var(--g)]">Premium</div>
+            <div className="mt-auto pt-8">
+              <div className="text-6xl font-light text-[var(--g)]">6,99 €</div>
+              <div className="text-sm text-[var(--tx-3)] mt-1">pro Monat</div>
+            </div>
+            <div className="mt-12 space-y-4 text-sm text-[var(--tx-2)]">
+              <div>Unlimitierter Scanner</div>
+              <div>Portfolio + Charts</div>
+              <div>Preis-Alerts</div>
+              <div>Exklusiv-Forum</div>
+            </div>
+            <Link href="/dashboard/premium" className="mt-12 block w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-center">Premium werden</Link>
+          </div>
+
+          {/* Händler */}
+          <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-10 flex flex-col">
+            <div className="uppercase text-xs tracking-widest text-[var(--g)]">Händler</div>
+            <div className="mt-auto pt-8">
+              <div className="text-6xl font-light">19,99 €</div>
+              <div className="text-sm text-[var(--tx-3)] mt-1">pro Monat</div>
+            </div>
+            <div className="mt-12 space-y-4 text-sm text-[var(--tx-2)]">
+              <div>Alles aus Premium</div>
+              <div>Verified Seller Badge</div>
+              <div>Eigene Shop-Seite</div>
+              <div>API-Zugang (Beta)</div>
+            </div>
+            <Link href="/dashboard/premium?plan=dealer" className="mt-12 block w-full py-5 border border-[var(--g18)] hover:bg-[var(--g06)] text-[var(--g)] rounded-3xl text-center">Händler werden</Link>
+          </div>
         </div>
       </section>
 
