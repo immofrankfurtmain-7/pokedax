@@ -4,72 +4,42 @@
 @tailwind utilities;
 
 :root {
-  --b0: #07070F;
-  --b1: #0C0C1A;
-  --b2: #101020;
-  --b3: #161628;
-  --b4: #1E1E38;
-  --br1: rgba(255,255,255,0.048);
-  --br2: rgba(255,255,255,0.080);
-  --br3: rgba(255,255,255,0.125);
-  --t1: #EDEAF6;
-  --t2: #8A89A8;
-  --t3: #454462;
-  --g:   #E9A84B;
-  --g30: rgba(233,168,75,0.30);
-  --g18: rgba(233,168,75,0.18);
-  --g10: rgba(233,168,75,0.10);
-  --g06: rgba(233,168,75,0.06);
-  --g03: rgba(233,168,75,0.03);
-  --green: #4BBF82;
-  --red:   #E04558;
-  --cyan:  #3BBDB6;
-  --ease: cubic-bezier(0.16,1,0.3,1);
-  /* legacy aliases */
-  --bg-base: var(--b0);
-  --bg-1: var(--b1);
-  --bg-2: var(--b2);
-  --bg-3: var(--b3);
-  --bg-4: var(--b4);
-  --br-1: var(--br1);
-  --br-2: var(--br2);
-  --br-3: var(--br3);
-  --tx-1: var(--t1);
-  --tx-2: var(--t2);
-  --tx-3: var(--t3);
-  --gold: var(--g);
-  --gold-18: var(--g18);
-  --gold-06: var(--g06);
+  --bg-base:  #0a0a0a;
+  --bg-1:     #111113;
+  --bg-2:     #1a1a1f;
+
+  --br-1: rgba(255,255,255,0.06);
+  --br-2: rgba(255,255,255,0.11);
+
+  --tx-1: #f0f0f5;
+  --tx-2: #a3a3b0;
+  --tx-3: #5e5e6b;
+
+  --g: #E8B05A;
+  --g30: rgba(232,176,90,0.30);
+  --g18: rgba(232,176,90,0.18);
+  --g10: rgba(232,176,90,0.10);
 }
 
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+* { box-sizing: border-box; }
+
 body {
-  background: var(--b0);
-  color: var(--t1);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 14px;
-  line-height: 1.6;
+  background-color: var(--bg-base);
+  color: var(--tx-1);
+  font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: "kern" 1, "liga" 1;
-}
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--br2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--br3); }
-
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-@keyframes ticker-scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-@keyframes fade-up { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-@keyframes price-flash {
-  0%,100%{background:transparent}
-  50%{background:rgba(233,168,75,0.12)}
 }
 
-/* Global section divider */
-.section-divider {
-  height: 1px;
-  background: var(--br1);
-  margin: 0 24px;
+.hero-title {
+  font-size: 72px;
+  font-weight: 300;
+  letter-spacing: -3.2px;
+  line-height: 1.04;
+}
+
+.price {
+  font-family: 'DM Mono', monospace;
+  font-size: 27px;
+  font-weight: 500;
+  color: var(--g);
 }
