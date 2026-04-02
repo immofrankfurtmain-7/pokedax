@@ -43,7 +43,7 @@ export default async function HomePage() {
 
   return (
     <div className="bg-[var(--bg-base)] text-[var(--tx-1)]">
-      
+
       {/* HERO */}
       <section className="pt-32 pb-28 px-10 max-w-screen-2xl mx-auto">
         <div className="max-w-3xl mx-auto text-center">
@@ -95,7 +95,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* TRENDING mit schönem Hover-Effekt */}
+      {/* TRENDING mit schönem Hover */}
       <section className="px-10 pt-28 pb-20 max-w-screen-2xl mx-auto">
         <div className="flex justify-between items-baseline mb-10">
           <h2 className="text-2xl font-light tracking-tight">Meistgesucht</h2>
