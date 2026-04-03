@@ -16,39 +16,33 @@ const FALLBACK: TickerCard[] = [
   { name:"Dragonite ex",   price:312.00, change:+18.3, set:"OBF"    },
 ];
 
+function fmt(n: number) {
+  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtPct(n: number) {
+  return Math.abs(n).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
 function Item({ card }: { card: TickerCard }) {
   const up = card.change >= 0;
   return (
     <span style={{
       display:"inline-flex", alignItems:"center", gap:9,
-      padding:"0 22px",
+      padding:"0 24px",
       borderRight:"1px solid rgba(233,168,75,0.08)",
       whiteSpace:"nowrap", flexShrink:0,
     }}>
-      {/* Name */}
-      <span style={{
-        fontSize:11, fontWeight:400, letterSpacing:"-.005em",
-        color:"rgba(233,168,75,0.85)",
-        fontFamily:"var(--font-body)",
-      }}>{card.name}</span>
-      {/* Set */}
-      <span style={{
-        fontSize:9, fontWeight:600, letterSpacing:".08em",
-        color:"rgba(233,168,75,0.30)",
-      }}>{card.set}</span>
-      {/* Price */}
-      <span style={{
-        fontSize:11, fontWeight:500, letterSpacing:"-.01em",
-        color:"rgba(233,168,75,0.95)",
-        fontFamily:"var(--font-mono)",
-      }}>{card.price.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €</span>
-      {/* Change */}
-      <span style={{
-        fontSize:10, fontWeight:600,
-        color: up ? "rgba(233,168,75,0.6)" : "rgba(233,168,75,0.35)",
-        letterSpacing:"-.005em",
-      }}>
-        {up ? "▲" : "▼"} {up ? "+" : ""}{card.change.toFixed(1)} %
+      <span style={{ fontSize:11, fontWeight:400, letterSpacing:"-.01em", color:"rgba(233,168,75,0.85)", fontFamily:"var(--font-body)" }}>
+        {card.name}
+      </span>
+      <span style={{ fontSize:9, fontWeight:600, letterSpacing:".08em", color:"rgba(233,168,75,0.28)" }}>
+        {card.set}
+      </span>
+      <span style={{ fontSize:11, fontWeight:500, letterSpacing:"-.01em", color:"rgba(233,168,75,0.95)", fontFamily:"var(--font-mono)" }}>
+        {fmt(card.price)} €
+      </span>
+      <span style={{ fontSize:10, fontWeight:600, color: up ? "rgba(233,168,75,0.62)" : "rgba(233,168,75,0.35)", letterSpacing:"-.005em" }}>
+        {up ? "▲" : "▼"} {up ? "+" : "−"}{fmtPct(card.change)} %
       </span>
     </span>
   );
@@ -69,9 +63,9 @@ export default function PriceTicker() {
   return (
     <div style={{
       height:28, overflow:"hidden",
-      background:"rgba(233,168,75,0.02)",
-      borderTop:"1px solid rgba(233,168,75,0.06)",
-      borderBottom:"1px solid rgba(233,168,75,0.06)",
+      background:"rgba(233,168,75,0.018)",
+      borderTop:"1px solid rgba(233,168,75,0.07)",
+      borderBottom:"1px solid rgba(233,168,75,0.07)",
       borderRadius:"0 0 14px 14px",
       marginTop:1,
       display:"flex", alignItems:"center",
@@ -84,25 +78,25 @@ export default function PriceTicker() {
       }}>
         <div style={{
           width:4, height:4, borderRadius:"50%",
-          background:"var(--gold)",
+          background:"#E9A84B",
           animation:"blink 2s ease-in-out infinite",
         }}/>
-        <span style={{
-          fontSize:8.5, fontWeight:700, letterSpacing:".15em",
-          textTransform:"uppercase", color:"var(--gold)",
-        }}>Live</span>
+        <span style={{ fontSize:8.5, fontWeight:700, letterSpacing:".15em", textTransform:"uppercase", color:"#E9A84B" }}>
+          Live
+        </span>
       </div>
-      {/* Scrolling track */}
+
+      {/* Scrolling track — 60s = slow & readable */}
       <div style={{
         display:"flex", overflow:"hidden", flex:1,
-        maskImage:"linear-gradient(90deg,transparent 0%,black 3%,black 97%,transparent 100%)",
-        WebkitMaskImage:"linear-gradient(90deg,transparent 0%,black 3%,black 97%,transparent 100%)",
+        maskImage:"linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)",
+        WebkitMaskImage:"linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)",
       }}>
         <div style={{
           display:"flex",
-          animation:"ticker-scroll 36s linear infinite",
+          animation:"ticker-scroll 60s linear infinite",
         }}>
-          {items.map((c,i) => <Item key={i} card={c}/>)}
+          {items.map((c, i) => <Item key={i} card={c}/>)}
         </div>
       </div>
     </div>
