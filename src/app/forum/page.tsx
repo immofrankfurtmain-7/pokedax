@@ -11,7 +11,7 @@ type Post = {
   title: string;
   upvotes: number;
   created_at: string;
-  profiles: { username: string } | null;
+  profiles: { username: string } | null;           // wichtig: einzelnes Objekt, nicht Array
   forum_categories: { name: string } | null;
 };
 
@@ -34,14 +34,18 @@ export default function ForumPage() {
           title,
           upvotes,
           created_at,
-          profiles(username),
-          forum_categories(name)
+          profiles!inner(username),
+          forum_categories!inner(name)
         `)
         .order("created_at", { ascending: false })
         .limit(20);
 
-      if (error) console.error(error);
-      setPosts(data as Post[] ?? []);
+      if (error) {
+        console.error("Forum fetch error:", error);
+      } else {
+        // profiles ist jetzt ein einzelnes Objekt dank !inner
+        setPosts((data as Post[]) ?? []);
+      }
       setLoading(false);
     }
 
@@ -104,10 +108,10 @@ export default function ForumPage() {
           ))}
         </div>
 
-        {/* Posts */}
+        {/* Posts List */}
         <div className="space-y-6">
           {filteredPosts.length > 0 ? (
-            filteredPosts.map((post, i) => {
+            filteredPosts.map((post) => {
               const cat = post.forum_categories?.name || "Allgemein";
               const author = post.profiles?.username || "Anonym";
               const ago = getTimeAgo(post.created_at);
