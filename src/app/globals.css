@@ -1,39 +1,121 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,300&family=DM+Mono:wght@400;500&display=swap");
+﻿// src/app/globals.css
+// Komplett überarbeitet für Quiet Luxury Dark + neues Gold #D9A14F
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,300&family=DM+Mono:wght@400;500;600&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg-base:  #0a0a0a;
-  --bg-1:     #111113;
-  --bg-2:     #1a1a1f;
+  /* ── Core Canvas & Backgrounds (Quiet Luxury) ── */
+  --canvas:      #0a0a0a;
+  --bg-base:     #0a0a0a;
+  --bg-1:        #111113;
+  --bg-2:        #1a1a1f;
+  --bg-3:        #222228;
+  --bg-4:        #2a2a32;
 
-  --br-1: rgba(255,255,255,0.06);
-  --br-2: rgba(255,255,255,0.11);
+  /* ── Borders ── */
+  --br-1:        rgba(255,255,255,0.06);
+  --br-2:        rgba(255,255,255,0.10);
+  --br-3:        rgba(255,255,255,0.16);
+  --br-gold:     rgba(217,161,79,0.12);
 
-  --tx-1: #f0f0f5;
-  --tx-2: #a3a3b0;
-  --tx-3: #5e5e6b;
+  /* ── Text Hierarchy ── */
+  --tx-1:        #f0f0f5;
+  --tx-2:        #a3a3b0;
+  --tx-3:        #5e5e6b;
+  --tx-4:        #3a3a44;
 
-  --g: #E8B05A;
-  --g30: rgba(232,176,90,0.30);
-  --g18: rgba(232,176,90,0.18);
-  --g10: rgba(232,176,90,0.10);
+  /* ── Gold – Deep Luxury Gold (neu) ── */
+  --gold:        #D9A14F;
+  --gold-30:     rgba(217,161,79,0.30);
+  --gold-18:     rgba(217,161,79,0.18);
+  --gold-12:     rgba(217,161,79,0.12);
+  --gold-08:     rgba(217,161,79,0.08);
+  --gold-05:     rgba(217,161,79,0.05);
+
+  /* ── Semantic ── */
+  --green:       #4DBF85;
+  --red:         #E8495A;
+
+  /* ── Radius (feiner, edler) ── */
+  --r-sm:        8px;
+  --r-md:        12px;
+  --r-lg:        16px;
+  --r-xl:        24px;
+
+  /* Legacy Aliases für alte Komponenten */
+  --bg:          var(--bg-base);
+  --bg2:         var(--bg-2);
+  --text:        var(--tx-1);
+  --text2:       var(--tx-2);
+  --border:      var(--br-1);
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
-  background-color: var(--bg-base);
+  background-color: var(--canvas);
   color: var(--tx-1);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "kern" 1, "liga" 1, "tnum" 1;
 }
 
-.hero-title {
-  font-size: 72px;
-  font-weight: 300;
-  letter-spacing: -3.2px;
-  line-height: 1.04;
+/* Subtile Hover-Effekte – Weltklasse-Niveau */
+.hover-lift {
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4),
+              0 0 0 1px rgba(217, 161, 79, 0.15) inset;
+}
+
+/* Gold Glow bei Fokus/Hover */
+.gold-focus {
+  transition: box-shadow 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.gold-focus:hover,
+.gold-focus:focus-visible {
+  box-shadow: 0 0 0 1px var(--gold), 
+              0 0 0 4px var(--gold-12);
+}
+
+/* Scrollbar – extrem dezent */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--br-2);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--br-3);
+}
+
+/* Framer Motion Ready – fade & lift */
+.animate-in {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.animate-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

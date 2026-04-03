@@ -1,25 +1,15 @@
-"use client";
-
-import { motion } from "framer-motion";
-
+// src/app/loading.tsx
 export default function Loading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)]">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--canvas)]">
       <div className="flex flex-col items-center gap-6">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.35, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-[3px] border-transparent border-t-[var(--g)] rounded-full"
-        />
-
-        <motion.span
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.6 }}
-          transition={{ delay: 0.4 }}
-          className="text-xs font-medium tracking-[2px] uppercase text-[var(--tx-3)]"
-        >
-          LÄDT
-        </motion.span>
+        <div className="relative w-11 h-11">
+          <div className="absolute inset-0 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-[3px] border border-[var(--br-2)] rounded-full" />
+        </div>
+        <div className="text-[11px] font-medium tracking-[0.08em] text-[var(--tx-3)] uppercase">
+          Lade PokéDax…
+        </div>
       </div>
     </div>
   );

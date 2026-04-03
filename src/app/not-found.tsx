@@ -1,24 +1,39 @@
-﻿"use client";
+﻿// src/app/not-found.tsx
+"use client";
+
 import Link from "next/link";
+
 export default function NotFound() {
-  return(
-    <div style={{minHeight:"70vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"40px 24px",textAlign:"center"}}>
-      <div style={{marginBottom:24,animation:"spin 3s linear infinite",filter:"drop-shadow(0 0 16px rgba(233,168,75,0.25))"}}>
-        <svg width="64" height="64" viewBox="0 0 64 64">
-          <circle cx="32" cy="32" r="30" fill="#EE1515"/>
-          <path d="M2 32 A30 30 0 0 1 62 32 Z" fill="white"/>
-          <rect x="2" y="29" width="60" height="6" fill="#111"/>
-          <circle cx="32" cy="32" r="10" fill="#111"/>
-          <circle cx="32" cy="32" r="6" fill="white"/>
-        </svg>
+  return (
+    <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center">
+      <div className="mb-10 relative">
+        <div className="w-20 h-20 rounded-2xl border border-[var(--br-gold)] bg-[var(--bg-1)] flex items-center justify-center">
+          <div className="w-9 h-9 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+        </div>
       </div>
-      <h1 style={{fontSize:26,fontWeight:500,letterSpacing:"-.03em",marginBottom:8,color:"#EDEAF6"}}>Diese Seite ist entwischt!</h1>
-      <p style={{fontSize:13,color:"#8A89A8",marginBottom:28,maxWidth:300,lineHeight:1.65}}>Der Wildpokémon-Detektor zeigt nichts an. Diese Seite existiert nicht — oder ist gerade auf der Flucht.</p>
-      <div style={{display:"flex",gap:8}}>
-        <Link href="/" style={{padding:"10px 22px",borderRadius:10,background:"#E9A84B",color:"#09070E",fontSize:13,fontWeight:600,textDecoration:"none"}}>Startseite</Link>
-        <Link href="/preischeck" style={{padding:"10px 22px",borderRadius:10,border:"1px solid rgba(255,255,255,0.125)",color:"#8A89A8",fontSize:13,textDecoration:"none"}}>Preischeck</Link>
+
+      <h1 className="text-4xl font-light tracking-[-0.04em] text-[var(--tx-1)] mb-3">
+        Seite nicht gefunden
+      </h1>
+      <p className="max-w-[340px] text-[var(--tx-2)] text-[15px] leading-relaxed mb-12">
+        Die gesuchte Karte scheint aus dem Set entwischt zu sein. 
+        Versuche es erneut oder kehre zur Startseite zurück.
+      </p>
+
+      <div className="flex gap-4">
+        <Link
+          href="/"
+          className="px-8 py-3.5 bg-[var(--gold)] text-[#0a0a0a] font-medium text-sm tracking-[-0.01em] rounded-xl hover-lift gold-focus"
+        >
+          Zur Startseite
+        </Link>
+        <Link
+          href="/preischeck"
+          className="px-8 py-3.5 border border-[var(--br-2)] text-[var(--tx-2)] font-medium text-sm tracking-[-0.01em] rounded-xl hover:bg-[var(--bg-2)] transition-colors"
+        >
+          Preischeck öffnen
+        </Link>
       </div>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
