@@ -65,7 +65,6 @@ export default function ForumPage() {
     return `vor ${Math.floor(hours / 24)} Tagen`;
   };
 
-  // Kategorien ohne Set-Spread (um tsconfig-Fehler zu vermeiden)
   const allCategories = posts.map(p => p.forum_categories?.name).filter(Boolean) as string[];
   const uniqueCategories = ["alle", ...Array.from(new Set(allCategories))];
 
@@ -115,7 +114,7 @@ export default function ForumPage() {
           ))}
         </div>
 
-        {/* Posts List */}
+        {/* Posts */}
         <div className="space-y-6">
           {filteredPosts.length > 0 ? (
             filteredPosts.map((post) => {
