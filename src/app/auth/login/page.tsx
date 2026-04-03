@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+﻿export const dynamic = "force-dynamic";
+import Link from "next/link";
 export const metadata = { title:"Anmelden" };
 const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
 const BG1="#111113",BG2="#1a1a1f",BR2="rgba(255,255,255,0.085)";

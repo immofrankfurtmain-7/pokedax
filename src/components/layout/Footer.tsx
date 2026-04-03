@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+﻿"use client";
+import Link from "next/link";
 export default function Footer() {
   const T1="#f0f0f5",T2="#a8a8b8",T3="#6b6b7a";
   return (

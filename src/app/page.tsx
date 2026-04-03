@@ -287,8 +287,8 @@ export default async function HomePage() {
                 background:BG2, border:`1px dashed rgba(233,168,75,0.18)`,
                 transition:"border-color .22s var(--ease), background .22s, transform .22s var(--ease)",
               }}
-              onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor=G30;el.style.background=G05;el.style.transform="scale(1.015)";}}
-              onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor="rgba(233,168,75,0.18)";el.style.background=BG2;el.style.transform="scale(1)";}}>
+              }
+              }>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={TX3} strokeWidth="1.5" style={{opacity:.5}}>
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
                 </svg>
@@ -301,8 +301,8 @@ export default async function HomePage() {
                 boxShadow:"0 2px 18px rgba(233,168,75,0.2)",
                 transition:"box-shadow .2s var(--ease),transform .2s var(--ease)",
               }}
-              onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow="0 4px 28px rgba(233,168,75,0.38)";el.style.transform="translateY(-1px)";}}
-              onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow="0 2px 18px rgba(233,168,75,0.2)";el.style.transform="translateY(0)";}}>
+              }
+              }>
                 Jetzt scannen
               </Link>
             </div>
@@ -367,8 +367,8 @@ export default async function HomePage() {
             return (
               <Link key={post.id} href={`/forum/post/${post.id}`} style={{textDecoration:"none"}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:14,padding:"18px 24px",borderBottom:i<posts.length-1?"1px solid rgba(255,255,255,0.035)":"none",transition:"background .1s",cursor:"pointer"}}
-                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.015)";}}
-                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
+              }
+              }>
                   <div style={{width:32,height:32,borderRadius:9,background:BG3,border:`1px solid ${BR2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:600,color:TX2,flexShrink:0,marginTop:1}}>
                     {author[0]?.toUpperCase()}
                   </div>
@@ -431,8 +431,8 @@ export default async function HomePage() {
               ))}
             </div>
             <Link href="/auth/register" style={{display:"block",textAlign:"center",padding:"11px",borderRadius:11,background:BG2,color:TX2,fontSize:13,fontWeight:500,textDecoration:"none",transition:"background .15s"}}
-            onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background=BG3;}}
-            onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background=BG2;}}>Kostenlos starten</Link>
+              }
+              }>Kostenlos starten</Link>
           </div>
 
           {/* Premium — featured */}
@@ -478,8 +478,8 @@ export default async function HomePage() {
               ))}
             </div>
             <Link href="/dashboard/premium?plan=dealer" style={{display:"block",textAlign:"center",padding:"11px",borderRadius:11,background:"transparent",color:G,fontSize:13,fontWeight:600,textDecoration:"none",border:`1px solid rgba(233,168,75,0.2)`,transition:"background .15s,border-color .15s"}}
-            onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.background=G08;el.style.borderColor=G30;}}
-            onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.background="transparent";el.style.borderColor="rgba(233,168,75,0.2)";}}>Händler werden ✦✦✦</Link>
+              }
+              }>Händler werden ✦✦✦</Link>
           </div>
         </div>
 

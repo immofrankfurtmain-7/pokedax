@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+﻿export const dynamic = "force-dynamic";
+import Link from "next/link";
 
 const G="#E9A84B",G30="rgba(233,168,75,0.30)",G18="rgba(233,168,75,0.18)";
 const G12="rgba(233,168,75,0.12)",G08="rgba(233,168,75,0.08)",G05="rgba(233,168,75,0.05)";

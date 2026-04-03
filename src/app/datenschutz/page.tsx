@@ -1,16 +1,17 @@
-﻿import Link from "next/link";
+﻿export const dynamic = "force-dynamic";
+import Link from "next/link";
 export const metadata = { title:"Datenschutz" };
 const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a";
 const BG1="#111113",BR2="rgba(255,255,255,0.085)";
 export default function DatenschutzPage() {
   const sections=[
     {h:"Verantwortlicher",t:"PokéDax, Musterstraße 12, 80331 München. hello@pokedax.de"},
-    {h:"Erhobene Daten",t:"Bei Registrierung: E-Mail und Benutzername. Bei Nutzung: Scan-Verlauf, Wunschliste, Sammlung."},
-    {h:"Zweck",t:"Daten dienen ausschließlich der Bereitstellung des PokéDax-Services."},
+    {h:"Erhobene Daten",t:"E-Mail, Benutzername, Scan-Verlauf, Wunschliste, Sammlung."},
+    {h:"Zweck",t:"Bereitstellung des PokéDax-Services."},
     {h:"Speicherung",t:"EU-Server (Supabase). Passwörter als bcrypt-Hash."},
-    {h:"Weitergabe",t:"Keine Weitergabe personenbezogener Daten an Dritte."},
+    {h:"Weitergabe",t:"Keine Weitergabe an Dritte."},
     {h:"Ihre Rechte",t:"Auskunft, Berichtigung, Löschung (Art. 15-18 DSGVO). Anfragen: hello@pokedax.de"},
-    {h:"Cookies",t:"Nur technisch notwendige Cookies für Authentifizierung. Kein Tracking."},
+    {h:"Cookies",t:"Nur technisch notwendige Session-Cookies. Kein Tracking."},
   ] as const;
   return(
     <div style={{minHeight:"80vh",color:TX1}}>

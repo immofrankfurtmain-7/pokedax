@@ -1,4 +1,5 @@
-﻿import Link from "next/link";
+﻿export const dynamic = "force-dynamic";
+import Link from "next/link";
 export const metadata = { title:"Impressum" };
 const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a";
 const BG1="#111113",BR2="rgba(255,255,255,0.085)";
