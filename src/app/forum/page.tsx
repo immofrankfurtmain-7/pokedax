@@ -42,18 +42,15 @@ export default function ForumPage() {
 
       if (error) {
         console.error("Forum fetch error:", error);
-        setLoading(false);
-        return;
+      } else {
+        const mappedPosts: Post[] = (data || []).map((item: any) => ({
+          ...item,
+          profiles: item.profiles?.[0] || null,
+          forum_categories: item.forum_categories?.[0] || null,
+        }));
+
+        setPosts(mappedPosts);
       }
-
-      // Supabase gibt profiles als Array zurück → wir nehmen das erste Element
-      const mappedPosts: Post[] = (data || []).map((item: any) => ({
-        ...item,
-        profiles: item.profiles?.[0] || null,        // wichtig: Array → einzelnes Objekt
-        forum_categories: item.forum_categories?.[0] || null,
-      }));
-
-      setPosts(mappedPosts);
       setLoading(false);
     }
 
@@ -68,11 +65,13 @@ export default function ForumPage() {
     return `vor ${Math.floor(hours / 24)} Tagen`;
   };
 
+  // Kategorien ohne Set-Spread (um tsconfig-Fehler zu vermeiden)
+  const allCategories = posts.map(p => p.forum_categories?.name).filter(Boolean) as string[];
+  const uniqueCategories = ["alle", ...Array.from(new Set(allCategories))];
+
   const filteredPosts = activeCategory === "alle" 
     ? posts 
     : posts.filter(p => p.forum_categories?.name === activeCategory);
-
-  const categories = ["alle", ...new Set(posts.map(p => p.forum_categories?.name).filter(Boolean))];
 
   if (loading) {
     return (
@@ -101,7 +100,7 @@ export default function ForumPage() {
 
         {/* Kategorie Filter */}
         <div className="flex flex-wrap gap-3 mb-12">
-          {categories.map((cat) => (
+          {uniqueCategories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
@@ -116,7 +115,7 @@ export default function ForumPage() {
           ))}
         </div>
 
-        {/* Posts */}
+        {/* Posts List */}
         <div className="space-y-6">
           {filteredPosts.length > 0 ? (
             filteredPosts.map((post) => {
