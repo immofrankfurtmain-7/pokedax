@@ -38,32 +38,64 @@ body {
 
 .font-display { font-family: 'Satoshi', sans-serif; }
 
-/* ── STARKER GOLD-GLOW (genau wie du es willst) ── */
+/* ── WEICHES, SICH AUSBREITENDES GOLD-GLOW (genau wie gewünscht) ── */
 .gold-glow {
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  transition: all 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+  overflow: hidden;
+}
+
+.gold-glow::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: radial-gradient(circle at center, var(--gold-30) 0%, transparent 70%);
+  opacity: 0;
+  transition: all 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.gold-glow:hover::before {
+  opacity: 1;
+  transform: scale(1.15);
 }
 
 .gold-glow:hover {
+  transform: translateY(-6px);
   box-shadow: 
     0 0 0 1px var(--gold),
-    0 0 0 9px var(--gold-18),
-    0 30px 70px -15px rgba(233,168,75,0.40);
-  transform: translateY(-4px);
+    0 25px 60px -15px rgba(233,168,75,0.45);
 }
 
-/* ── Trending Card Hover – jetzt richtig leuchtend & rund ── */
+/* Speziell für Cards – noch stärkeres, weicheres Leuchten */
 .card-hover {
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  transition: all 0.55s cubic-bezier(0.23, 1, 0.32, 1);
   border-radius: 24px;
   overflow: hidden;
 }
 
+.card-hover::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 50% 30%, var(--gold-30) 0%, transparent 65%);
+  opacity: 0;
+  transition: all 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: -1;
+}
+
+.card-hover:hover::before {
+  opacity: 1;
+  transform: scale(1.25);
+}
+
 .card-hover:hover {
-  transform: translateY(-10px) scale(1.035);
+  transform: translateY(-10px) scale(1.02);
   box-shadow: 
-    0 40px 80px -20px rgba(0, 0, 0, 0.6),
-    0 0 0 1px var(--gold-12) inset,
-    0 0 0 12px var(--gold-18); /* extra Glow-Ring */
+    0 40px 90px -25px rgba(233,168,75,0.35),
+    0 0 0 1px var(--gold-12) inset;
 }
 
 /* Subtiler Canvas */

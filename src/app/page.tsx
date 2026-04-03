@@ -48,7 +48,7 @@ export default async function HomePage() {
           </Link>
           <Link 
             href="/scanner" 
-            className="px-10 py-5 border border-[var(--br-2)] hover:border-[var(--gold-18)] text-[var(--tx-2)] font-medium rounded-3xl transition-all gold-glow"
+            className="px-10 py-5 border border-[var(--br-2)] text-[var(--tx-2)] font-medium rounded-3xl transition-all gold-glow"
           >
             Karte scannen →
           </Link>
@@ -70,7 +70,7 @@ export default async function HomePage() {
         ))}
       </div>
 
-      {/* TRENDING CARDS – starker goldener Glow */}
+      {/* TRENDING CARDS – weiches, sich ausbreitendes Gold-Leuchten */}
       <section className="mb-28">
         <div className="flex items-baseline justify-between mb-8">
           <h2 className="font-display text-2xl font-light tracking-tight">Meistgesucht</h2>
@@ -85,7 +85,7 @@ export default async function HomePage() {
                 href={`/preischeck?q=${encodeURIComponent(card.name_de || card.name)}`} 
                 className="card-hover block group"
               >
-                <div className="bg-[var(--bg-1)] border border-[var(--br-1)] h-full flex flex-col rounded-3xl overflow-hidden">
+                <div className="bg-[var(--bg-1)] border border-[var(--br-1)] h-full flex flex-col">
                   <div className="aspect-[4/3] bg-[var(--bg-2)] flex items-center justify-center p-8 relative overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -115,7 +115,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* FANTASY LEAGUE – prominent */}
+      {/* FANTASY LEAGUE */}
       <section className="mb-28">
         <div className="flex items-baseline justify-between mb-8">
           <h2 className="font-display text-2xl font-light tracking-tight">Fantasy League</h2>
@@ -136,7 +136,6 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          {/* Leaderboard Vorschau */}
           <div className="md:col-span-2 bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-8 flex flex-col">
             <div className="text-xs text-[var(--tx-3)] mb-6">AKTUELLES LEADERBOARD</div>
             <div className="space-y-6 flex-1">
@@ -153,7 +152,7 @@ export default async function HomePage() {
 
       {/* SCANNER + PORTFOLIO */}
       <div className="grid md:grid-cols-2 gap-8 mb-28">
-        {/* Großer Scanner Upload-Bereich */}
+        {/* Scanner mit großem Upload-Bereich */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10 gold-glow">
           <div className="uppercase text-xs tracking-[0.12em] text-[var(--tx-3)] mb-3">KI-SCANNER • GEMINI FLASH</div>
           <div className="text-4xl font-light tracking-[-0.03em] leading-none mb-6">
@@ -161,7 +160,7 @@ export default async function HomePage() {
           </div>
           <p className="text-[var(--tx-2)] mb-8">Karte auf den Tisch legen – in 2 Sekunden den aktuellen Cardmarket-Wert sehen.</p>
           
-          <div className="border-2 border-dashed border-[var(--gold-18)] rounded-3xl h-72 flex flex-col items-center justify-center gap-4 hover:border-[var(--gold)] transition-colors">
+          <div className="border-2 border-dashed border-[var(--gold-18)] rounded-3xl h-72 flex flex-col items-center justify-center gap-4 hover:border-[var(--gold)] transition-colors gold-glow">
             <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="text-[var(--gold)]">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
             </svg>
@@ -225,7 +224,7 @@ export default async function HomePage() {
               <li>✓ Forum lesen</li>
               <li className="opacity-40">✕ Portfolio + Charts</li>
             </ul>
-            <Link href="/auth/register" className="mt-12 block w-full py-5 text-center border border-[var(--br-2)] rounded-3xl text-sm font-medium">Kostenlos starten</Link>
+            <Link href="/auth/register" className="mt-12 block w-full py-5 text-center border border-[var(--br-2)] rounded-3xl text-sm font-medium gold-glow">Kostenlos starten</Link>
           </div>
 
           {/* Premium */}
@@ -241,7 +240,7 @@ export default async function HomePage() {
               <li className="text-[var(--tx-1)]">✓ Preis-Alerts</li>
               <li className="text-[var(--tx-1)]">✓ Exklusives Forum</li>
             </ul>
-            <Link href="/dashboard/premium" className="mt-12 block w-full py-5 text-center bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-3xl">Premium werden</Link>
+            <Link href="/dashboard/premium" className="mt-12 block w-full py-5 text-center bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-3xl text-sm gold-glow">Premium werden</Link>
           </div>
 
           {/* Dealer */}
@@ -256,7 +255,7 @@ export default async function HomePage() {
               <li>✓ Eigene Shop-Seite</li>
               <li>✓ API-Zugang</li>
             </ul>
-            <Link href="/dashboard/premium?plan=dealer" className="mt-12 block w-full py-5 text-center border border-[var(--gold-18)] text-[var(--gold)] rounded-3xl">Händler werden</Link>
+            <Link href="/dashboard/premium?plan=dealer" className="mt-12 block w-full py-5 text-center border border-[var(--gold-18)] text-[var(--gold)] rounded-3xl text-sm gold-glow">Händler werden</Link>
           </div>
         </div>
       </section>
