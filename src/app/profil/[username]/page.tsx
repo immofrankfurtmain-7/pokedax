@@ -188,7 +188,6 @@ export default async function ProfilePage({ params }: Props) {
             )}
           </div>
         )}
- 
 
         {/* Recent posts */}
         {posts && posts.length > 0 && (
