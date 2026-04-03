@@ -7,9 +7,9 @@ export default function DatenschutzPage() {
     {h:"Verantwortlicher",t:"PokéDax, Musterstraße 12, 80331 München. hello@pokedax.de"},
     {h:"Erhobene Daten",t:"Bei Registrierung: E-Mail und Benutzername. Bei Nutzung: Scan-Verlauf, Wunschliste, Sammlung."},
     {h:"Zweck",t:"Daten dienen ausschließlich der Bereitstellung des PokéDax-Services."},
-    {h:"Speicherung",t:"EU-Server (Supabase). Passwörter als bcrypt-Hash. Kein Klartext-Zugriff."},
+    {h:"Speicherung",t:"EU-Server (Supabase). Passwörter als bcrypt-Hash."},
     {h:"Weitergabe",t:"Keine Weitergabe personenbezogener Daten an Dritte."},
-    {h:"Ihre Rechte",t:"Auskunft, Berichtigung, Löschung (Art. 15–18 DSGVO). Anfragen: hello@pokedax.de"},
+    {h:"Ihre Rechte",t:"Auskunft, Berichtigung, Löschung (Art. 15-18 DSGVO). Anfragen: hello@pokedax.de"},
     {h:"Cookies",t:"Nur technisch notwendige Cookies für Authentifizierung. Kein Tracking."},
   ] as const;
   return(
