@@ -11,7 +11,7 @@ type Post = {
   title: string;
   upvotes: number;
   created_at: string;
-  profiles: { username: string } | null;           // wichtig: einzelnes Objekt, nicht Array
+  profiles: { username: string } | null;
   forum_categories: { name: string } | null;
 };
 
@@ -42,10 +42,18 @@ export default function ForumPage() {
 
       if (error) {
         console.error("Forum fetch error:", error);
-      } else {
-        // profiles ist jetzt ein einzelnes Objekt dank !inner
-        setPosts((data as Post[]) ?? []);
+        setLoading(false);
+        return;
       }
+
+      // Supabase gibt profiles als Array zurück → wir nehmen das erste Element
+      const mappedPosts: Post[] = (data || []).map((item: any) => ({
+        ...item,
+        profiles: item.profiles?.[0] || null,        // wichtig: Array → einzelnes Objekt
+        forum_categories: item.forum_categories?.[0] || null,
+      }));
+
+      setPosts(mappedPosts);
       setLoading(false);
     }
 
@@ -108,7 +116,7 @@ export default function ForumPage() {
           ))}
         </div>
 
-        {/* Posts List */}
+        {/* Posts */}
         <div className="space-y-6">
           {filteredPosts.length > 0 ? (
             filteredPosts.map((post) => {
