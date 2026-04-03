@@ -201,8 +201,8 @@ export default async function ProfilePage({ params }: Props) {
             {posts.map((post, i) => (
               <Link key={post.id} href={`/forum/post/${post.id}`} style={{ display:"block", textDecoration:"none" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 18px", borderBottom: i < posts.length-1 ? "1px solid rgba(255,255,255,0.04)" : "none", transition:"background .15s" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background="rgba(255,255,255,0.03)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background="transparent"; }}
+                  }
+                  }
                 >
                   <div style={{ flex:1, minWidth:0 }}>
                     <p style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.75)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:2 }}>{post.title}</p>
