@@ -1,148 +1,133 @@
-﻿"use client";
+﻿// src/app/forum/page.tsx
+"use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
-import { motion } from "framer-motion";
+import { useState } from "react";
 
-// ── Type Definitions (sauber & realistisch für Supabase) ──
-interface Post {
-  id: string;
-  title: string;
-  upvotes: number;
-  created_at: string;
-  profiles: { username: string } | null;           // ← wichtig: kann null oder Objekt sein
-  forum_categories: { name: string } | null;       // ← wichtig: kann null oder Objekt sein
-}
+const categories = [
+  { name: "Alle", slug: "all" },
+  { name: "Preise", slug: "preise" },
+  { name: "Sammlung", slug: "sammlung" },
+  { name: "Strategie", slug: "strategie" },
+  { name: "News", slug: "news" },
+  { name: "Tausch", slug: "tausch" },
+  { name: "Fake-Check", slug: "fake-check" },
+];
 
-interface Category {
-  id: string;
-  name: string;
-}
+const samplePosts = [
+  {
+    id: 1,
+    title: "Charizard UPC Wertentwicklung – lohnt sich Grading noch 2026?",
+    category: "Preise",
+    author: "MaxTrainer",
+    time: "2 Std.",
+    upvotes: 47,
+  },
+  {
+    id: 2,
+    title: "Meine komplette SV01-Sammlung ab € Verkauf oder Tausch?",
+    category: "Sammlung",
+    author: "SaraCollects",
+    time: "5 Std.",
+    upvotes: 31,
+  },
+  {
+    id: 3,
+    title: "Ist diese Charizard Base Set eine Fälschung? Fotos anbei",
+    category: "Fake-Check",
+    author: "KarteCheck",
+    time: "14 Std.",
+    upvotes: 89,
+  },
+  {
+    id: 4,
+    title: "Neue Sets 2026 – welche Karten werden voraussichtlich explodieren?",
+    category: "Strategie",
+    author: "TCGInvestor",
+    time: "1 Tag",
+    upvotes: 124,
+  },
+];
 
 export default function ForumPage() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [cats, setCats] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("all");
 
-  useEffect(() => {
-    async function fetchForumData() {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      const [postsRes, catsRes] = await Promise.all([
-        supabase
-          .from("forum_posts")
-          .select(`
-            id,
-            title,
-            upvotes,
-            created_at,
-            profiles (username),
-            forum_categories (name)
-          `)
-          .order("created_at", { ascending: false })
-          .limit(20),
-
-        supabase
-          .from("forum_categories")
-          .select("id, name")
-          .order("name"),
-      ]);
-
-      // Typ-Sicherheit: profiles und forum_categories sind bei Supabase oft Arrays → wir nehmen [0]
-      const typedPosts: Post[] = (postsRes.data ?? []).map((p: any) => ({
-        ...p,
-        profiles: p.profiles?.[0] ?? null,                    // Array → erstes Element oder null
-        forum_categories: p.forum_categories?.[0] ?? null,
-      }));
-
-      setPosts(typedPosts);
-      setCats(catsRes.data ?? []);
-      setLoading(false);
-    }
-
-    fetchForumData();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)]">
-        <div className="w-6 h-6 border-2 border-transparent border-t-[var(--g)] rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const filteredPosts = activeCategory === "all" 
+    ? samplePosts 
+    : samplePosts.filter(post => post.category.toLowerCase() === activeCategory);
 
   return (
-    <div className="bg-[var(--bg-base)] min-h-screen pb-24">
-      <div className="max-w-4xl mx-auto px-6 pt-12">
-        <div className="flex items-end justify-between mb-10">
+    <div className="bg-[var(--bg-base)] text-[var(--tx-1)] min-h-screen pb-20">
+      <div className="max-w-screen-2xl mx-auto px-10 pt-12">
+
+        {/* Header */}
+        <div className="flex justify-between items-end mb-12">
           <div>
-            <h1 className="text-4xl font-light tracking-tight">Forum</h1>
-            <p className="text-[var(--tx-2)] mt-2">Diskussionen &amp; Erfahrungen der Community</p>
+            <h1 className="text-5xl font-light tracking-[-2px]">Forum</h1>
+            <p className="text-[var(--tx-2)] mt-3">Diskussionen und Erfahrungen der Community</p>
           </div>
-          <Link
-            href="/forum/new"
-            className="px-6 py-3 bg-[var(--g)] text-[#0a0a0a] font-medium rounded-2xl hover:bg-[#f5c16e] transition-colors"
+          <Link 
+            href="/forum/new" 
+            className="px-8 py-4 bg-[var(--g)] text-black font-medium rounded-3xl hover:bg-[#f5c16e] transition-colors"
           >
             + Neuer Beitrag
           </Link>
         </div>
 
-        <div className="space-y-4">
-          {posts.length === 0 ? (
-            <div className="text-center py-20 text-[var(--tx-3)]">
-              Noch keine Beiträge vorhanden.
-            </div>
+        {/* Kategorien */}
+        <div className="flex flex-wrap gap-2 mb-12">
+          {categories.map((cat) => (
+            <button
+              key={cat.slug}
+              onClick={() => setActiveCategory(cat.slug)}
+              className={`px-6 py-2.5 rounded-3xl text-sm font-medium transition-all ${
+                activeCategory === cat.slug 
+                  ? "bg-[var(--g)] text-black" 
+                  : "bg-[var(--bg-1)] border border-[var(--br-2)] hover:border-[var(--g18)]"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Posts */}
+        <div className="space-y-6">
+          {filteredPosts.length > 0 ? (
+            filteredPosts.map((post) => (
+              <Link 
+                key={post.id} 
+                href={`/forum/post/${post.id}`}
+                className="block bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-8 hover:border-[var(--g18)] transition-all group"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="font-medium text-lg leading-tight group-hover:text-[var(--g)] transition-colors">
+                      {post.title}
+                    </div>
+                    <div className="flex items-center gap-4 mt-6 text-sm">
+                      <span className="text-[var(--tx-2)]">{post.author}</span>
+                      <span className="text-[var(--tx-3)]">• {post.time}</span>
+                      <span className="px-4 py-1 text-xs bg-[var(--g06)] text-[var(--g)] rounded-full border border-[var(--g18)]">
+                        {post.category}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right text-sm text-[var(--tx-3)]">
+                    <div className="flex items-center gap-1 justify-end">
+                      ↑ {post.upvotes}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))
           ) : (
-            posts.map((post) => {
-              const category = post.forum_categories?.name ?? "Allgemein";
-              const username = post.profiles?.username ?? "Anonym";
-              const timeAgo = new Date(post.created_at).toLocaleDateString("de-DE", {
-                day: "2-digit",
-                month: "short",
-              });
-
-              return (
-                <motion.div
-                  key={post.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="group bg-[var(--bg-1)] border border-[var(--br-2)] hover:border-[var(--g18)] rounded-3xl p-8 transition-all"
-                >
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-2xl bg-[var(--bg-3)] flex items-center justify-center text-xs font-medium text-[var(--tx-2)]">
-                        {username[0]?.toUpperCase() ?? "?"}
-                      </div>
-                      <div>
-                        <span className="font-medium text-[var(--tx-1)]">{username}</span>
-                        <span className="text-[var(--tx-3)] ml-3 text-xs">{timeAgo}</span>
-                      </div>
-                    </div>
-
-                    <div className="px-4 py-1 text-xs font-medium bg-[var(--g06)] text-[var(--g)] rounded-full border border-[var(--g18)]">
-                      {category}
-                    </div>
-                  </div>
-
-                  <Link href={`/forum/post/${post.id}`} className="block mt-6 group-hover:text-[var(--g)] transition-colors">
-                    <h3 className="text-xl font-medium leading-snug tracking-[-0.2px]">{post.title}</h3>
-                  </Link>
-
-                  <div className="mt-6 flex items-center gap-6 text-xs text-[var(--tx-3)]">
-                    <div className="flex items-center gap-1.5">
-                      <span>↑</span>
-                      <span>{post.upvotes ?? 0}</span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })
+            <div className="text-center py-20 text-[var(--tx-3)]">
+              Noch keine Beiträge in dieser Kategorie.
+            </div>
           )}
         </div>
+
       </div>
     </div>
   );
