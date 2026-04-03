@@ -1,8 +1,4 @@
-﻿// src/app/page.tsx
-// Komplett überarbeitet – ALLE fehlenden Elemente aus vorherigen Chats zurück + neue Quiet-Luxury-Qualität
-// Hero mit goldenem Wort, Scanner mit großem Upload-Bereich, Portfolio mit feiner Sparkline, Pricing-Boxen, starke Hovers, goldenes Leuchten
-
-import Link from "next/link";
+﻿import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -48,7 +44,7 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* TRENDING CARDS – starke Hover + goldenes Leuchten */}
+      {/* TRENDING – starke Hovers */}
       <section className="mb-28">
         <div className="flex items-baseline justify-between mb-8">
           <h2 className="font-display text-2xl font-light tracking-tight">Meistgesucht</h2>
@@ -75,10 +71,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SCANNER + PORTFOLIO – beide Teaser vollständig zurück */}
+      {/* SCANNER + PORTFOLIO */}
       <div className="grid md:grid-cols-2 gap-8 mb-28">
-        
-        {/* Großer Scanner Upload-Bereich (genau wie in alten Chats) */}
+        {/* Großer Scanner Upload-Bereich */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10 gold-glow">
           <div className="uppercase text-xs tracking-[0.12em] text-[var(--tx-3)] mb-3">KI-SCANNER • GEMINI FLASH</div>
           <div className="text-4xl font-light tracking-[-0.03em] leading-none mb-6">
@@ -86,14 +81,13 @@ export default function HomePage() {
           </div>
           <p className="text-[var(--tx-2)] mb-8">Karte auf den Tisch legen – in 2 Sekunden den aktuellen Cardmarket-Wert sehen.</p>
           
-          {/* Großer Upload-Bereich */}
           <div className="border-2 border-dashed border-[var(--gold-18)] rounded-3xl h-72 flex flex-col items-center justify-center gap-4 hover:border-[var(--gold)] transition-colors">
             <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="text-[var(--gold)]">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
             </svg>
             <div className="text-center">
               <div className="text-sm font-medium">Foto ablegen oder klicken</div>
-              <div className="text-xs text-[var(--tx-3)]">Unterstützt JPG, PNG, HEIC • Max 10 MB</div>
+              <div className="text-xs text-[var(--tx-3)]">JPG, PNG, HEIC • Max 10 MB</div>
             </div>
           </div>
 
@@ -102,7 +96,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Portfolio mit feiner Sparkline-Grafik */}
+        {/* Portfolio mit Sparkline */}
         <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10 flex flex-col gold-glow">
           <div className="flex-1">
             <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">DEIN PORTFOLIO</div>
@@ -113,15 +107,14 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Feine Sparkline (wie in den alten Dateien) */}
           <svg width="100%" height="92" viewBox="0 0 420 92" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-8">
             <defs>
               <linearGradient id="portfolioGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#D9A14F" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#D9A14F" stopOpacity="0" />
+                <stop offset="0%" stopColor="#E9A84B" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#E9A84B" stopOpacity="0" />
               </linearGradient>
             </defs>
-            <path d="M10 75 Q80 68 140 55 Q200 38 260 32 Q320 18 410 12" stroke="#D9A14F" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M10 75 Q80 68 140 55 Q200 38 260 32 Q320 18 410 12" stroke="#E9A84B" strokeWidth="2.5" strokeLinecap="round" />
             <path d="M10 75 Q80 68 140 55 Q200 38 260 32 Q320 18 410 12 L410 92 L10 92 Z" fill="url(#portfolioGlow)" />
           </svg>
 
@@ -132,7 +125,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* PRICING BOXEN – vollständig zurück (wie in den ersten Chats) */}
+      {/* PRICING BOXEN – vollständig */}
       <section className="mb-16">
         <div className="text-center mb-12">
           <div className="text-sm text-[var(--tx-3)] tracking-widest">MITGLIEDSCHAFT</div>
@@ -155,7 +148,7 @@ export default function HomePage() {
             <Link href="/auth/register" className="mt-12 block w-full py-5 text-center border border-[var(--br-2)] rounded-3xl text-sm font-medium">Kostenlos starten</Link>
           </div>
 
-          {/* Premium – featured */}
+          {/* Premium */}
           <div className="bg-gradient-to-b from-[var(--gold-08)] to-[var(--bg-1)] border border-[var(--gold-18)] rounded-3xl p-9 relative gold-glow">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[var(--gold)] text-[#0a0a0a] text-xs font-bold px-8 py-1 rounded-b-3xl">BELIEBTESTE WAHL</div>
             <div className="uppercase text-xs text-[var(--gold)] tracking-widest mt-8 mb-6">ILLUSTRATION RARE</div>

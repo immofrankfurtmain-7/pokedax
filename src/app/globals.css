@@ -1,5 +1,4 @@
-﻿
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,300&family=DM+Mono:wght@400;500;600&display=swap");
+﻿@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,300&family=DM+Mono:wght@400;500;600&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Satoshi:wght@300;400;500;700&display=swap');
 
 @tailwind base;
@@ -7,26 +6,25 @@
 @tailwind utilities;
 
 :root {
-  --canvas:      #0a0a0a;
-  --bg-1:        #111113;
-  --bg-2:        #1a1a1f;
-  --bg-3:        #222228;
+  --canvas: #0a0a0a;
+  --bg-1: #111113;
+  --bg-2: #1a1a1f;
+  --bg-3: #222228;
 
-  --br-1:        rgba(255,255,255,0.055);
-  --br-2:        rgba(255,255,255,0.095);
-  --br-gold:     rgba(217,161,79,0.14);
+  --br-1: rgba(255,255,255,0.055);
+  --br-2: rgba(255,255,255,0.095);
+  --br-gold: rgba(233,168,75,0.14);
 
-  --tx-1:        #f0f0f5;
-  --tx-2:        #a8a8b8;
-  --tx-3:        #6b6b7a;
+  --tx-1: #f0f0f5;
+  --tx-2: #a8a8b8;
+  --tx-3: #6b6b7a;
 
-  /* Deep Luxury Gold – genau wie in deiner Projektzusammenfassung */
-  --gold:        #D9A14F;
-  --gold-30:     rgba(217,161,79,0.30);
-  --gold-18:     rgba(217,161,79,0.18);
-  --gold-12:     rgba(217,161,79,0.12);
-  --gold-08:     rgba(217,161,79,0.08);
-  --gold-05:     rgba(217,161,79,0.05);
+  --gold: #E9A84B;
+  --gold-30: rgba(233,168,75,0.30);
+  --gold-18: rgba(233,168,75,0.18);
+  --gold-12: rgba(233,168,75,0.12);
+  --gold-08: rgba(233,168,75,0.08);
+  --gold-05: rgba(233,168,75,0.05);
 }
 
 * { box-sizing: border-box; }
@@ -40,20 +38,20 @@ body {
 
 .font-display { font-family: 'Satoshi', sans-serif; }
 
-/* ── STARKES goldenes Leuchten (genau wie du es mochtest) ── */
+/* Starkes goldenes Leuchten – genau wie du es liebst */
 .gold-glow {
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: all 0.45s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .gold-glow:hover {
   box-shadow: 
     0 0 0 1px var(--gold),
     0 0 0 6px var(--gold-18),
-    0 25px 50px -12px rgba(217,161,79,0.25);
+    0 25px 50px -12px rgba(233,168,75,0.25);
   transform: translateY(-4px);
 }
 
-/* ── Hover für Karten – jetzt richtig spürbar ── */
+/* Spürbarer, aber edler Card-Hover */
 .card-hover {
   transition: all 0.45s cubic-bezier(0.23, 1, 0.32, 1);
 }
@@ -64,18 +62,17 @@ body {
               0 0 0 1px var(--gold-12) inset;
 }
 
-/* Subtiler Canvas-Hintergrund (kein altes Rauschen mehr) */
+/* Subtiler Canvas (kein altes Rauschen) */
 .background-canvas {
   position: fixed;
   inset: 0;
   z-index: 0;
   background: 
-    radial-gradient(circle at 30% 20%, rgba(217,161,79,0.035) 0%, transparent 40%),
-    radial-gradient(circle at 70% 80%, rgba(217,161,79,0.025) 0%, transparent 50%);
+    radial-gradient(circle at 30% 20%, rgba(233,168,75,0.035) 0%, transparent 40%),
+    radial-gradient(circle at 70% 80%, rgba(233,168,75,0.025) 0%, transparent 50%);
   pointer-events: none;
 }
 
-/* Scrollbar extrem clean */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-thumb { background: var(--br-1); border-radius: 20px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--br-2); }
