@@ -1,23 +1,25 @@
-﻿export default function ImpressumPage() {
-  const T1="#EDEAF6",T2="#8A89A8",T3="#454462";
-  const B2="#101020",BR2="rgba(255,255,255,0.080)";
-  return(
-    <div style={{minHeight:"80vh",color:T1}}>
-      <div style={{maxWidth:680,margin:"0 auto",padding:"48px 24px"}}>
-        <h1 style={{fontSize:22,fontWeight:500,letterSpacing:"-.03em",marginBottom:6}}>Impressum</h1>
-        <p style={{fontSize:12,color:T3,marginBottom:32}}>Angaben gemäß § 5 TMG</p>
-        <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"24px 28px",display:"flex",flexDirection:"column",gap:20}}>
-          {[
-            {h:"Verantwortlich",t:"PokéDax\nMaximilian Mustermann\nMusterstraße 1\n12345 Berlin\nDeutschland"},
-            {h:"Kontakt",t:"E-Mail: kontakt@pokedax.de\nWebsite: https://pokedax2.vercel.app"},
-            {h:"Haftungsausschluss",t:"PokéDax ist kein offizielles Produkt von The Pokémon Company. Alle Pokémon-Namen und -Marken sind Eigentum ihrer jeweiligen Inhaber. Diese Plattform dient ausschließlich informativen Zwecken."},
-            {h:"Datenquelle",t:"Preisdaten werden von Cardmarket (cardmarket.com) bezogen. Karten-Informationen stammen von TCGdex. Alle Preise sind unverbindliche Richtwerte."},
-          ].map(s=>(
-            <div key={s.h}>
-              <div style={{fontSize:11,fontWeight:600,letterSpacing:".08em",textTransform:"uppercase",color:T3,marginBottom:8}}>{s.h}</div>
-              <div style={{fontSize:13,color:T2,lineHeight:1.75,whiteSpace:"pre-line"}}>{s.t}</div>
-            </div>
-          ))}
+﻿// src/app/impressum/page.tsx
+
+export default function ImpressumPage() {
+  return (
+    <div className="min-h-screen bg-[var(--canvas)] py-20">
+      <div className="max-w-3xl mx-auto px-6 prose prose-invert">
+        <h1 className="font-display text-5xl font-light tracking-tight mb-12">Impressum</h1>
+        
+        <div className="space-y-12 text-[var(--tx-2)] leading-relaxed">
+          <div>
+            <h2 className="text-xl font-medium text-[var(--tx-1)] mb-4">Angaben gemäß § 5 TMG</h2>
+            <p>PokéDax GmbH<br />Musterstraße 12<br />80331 München</p>
+          </div>
+          
+          <div>
+            <h2 className="text-xl font-medium text-[var(--tx-1)] mb-4">Kontakt</h2>
+            <p>E-Mail: hello@pokedax.de</p>
+          </div>
+
+          <div className="text-xs text-[var(--tx-3)]">
+            Diese Seite wurde mit höchster Präzision und Liebe zum Detail gestaltet.
+          </div>
         </div>
       </div>
     </div>

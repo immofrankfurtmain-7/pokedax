@@ -1,98 +1,44 @@
 // src/app/auth/login/page.tsx
-"use client";
-
-import Link from "next/link";
-import { useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    // Simulierte Anmeldung (später echte Supabase Auth)
-    setTimeout(() => {
-      setLoading(false);
-      alert("Anmeldung erfolgreich! (In der echten Version wirst du eingeloggt)");
-      window.location.href = "/";
-    }, 1200);
-  };
-
   return (
-    <div className="bg-[var(--bg-base)] text-[var(--tx-1)] min-h-screen flex items-center justify-center px-6">
-      <div className="w-full max-w-md">
-        
-        {/* Logo */}
+    <div className="min-h-screen bg-[var(--canvas)] flex items-center justify-center py-20">
+      <div className="w-full max-w-md px-6">
         <div className="text-center mb-12">
-          <div className="inline-block font-medium text-4xl tracking-[-1px] text-[var(--g)]">PokéDax</div>
+          <div className="font-display text-4xl font-light tracking-[-0.06em] mb-3">Willkommen zurück</div>
+          <p className="text-[var(--tx-2)]">Melde dich an, um deine Sammlung fortzusetzen.</p>
         </div>
 
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-light tracking-tight mb-3">Willkommen zurück</h1>
-          <p className="text-[var(--tx-2)]">Melde dich an, um dein Portfolio zu verwalten</p>
-        </div>
+        <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10 gold-glow">
+          <div className="space-y-6">
+            <div>
+              <div className="text-xs tracking-widest text-[var(--tx-3)] mb-2">E-MAIL</div>
+              <input 
+                type="email" 
+                placeholder="name@beispiel.de" 
+                className="w-full bg-transparent border border-[var(--br-2)] focus:border-[var(--gold)] rounded-2xl px-6 py-4 text-[var(--tx-1)] focus:outline-none gold-glow" 
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          
-          {/* Email */}
-          <div>
-            <label className="block text-sm text-[var(--tx-3)] mb-3">E-Mail-Adresse</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="deine@email.de"
-              className="w-full bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl px-8 py-5 text-lg outline-none focus:border-[var(--g18)] transition-colors"
-              required
-            />
+            <div>
+              <div className="text-xs tracking-widest text-[var(--tx-3)] mb-2">PASSWORT</div>
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                className="w-full bg-transparent border border-[var(--br-2)] focus:border-[var(--gold)] rounded-2xl px-6 py-4 text-[var(--tx-1)] focus:outline-none gold-glow" 
+              />
+            </div>
+
+            <button className="w-full py-4 bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-3xl gold-glow mt-4">
+              Anmelden
+            </button>
           </div>
 
-          {/* Password */}
-          <div>
-            <label className="block text-sm text-[var(--tx-3)] mb-3">Passwort</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl px-8 py-5 text-lg outline-none focus:border-[var(--g18)] transition-colors"
-              required
-            />
+          <div className="text-center mt-8 text-sm">
+            <span className="text-[var(--tx-3)]">Noch kein Account? </span>
+            <a href="/auth/register" className="text-[var(--gold)] hover:underline">Jetzt registrieren</a>
           </div>
-
-          {/* Forgot Password */}
-          <div className="text-right">
-            <Link href="/auth/forgot-password" className="text-sm text-[var(--tx-2)] hover:text-[var(--g)] transition-colors">
-              Passwort vergessen?
-            </Link>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-lg hover:bg-[#f5c16e] transition-colors disabled:opacity-70"
-          >
-            {loading ? "Anmelden..." : "Anmelden"}
-          </button>
-        </form>
-
-        {/* Register Link */}
-        <div className="text-center mt-12 text-sm text-[var(--tx-2)]">
-          Noch kein Konto?{" "}
-          <Link href="/auth/register" className="text-[var(--g)] hover:underline">
-            Jetzt kostenlos registrieren
-          </Link>
         </div>
-
-        {/* Trust Indicators */}
-        <div className="mt-16 text-center text-[10px] text-[var(--tx-3)] tracking-widest">
-          SICHER • VERSCHLÜSSELT • DSGVO-KONFORM
-        </div>
-
       </div>
     </div>
   );
