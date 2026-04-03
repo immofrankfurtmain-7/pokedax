@@ -1,116 +1,106 @@
 ﻿// src/app/preischeck/page.tsx
-"use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 export default function PreischeckPage() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("cards")
-      .select("id, name, name_de, set_id, number, image_url, price_market")
-      .or(`name.ilike.%${query}%,name_de.ilike.%${query}%`)
-      .limit(20);
-
-    if (error) {
-      console.error(error);
-    } else {
-      setResults(data || []);
-    }
-    setLoading(false);
-  };
-
-  // Suche bei Enter-Taste
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
   return (
-    <div className="bg-[var(--bg-base)] text-[var(--tx-1)] min-h-screen pb-20">
-      <div className="max-w-screen-2xl mx-auto px-10 pt-12">
-
+    <div className="min-h-screen bg-[var(--canvas)]">
+      <div className="max-w-6xl mx-auto px-6 pt-12 pb-24">
+        
         {/* Header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
-          <h1 className="text-5xl font-light tracking-[-2px] mb-4">Preis checken</h1>
-          <p className="text-[var(--tx-2)] text-lg">
-            Gib den Namen oder die Kartennummer ein – sofort den aktuellen Wert sehen.
+          <div className="inline-flex items-center gap-2 px-5 py-1.5 rounded-3xl border border-[var(--gold-12)] bg-[var(--gold-05)] text-[var(--gold)] text-xs font-medium tracking-widest mb-6">
+            LIVE CARDMARKET • DEUTSCHLAND
+          </div>
+          <h1 className="font-display text-6xl font-light tracking-[-0.055em] text-[var(--tx-1)] leading-none mb-6">
+            Finde den<br />wahren Wert.
+          </h1>
+          <p className="text-[var(--tx-2)] text-lg max-w-md mx-auto">
+            Suche nach Pokémon TCG Karten und erhalte sofort aktuelle Cardmarket-Preise.
           </p>
         </div>
 
-        {/* Suchfeld */}
-        <div className="max-w-2xl mx-auto mb-16">
-          <div className="bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl p-2 flex items-center">
-            <input 
-              type="text" 
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="z. B. Charizard ex, Pikachu VMAX, Gardevoir ex..."
-              className="flex-1 bg-transparent outline-none px-8 py-5 text-lg placeholder-[var(--tx-3)]"
+        {/* Große edle Suchleiste */}
+        <div className="max-w-3xl mx-auto mb-20">
+          <div className="relative group">
+            <div className="absolute left-8 top-1/2 -translate-y-1/2 text-[var(--tx-3)]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 01-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            
+            <input
+              type="text"
+              placeholder="Kartenname, Set oder Nummer eingeben..."
+              className="w-full bg-[var(--bg-1)] border border-[var(--br-2)] focus:border-[var(--gold)] text-[var(--tx-1)] placeholder-[var(--tx-3)] pl-20 pr-8 py-7 rounded-3xl text-lg focus:outline-none gold-glow transition-all"
             />
-            <button 
-              onClick={handleSearch}
-              disabled={loading}
-              className="bg-[var(--g)] text-black font-medium px-10 py-5 rounded-3xl hover:bg-[#f5c16e] transition-colors disabled:opacity-70"
-            >
-              {loading ? "Suchen..." : "Suchen"}
-            </button>
+
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-medium text-[var(--tx-3)] tracking-widest hidden sm:block">
+              ⏎ SUCHEN
+            </div>
           </div>
         </div>
 
-        {/* Ergebnisse */}
-        <div className="max-w-5xl mx-auto">
-          {results.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {results.map((card) => {
-                const name = card.name_de || card.name;
-                const price = card.price_market ? `${Number(card.price_market).toFixed(2)} €` : "—";
-                return (
-                  <Link
-                    key={card.id}
-                    href={`/preischeck?q=${encodeURIComponent(name)}`}
-                    className="group bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-4 hover:border-[var(--g18)]"
-                  >
-                    <div className="aspect-[3/4] bg-[var(--bg-2)] flex items-center justify-center p-8">
-                      <img 
-                        src={card.image_url} 
-                        alt={name} 
-                        className="w-full h-full object-contain transition-transform group-hover:scale-105" 
-                      />
-                    </div>
-                    <div className="px-6 py-7">
-                      <div className="font-medium line-clamp-1">{name}</div>
-                      <div className="text-xs text-[var(--tx-3)] mt-px">
-                        {String(card.set_id).toUpperCase()} · #{card.number}
-                      </div>
-                      <div className="price mt-6">{price}</div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : query.length > 0 && !loading ? (
-            <div className="text-center py-20 text-[var(--tx-3)]">
-              Keine Karten gefunden für „{query}“
-            </div>
-          ) : null}
+        {/* Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-12 border-b border-[var(--br-1)] pb-8">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button className="px-6 py-2.5 bg-[var(--bg-1)] border border-[var(--gold-12)] text-[var(--gold)] rounded-2xl text-sm font-medium gold-glow">Alle Sets</button>
+            <button className="px-6 py-2.5 text-[var(--tx-2)] hover:text-[var(--tx-1)] transition-colors">Scarlet & Violet</button>
+            <button className="px-6 py-2.5 text-[var(--tx-2)] hover:text-[var(--tx-1)] transition-colors">Sword & Shield</button>
+            <button className="px-6 py-2.5 text-[var(--tx-2)] hover:text-[var(--tx-1)] transition-colors">Hidden Fates</button>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm">
+            <select className="bg-[var(--bg-1)] border border-[var(--br-2)] text-[var(--tx-2)] px-5 py-3 rounded-2xl focus:outline-none gold-glow">
+              <option>Preis: Hoch → Niedrig</option>
+              <option>Preis: Niedrig → Hoch</option>
+              <option>Neueste Sets</option>
+              <option>Beliebtheit</option>
+            </select>
+          </div>
         </div>
 
+        {/* Ergebnis Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Link 
+              key={i} 
+              href="#" 
+              className="card-hover block group"
+            >
+              <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl overflow-hidden h-full flex flex-col">
+                <div className="aspect-[4/3] bg-[var(--bg-2)] flex items-center justify-center p-6 relative">
+                  <div className="text-[var(--tx-4)] text-xs font-mono">KARTENBILD {i + 1}</div>
+                </div>
+                
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="text-sm font-medium text-[var(--tx-1)] line-clamp-2 mb-1 group-hover:text-[var(--gold)] transition-colors">
+                    Charizard ex – Obsidian Flames
+                  </div>
+                  <div className="text-xs text-[var(--tx-3)] mb-6">
+                    SVI • 234/197 • Illustration Rare
+                  </div>
+
+                  <div className="mt-auto flex justify-between items-end">
+                    <div>
+                      <div className="font-mono text-[var(--gold)] text-2xl tracking-tighter">184,50 €</div>
+                      <div className="text-xs text-[var(--tx-3)]">Marktpreis</div>
+                    </div>
+                    <div className="text-emerald-400 text-xs font-medium text-right">
+                      ▲ 8,4%<br />
+                      <span className="text-[var(--tx-3)]">30 Tage</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Hinweis */}
+        <div className="text-center mt-20 text-[var(--tx-3)] text-sm">
+          28.470 Karten • Preise werden alle 15 Minuten aktualisiert
+        </div>
       </div>
     </div>
   );
