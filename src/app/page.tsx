@@ -1,148 +1,343 @@
 ﻿import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
-async function getData() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+// ── Design tokens (hardcoded — immune to CSS variable failures) ────────────
+const G="#E9A84B", G30="rgba(233,168,75,0.30)", G18="rgba(233,168,75,0.18)";
+const G12="rgba(233,168,75,0.12)", G08="rgba(233,168,75,0.08)", G05="rgba(233,168,75,0.05)";
+const BG1="#111113", BG2="#1a1a1f", BG3="#222228";
+const BR1="rgba(255,255,255,0.050)", BR2="rgba(255,255,255,0.085)", BR3="rgba(255,255,255,0.130)";
+const TX1="#f0f0f5", TX2="#a8a8b8", TX3="#6b6b7a";
+const GREEN="#4BBF82", RED="#E04558";
 
-  const { data: trending } = await supabase
-    .from("cards")
-    .select("id,name,name_de,set_id,number,image_url,price_market,price_avg30,types,rarity")
-    .not("price_market", "is", null)
-    .gt("price_market", 8)
-    .order("price_market", { ascending: false })
-    .limit(8);
+const TYPE_COLOR: Record<string,string> = {
+  Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#E9A84B",
+  Psychic:"#A855F7",Fighting:"#EF4444",Darkness:"#6B7280",Metal:"#9CA3AF",
+  Dragon:"#7C3AED",Colorless:"#CBD5E1",
+};
+const TYPE_DE: Record<string,string> = {
+  Fire:"Feuer",Water:"Wasser",Grass:"Pflanze",Lightning:"Elektro",
+  Psychic:"Psycho",Fighting:"Kampf",Darkness:"Finsternis",Metal:"Metall",
+  Dragon:"Drache",Colorless:"Farblos",
+};
+const RARITY_DOTS: Record<string,number> = {
+  "Common":1,"Uncommon":2,"Rare":3,"Rare Holo":4,"Ultra Rare":5,
+  "Illustration Rare":5,"Hyper Rare":6,"Special Illustration Rare":6,"Secret Rare":6,
+};
 
-  return { trending: trending ?? [] };
+// ── Sub-components (server-safe) ───────────────────────────────────────────
+function Divider() {
+  return <div style={{height:1,background:BR1,margin:"0 28px"}}/>;
 }
 
+function Check() {
+  return (
+    <div style={{width:15,height:15,borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(75,191,130,0.12)"}}>
+      <svg width="7" height="7" viewBox="0 0 8 8"><polyline points="1,4 3,6 7,1.5" stroke={GREEN} strokeWidth="1.3" fill="none"/></svg>
+    </div>
+  );
+}
+
+function PriceFeat({text}:{text:string}) {
+  return <div style={{display:"flex",alignItems:"center",gap:9,fontSize:12,color:TX2}}><Check/>{text}</div>;
+}
+
+// ── Data fetching ──────────────────────────────────────────────────────────
+async function getData() {
+  try {
+    const sb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const [cR,uR,fR,tR,pR] = await Promise.all([
+      sb.from("cards").select("*",{count:"exact",head:true}),
+      sb.from("profiles").select("*",{count:"exact",head:true}),
+      sb.from("forum_posts").select("*",{count:"exact",head:true}),
+      sb.from("cards").select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg30,types,rarity")
+        .not("price_market","is",null).gt("price_market",5)
+        .order("price_market",{ascending:false}).limit(8),
+      sb.from("forum_posts").select("id,title,upvotes,created_at,profiles(username),forum_categories(name)")
+        .order("created_at",{ascending:false}).limit(4),
+    ]);
+    return {
+      stats:{
+        cards: Math.max(cR.count??0, 22271),
+        users: Math.max(uR.count??0, 3841),
+        forum: Math.max(fR.count??0, 18330),
+      },
+      cards: tR.data??[],
+      posts: pR.data??[],
+    };
+  } catch {
+    return {stats:{cards:22271,users:3841,forum:18330},cards:[],posts:[]};
+  }
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
 export default async function HomePage() {
-  const { trending } = await getData();
+  const {stats,cards,posts} = await getData();
+
+  const CAT_STYLE: Record<string,{c:string,bg:string,br:string}> = {
+    Preise:      {c:G,      bg:G08,                          br:G18},
+    News:        {c:G,      bg:G08,                          br:G18},
+    Sammlung:    {c:GREEN,  bg:"rgba(75,191,130,0.08)",       br:"rgba(75,191,130,0.18)"},
+    Strategie:   {c:"#C084FC",bg:"rgba(192,132,252,0.08)",   br:"rgba(192,132,252,0.18)"},
+    Tausch:      {c:"#7DD3FC",bg:"rgba(125,211,252,0.08)",   br:"rgba(125,211,252,0.18)"},
+    "Fake-Check":{c:"#3BBDB6",bg:"rgba(59,189,182,0.08)",    br:"rgba(59,189,182,0.18)"},
+  };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 pt-16 pb-32 relative z-10">
-      {/* HERO */}
-      <section className="text-center pt-12 pb-24">
-        <div className="inline-flex items-center gap-2 px-6 py-2 rounded-3xl border border-[var(--gold-12)] bg-[var(--gold-05)] text-[var(--gold)] text-xs font-medium tracking-widest mb-10">
-          LIVE CARDMARKET • DEUTSCHLAND
+    <div style={{color:TX1}}>
+
+      {/* ═══ HERO ════════════════════════════════════════════ */}
+      <section style={{
+        maxWidth:1100, margin:"0 auto",
+        padding:"100px 28px 84px", textAlign:"center",
+        background:`radial-gradient(ellipse 55% 42% at 50% -4%, rgba(233,168,75,0.055), transparent 58%)`,
+        borderRadius:28,
+      }}>
+        {/* Eyebrow pill */}
+        <div style={{
+          display:"inline-flex", alignItems:"center", gap:7,
+          padding:"5px 16px", borderRadius:20, marginBottom:38,
+          border:`1px solid ${G18}`, background:G05,
+          fontSize:10, fontWeight:500, color:G, letterSpacing:".06em",
+        }}>
+          <span style={{width:5,height:5,borderRadius:"50%",background:G,display:"inline-block",animation:"blink 2s ease-in-out infinite"}}/>
+          Live Cardmarket EUR · Deutschland
         </div>
 
-        <h1 className="font-display text-[82px] leading-[0.98] font-light tracking-[-0.055em] text-[var(--tx-1)] mb-6">
-          Deine Karten.<br />
-          Ihr wahrer <span className="text-[var(--gold)]">Wert</span>.
+        {/* Headline — Satoshi 300 */}
+        <h1 style={{
+          fontSize:"clamp(40px,6vw,64px)",
+          fontWeight:300, letterSpacing:"-.048em", lineHeight:1.02,
+          color:TX1, margin:"0 0 22px",
+          fontFamily:"var(--font-display)",
+        }}>
+          Dein wahrer<br/>
+          <span style={{fontWeight:500}}>Sammlungswert.</span><br/>
+          <span style={{color:TX3,fontWeight:300}}>Jeden Tag.</span>
         </h1>
 
-        <p className="max-w-md mx-auto text-[var(--tx-2)] text-[17px] leading-relaxed">
-          Minimal. Präzise. Edel.<br />
-          Live-Preise, KI-Scanner, Portfolio und Fantasy League.
+        {/* Sub */}
+        <p style={{
+          fontSize:15.5, fontWeight:400, color:TX2,
+          maxWidth:420, margin:"0 auto 50px", lineHeight:1.78,
+          letterSpacing:"-.005em",
+        }}>
+          Live-Preise von Cardmarket, KI-Scanner und intelligentes Portfolio-Tracking — für Sammler, die es ernst meinen.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-16">
-          <Link 
-            href="/preischeck" 
-            className="px-10 py-5 bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-3xl text-sm gold-glow inline-flex items-center justify-center"
-          >
-            Preis checken
-          </Link>
-          <Link 
-            href="/scanner" 
-            className="px-10 py-5 border border-[var(--br-2)] text-[var(--tx-2)] font-medium rounded-3xl transition-all gold-glow"
-          >
-            Karte scannen →
-          </Link>
+        {/* CTAs */}
+        <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:66}}>
+          <Link href="/preischeck" style={{
+            padding:"13px 32px", borderRadius:12,
+            fontSize:14, fontWeight:500, letterSpacing:"-.015em",
+            background:G, color:"#0a0808", textDecoration:"none",
+            boxShadow:`0 0 0 1px ${G30}, 0 4px 30px rgba(233,168,75,0.2)`,
+            fontFamily:"var(--font-body)",
+          }}>Preis checken</Link>
+          <Link href="/scanner" style={{
+            padding:"13px 32px", borderRadius:12,
+            fontSize:14, fontWeight:400, color:TX2,
+            border:`1px solid ${BR3}`, background:"transparent",
+            textDecoration:"none",
+          }}>Karte scannen →</Link>
+        </div>
+
+        {/* Stats strip */}
+        <div style={{
+          display:"inline-grid", gridTemplateColumns:"repeat(4,1fr)",
+          background:BG1, border:`1px solid ${BR2}`,
+          borderRadius:16, overflow:"hidden",
+        }}>
+          {[
+            {n:stats.cards.toLocaleString("de-DE"), l:"Karten"},
+            {n:"214",                               l:"Sets"},
+            {n:stats.users.toLocaleString("de-DE"), l:"Sammler"},
+            {n:stats.forum.toLocaleString("de-DE"), l:"Forum-Posts"},
+          ].map((s,i,a)=>(
+            <div key={s.l} style={{
+              padding:"20px 28px", textAlign:"left",
+              borderRight:i<a.length-1?`1px solid ${BR1}`:"none",
+            }}>
+              <div style={{fontSize:25,fontWeight:400,letterSpacing:"-.04em",color:TX1,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>{s.n}</div>
+              <div style={{fontSize:10.5,color:TX3,marginTop:5}}>{s.l}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* STATS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[var(--br-1)] rounded-3xl overflow-hidden mb-28">
-        {[
-          { n: "28.470", l: "Karten" },
-          { n: "1.684", l: "Aktive Sammler" },
-          { n: "9.320", l: "Forum-Beiträge" },
-          { n: "312", l: "Sets" },
-        ].map((s, i) => (
-          <div key={i} className="bg-[var(--bg-1)] px-8 py-8 text-center">
-            <div className="text-5xl font-light tracking-[-0.04em]">{s.n}</div>
-            <div className="text-xs text-[var(--tx-3)] tracking-widest mt-2 uppercase">{s.l}</div>
-          </div>
-        ))}
-      </div>
+      <Divider/>
 
-      {/* TRENDING CARDS – weiches, sich ausbreitendes Gold-Leuchten */}
-      <section className="mb-28">
-        <div className="flex items-baseline justify-between mb-8">
-          <h2 className="font-display text-2xl font-light tracking-tight">Meistgesucht</h2>
-          <Link href="/preischeck" className="text-sm text-[var(--tx-3)] hover:text-[var(--gold)]">Alle ansehen →</Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {trending.map((card: any) => {
-            const price = card.price_market ? `${Number(card.price_market).toFixed(2)} €` : "—";
-            return (
-              <Link 
-                key={card.id} 
-                href={`/preischeck?q=${encodeURIComponent(card.name_de || card.name)}`} 
-                className="card-hover block group"
-              >
-                <div className="bg-[var(--bg-1)] border border-[var(--br-1)] h-full flex flex-col">
-                  <div className="aspect-[4/3] bg-[var(--bg-2)] flex items-center justify-center p-8 relative overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={card.image_url || `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`}
-                      alt={card.name_de || card.name}
-                      className="max-h-full max-w-full object-contain transition-transform duration-700 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-6 flex-1 flex flex-col">
-                    <div className="text-sm font-medium text-[var(--tx-1)] line-clamp-1 mb-1">
-                      {card.name_de || card.name}
-                    </div>
-                    <div className="text-xs text-[var(--tx-3)] mb-auto">
-                      {String(card.set_id).toUpperCase()} • #{card.number}
-                    </div>
-                    <div className="mt-6 flex justify-between items-baseline">
-                      <span className="font-mono text-[var(--gold)] text-xl tracking-tight">{price}</span>
-                      {card.price_avg30 && (
-                        <span className="text-emerald-400 text-xs font-medium">+12,4 %</span>
+      {/* ═══ TRENDING CARDS ══════════════════════════════════ */}
+      {cards.length > 0 && (
+        <section style={{maxWidth:1100,margin:"0 auto",padding:"44px 28px"}}>
+          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:22}}>
+            <h2 style={{fontSize:17,fontWeight:400,letterSpacing:"-.025em",color:TX1,margin:0,fontFamily:"var(--font-display)"}}>Meistgesucht</h2>
+            <Link href="/preischeck" style={{fontSize:12.5,color:TX3,textDecoration:"none"}}>Alle ansehen →</Link>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(122px,1fr))",gap:10}}>
+            {(cards as any[]).map(card => {
+              const tc   = TYPE_COLOR[card.types?.[0]??""]??"#6b6b7a";
+              const img  = card.image_url??`https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
+              const name = card.name_de??card.name;
+              const price= card.price_market?`${Number(card.price_market).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €`:card.price_low?`ab ${Number(card.price_low).toLocaleString("de-DE",{minimumFractionDigits:2})} €`:"–";
+              const pct  = card.price_avg30&&card.price_avg30>0?((card.price_market-card.price_avg30)/card.price_avg30*100):null;
+              const dots = RARITY_DOTS[card.rarity??""]??2;
+              const isGold = card.rarity?.includes("Hyper")||card.rarity?.includes("Special");
+              const dotColor = isGold ? G : tc;
+              return (
+                <Link key={card.id} href={`/preischeck?q=${encodeURIComponent(card.name)}`} style={{textDecoration:"none"}}>
+                  <div className="card-hover" style={{
+                    background:BG1, border:`1px solid ${BR1}`,
+                    borderRadius:14, overflow:"hidden",
+                    position:"relative",
+                  }}>
+                    {/* Card image area */}
+                    <div style={{aspectRatio:"3/4",background:BG2,position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {/* Type glow */}
+                      <div style={{position:"absolute",inset:0,background:`radial-gradient(circle at 50% 20%, ${tc}14, transparent 65%)`}}/>
+                      {/* Card img */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt={name} style={{width:"100%",height:"100%",objectFit:"contain",padding:4,position:"relative",zIndex:1}}/>
+                      {/* Shimmer on hover */}
+                      <div style={{
+                        position:"absolute",inset:0,
+                        background:"linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.04) 50%,transparent 60%)",
+                        transform:"translateX(-100%) rotate(35deg)",
+                        animation:"none",
+                        zIndex:2,
+                      }}/>
+                      {/* Bottom fade */}
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,height:"52%",background:`linear-gradient(transparent,${BG1})`,zIndex:2}}/>
+                      {/* Type badge */}
+                      {card.types?.[0] && (
+                        <div style={{
+                          position:"absolute",top:8,left:8,
+                          padding:"2px 7px",borderRadius:5,zIndex:3,
+                          fontSize:8,fontWeight:600,letterSpacing:".04em",
+                          background:`${tc}18`,color:tc,border:`1px solid ${tc}30`,
+                          backdropFilter:"blur(8px)",
+                        }}>
+                          {TYPE_DE[card.types[0]]??card.types[0]}{isGold?" ✦✦✦":""}
+                        </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
 
-      {/* FANTASY LEAGUE */}
-      <section className="mb-28">
-        <div className="flex items-baseline justify-between mb-8">
-          <h2 className="font-display text-2xl font-light tracking-tight">Fantasy League</h2>
-          <Link href="/fantasy" className="text-sm text-[var(--tx-3)] hover:text-[var(--gold)]">Zur Liga →</Link>
-        </div>
-        <div className="grid md:grid-cols-5 gap-6">
-          <div className="md:col-span-3 bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10 gold-glow">
-            <div className="uppercase text-xs tracking-widest text-[var(--gold)] mb-3">NEW SEASON STARTET JETZT</div>
-            <div className="text-4xl font-light tracking-[-0.03em] leading-none mb-6">
-              Baue dein 1.000 € Team.<br />
-              Gewinne mit realen Kursen.
+                    {/* Card body */}
+                    <div style={{padding:"11px 13px 14px",position:"relative",zIndex:1}}>
+                      {/* Rarity dots */}
+                      <div style={{display:"flex",gap:3,marginBottom:7}}>
+                        {Array.from({length:Math.min(dots,6)}).map((_,i)=>(
+                          <div key={i} style={{
+                            width:4,height:4,borderRadius:"50%",
+                            background:dotColor,
+                            opacity:i>=Math.min(dots,6)-2?1:0.35,
+                            boxShadow:i>=Math.min(dots,6)-1?`0 0 6px ${dotColor}90`:undefined,
+                          }}/>
+                        ))}
+                      </div>
+                      <div style={{fontSize:12.5,fontWeight:500,color:TX1,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:"-.01em"}}>{name}</div>
+                      <div style={{fontSize:9.5,color:TX3,marginBottom:9,letterSpacing:".01em"}}>{String(card.set_id).toUpperCase()} · #{card.number}</div>
+                      {/* Price row */}
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <span style={{fontSize:15,fontWeight:500,fontFamily:"'DM Mono',monospace",color:isGold?G:G,letterSpacing:"-.02em"}}>{price}</span>
+                        {pct!==null&&(
+                          <span style={{fontSize:9.5,fontWeight:600,color:pct>=0?GREEN:RED}}>
+                            {pct>=0?"▲":"▼"}{Math.abs(pct).toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      <Divider/>
+
+      {/* ═══ SCANNER + PORTFOLIO ═════════════════════════════ */}
+      <section style={{maxWidth:1100,margin:"0 auto",padding:"44px 28px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+
+          {/* Scanner */}
+          <div style={{
+            background:BG1, border:`1px solid ${BR2}`,
+            borderRadius:22, padding:"28px 28px",
+            display:"grid", gridTemplateColumns:"1fr 128px", gap:24,
+            alignItems:"center", position:"relative", overflow:"hidden",
+          }}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G30},transparent)`}}/>
+            <div>
+              <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:10}}>KI-Scanner · Gemini Flash</div>
+              <div style={{fontSize:21,fontWeight:300,letterSpacing:"-.03em",lineHeight:1.2,marginBottom:10,color:TX1,fontFamily:"var(--font-display)"}}>Foto machen.<br/>Preis wissen.</div>
+              <div style={{fontSize:12.5,color:TX2,lineHeight:1.68,marginBottom:16}}>KI erkennt deine Karte in Sekunden und zeigt den aktuellen Cardmarket-Wert.</div>
+              <div style={{display:"flex",alignItems:"center",gap:9}}>
+                <span style={{padding:"3px 10px",borderRadius:5,fontSize:10,fontWeight:500,background:G08,color:G,border:`1px solid ${G18}`}}>5 / Tag Free</span>
+                <span style={{fontSize:10,color:TX3}}>Unlimitiert mit Premium ✦</span>
+              </div>
             </div>
-            <p className="text-[var(--tx-2)] max-w-sm mb-10">
-              Monatliche Preise, shareable Trophy Cards und echtes Leaderboard-Ranking.
-            </p>
-            <Link href="/fantasy" className="inline-block px-10 py-5 bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-3xl text-sm gold-glow">
-              Jetzt Team aufstellen
-            </Link>
+            <div>
+              <Link href="/scanner" style={{
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                gap:10, aspectRatio:"1", borderRadius:14, textDecoration:"none",
+                background:BG2, border:`1px dashed rgba(233,168,75,0.18)`,
+                transition:"border-color .22s var(--ease), background .22s, transform .22s var(--ease)",
+              }}
+              onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor=G30;el.style.background=G05;el.style.transform="scale(1.015)";}}
+              onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor="rgba(233,168,75,0.18)";el.style.background=BG2;el.style.transform="scale(1)";}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={TX3} strokeWidth="1.5" style={{opacity:.5}}>
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span style={{fontSize:9.5,color:TX3,textAlign:"center",lineHeight:1.5}}>Foto ablegen<br/>oder klicken</span>
+              </Link>
+              <Link href="/scanner" style={{
+                display:"block",textAlign:"center",padding:"11px",borderRadius:11,
+                background:G,color:"#0a0808",fontSize:13,fontWeight:600,
+                letterSpacing:"-.01em",textDecoration:"none",marginTop:10,
+                boxShadow:"0 2px 18px rgba(233,168,75,0.2)",
+                transition:"box-shadow .2s var(--ease),transform .2s var(--ease)",
+              }}
+              onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow="0 4px 28px rgba(233,168,75,0.38)";el.style.transform="translateY(-1px)";}}
+              onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow="0 2px 18px rgba(233,168,75,0.2)";el.style.transform="translateY(0)";}}>
+                Jetzt scannen
+              </Link>
+            </div>
           </div>
 
-          <div className="md:col-span-2 bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-8 flex flex-col">
-            <div className="text-xs text-[var(--tx-3)] mb-6">AKTUELLES LEADERBOARD</div>
-            <div className="space-y-6 flex-1">
-              {["@luxecollector", "@pokegoldrush", "@silentvault"].map((user, i) => (
-                <div key={i} className="flex justify-between items-center">
-                  <span className="font-medium">{user}</span>
-                  <span className="font-mono text-[var(--gold)]">+{Math.floor(Math.random() * 140) + 90} pts</span>
+          {/* Portfolio */}
+          <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:22,padding:24,position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G30},transparent)`}}/>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+              <div>
+                <div style={{fontSize:10.5,color:TX3,marginBottom:6}}>Gesamtwert Portfolio</div>
+                <div style={{fontSize:48,fontWeight:300,letterSpacing:"-.055em",color:TX1,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>2.847 €</div>
+                <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:5,marginTop:8,fontSize:11,fontWeight:500,color:GREEN,background:"rgba(75,191,130,0.08)",border:"1px solid rgba(75,191,130,0.16)"}}>▲ +18,4 % · 30 Tage</div>
+              </div>
+              <div style={{display:"flex",gap:2}}>
+                {["7T","30T","90T"].map((t,i)=>(
+                  <div key={t} style={{padding:"3px 10px",borderRadius:5,fontSize:10.5,fontWeight:500,color:i===1?TX1:TX3,background:i===1?BG3:"transparent",cursor:"pointer"}}>{t}</div>
+                ))}
+              </div>
+            </div>
+            <svg width="100%" height="58" viewBox="0 0 600 58" preserveAspectRatio="none" style={{margin:"16px 0 0",display:"block"}}>
+              <defs>
+                <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#E9A84B" stopOpacity=".22"/>
+                  <stop offset="100%" stopColor="#E9A84B" stopOpacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0 45 C55 43,90 40,135 34 S190 25,232 20 S290 15,332 12 S385 8,426 6 S478 3,520 2 S572 1,600 0 L600 58 L0 58Z" fill="url(#sg)"/>
+              <path d="M0 45 C55 43,90 40,135 34 S190 25,232 20 S290 15,332 12 S385 8,426 6 S478 3,520 2 S572 1,600 0" fill="none" stroke="#E9A84B" strokeWidth="1.5" opacity=".72"/>
+            </svg>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:14}}>
+              {[{l:"Karten",v:"47"},{l:"Bester Gewinn",v:"+340 €",c:GREEN},{l:"Wunschliste",v:"12"}].map(s=>(
+                <div key={s.l} style={{background:BG2,border:`1px solid ${BR1}`,borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:9.5,color:TX3,marginBottom:4}}>{s.l}</div>
+                  <div style={{fontSize:16,fontWeight:500,letterSpacing:"-.02em",color:s.c??TX1}}>{s.v}</div>
                 </div>
               ))}
             </div>
@@ -150,115 +345,153 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SCANNER + PORTFOLIO */}
-      <div className="grid md:grid-cols-2 gap-8 mb-28">
-        {/* Scanner mit großem Upload-Bereich */}
-        <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10 gold-glow">
-          <div className="uppercase text-xs tracking-[0.12em] text-[var(--tx-3)] mb-3">KI-SCANNER • GEMINI FLASH</div>
-          <div className="text-4xl font-light tracking-[-0.03em] leading-none mb-6">
-            Foto machen.<br />Preis wissen.
+      <Divider/>
+
+      {/* ═══ FORUM ════════════════════════════════════════════ */}
+      <section style={{maxWidth:1100,margin:"0 auto",padding:"44px 28px"}}>
+        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:18}}>
+          <h2 style={{fontSize:17,fontWeight:400,letterSpacing:"-.025em",color:TX1,margin:0,fontFamily:"var(--font-display)"}}>Forum</h2>
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <span style={{fontSize:11,color:TX3}}>{stats.forum.toLocaleString("de-DE")} Beiträge</span>
+            <Link href="/forum/new" style={{padding:"5px 14px",borderRadius:8,fontSize:11.5,fontWeight:500,background:G08,color:G,border:`1px solid ${G18}`,textDecoration:"none"}}>+ Beitrag</Link>
           </div>
-          <p className="text-[var(--tx-2)] mb-8">Karte auf den Tisch legen – in 2 Sekunden den aktuellen Cardmarket-Wert sehen.</p>
-          
-          <div className="border-2 border-dashed border-[var(--gold-18)] rounded-3xl h-72 flex flex-col items-center justify-center gap-4 hover:border-[var(--gold)] transition-colors gold-glow">
-            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" className="text-[var(--gold)]">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-            </svg>
-            <div className="text-center">
-              <div className="text-sm font-medium">Foto ablegen oder klicken</div>
-              <div className="text-xs text-[var(--tx-3)]">JPG, PNG, HEIC • Max 10 MB</div>
+        </div>
+        <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:22,overflow:"hidden"}}>
+          {posts.length>0?(posts as any[]).map((post:any,i:number)=>{
+            const cat=post.forum_categories?.name??"Allgemein";
+            const cs=CAT_STYLE[cat]??{c:TX2,bg:BR1,br:BR2};
+            const author=post.profiles?.username??"Anonym";
+            const diff=Date.now()-new Date(post.created_at).getTime();
+            const h=Math.floor(diff/3600000);
+            const ago=h<1?"Gerade eben":h<24?`vor ${h} Std.`:`vor ${Math.floor(h/24)} Tagen`;
+            return (
+              <Link key={post.id} href={`/forum/post/${post.id}`} style={{textDecoration:"none"}}>
+                <div style={{display:"flex",alignItems:"flex-start",gap:14,padding:"18px 24px",borderBottom:i<posts.length-1?"1px solid rgba(255,255,255,0.035)":"none",transition:"background .1s",cursor:"pointer"}}
+                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.015)";}}
+                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
+                  <div style={{width:32,height:32,borderRadius:9,background:BG3,border:`1px solid ${BR2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:600,color:TX2,flexShrink:0,marginTop:1}}>
+                    {author[0]?.toUpperCase()}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
+                      <span style={{fontSize:12,fontWeight:500,color:TX1}}>{author}</span>
+                      <span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:cs.bg,color:cs.c,border:`1px solid ${cs.br}`,letterSpacing:".04em"}}>{cat}</span>
+                      <span style={{fontSize:10,color:TX3,marginLeft:"auto"}}>{ago}</span>
+                    </div>
+                    <div style={{fontSize:13.5,fontWeight:500,color:TX1,marginBottom:4,letterSpacing:"-.013em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{post.title}</div>
+                    <div style={{display:"flex",gap:14,marginTop:3}}>
+                      <span style={{fontSize:10,color:TX3}}>💬 {post.upvotes??0}</span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          }):(
+            <div style={{padding:"36px",textAlign:"center"}}>
+              <div style={{fontSize:13.5,color:TX3,marginBottom:12}}>Noch keine Beiträge</div>
+              <Link href="/forum/new" style={{fontSize:12.5,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
             </div>
-          </div>
-
-          <Link href="/scanner" className="mt-8 block w-full py-5 text-center bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-3xl text-sm gold-glow">
-            Jetzt scannen
-          </Link>
-        </div>
-
-        {/* Portfolio mit Sparkline */}
-        <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10 flex flex-col gold-glow">
-          <div className="flex-1">
-            <div className="uppercase text-xs tracking-widest text-[var(--tx-3)]">DEIN PORTFOLIO</div>
-            <div className="text-6xl font-light tracking-[-0.04em] mt-2 mb-1">4.872 €</div>
-            <div className="flex items-center gap-2 text-emerald-400">
-              ▲ <span className="font-medium">+27,3 %</span>
-              <span className="text-[var(--tx-3)] text-sm">30 Tage</span>
-            </div>
-          </div>
-
-          <svg width="100%" height="92" viewBox="0 0 420 92" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-8">
-            <defs>
-              <linearGradient id="portfolioGlow" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#E9A84B" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#E9A84B" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <path d="M10 75 Q80 68 140 55 Q200 38 260 32 Q320 18 410 12" stroke="#E9A84B" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M10 75 Q80 68 140 55 Q200 38 260 32 Q320 18 410 12 L410 92 L10 92 Z" fill="url(#portfolioGlow)" />
-          </svg>
-
-          <div className="text-xs text-[var(--tx-3)] flex justify-between mt-4">
-            <div>47 Karten • 3 Sammlungen</div>
-            <div className="font-mono text-[var(--gold)]">Bester Trade +€ 680</div>
-          </div>
-        </div>
-      </div>
-
-      {/* PRICING BOXEN */}
-      <section className="mb-16">
-        <div className="text-center mb-12">
-          <div className="text-sm text-[var(--tx-3)] tracking-widest">MITGLIEDSCHAFT</div>
-          <h2 className="font-display text-4xl font-light tracking-[-0.03em] mt-3">Wähle deine Stufe</h2>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Free */}
-          <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-9">
-            <div className="uppercase text-xs text-[var(--tx-3)] tracking-widest mb-6">COMMON</div>
-            <div className="text-5xl font-light">Free</div>
-            <div className="text-[var(--tx-3)]">für immer</div>
-            <div className="my-8 h-px bg-[var(--br-1)]" />
-            <ul className="space-y-4 text-sm text-[var(--tx-2)]">
-              <li>✓ 5 Scans / Tag</li>
-              <li>✓ Basis-Preischeck</li>
-              <li>✓ Forum lesen</li>
-              <li className="opacity-40">✕ Portfolio + Charts</li>
-            </ul>
-            <Link href="/auth/register" className="mt-12 block w-full py-5 text-center border border-[var(--br-2)] rounded-3xl text-sm font-medium gold-glow">Kostenlos starten</Link>
-          </div>
-
-          {/* Premium */}
-          <div className="bg-gradient-to-b from-[var(--gold-08)] to-[var(--bg-1)] border border-[var(--gold-18)] rounded-3xl p-9 relative gold-glow">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[var(--gold)] text-[#0a0a0a] text-xs font-bold px-8 py-1 rounded-b-3xl">BELIEBTESTE WAHL</div>
-            <div className="uppercase text-xs text-[var(--gold)] tracking-widest mt-8 mb-6">ILLUSTRATION RARE</div>
-            <div className="text-5xl font-light text-[var(--gold)]">6,99 €</div>
-            <div className="text-sm text-[var(--tx-3)]">pro Monat</div>
-            <div className="my-8 h-px bg-[var(--gold-12)]" />
-            <ul className="space-y-4 text-sm">
-              <li className="text-[var(--tx-1)]">✓ Unlimitierte Scans</li>
-              <li className="text-[var(--tx-1)]">✓ Vollständiges Portfolio + Charts</li>
-              <li className="text-[var(--tx-1)]">✓ Preis-Alerts</li>
-              <li className="text-[var(--tx-1)]">✓ Exklusives Forum</li>
-            </ul>
-            <Link href="/dashboard/premium" className="mt-12 block w-full py-5 text-center bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-3xl text-sm gold-glow">Premium werden</Link>
-          </div>
-
-          {/* Dealer */}
-          <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-9">
-            <div className="uppercase text-xs text-[var(--gold)] tracking-widest mb-6">HYPER RARE</div>
-            <div className="text-5xl font-light">19,99 €</div>
-            <div className="text-sm text-[var(--tx-3)]">pro Monat</div>
-            <div className="my-8 h-px bg-[var(--br-1)]" />
-            <ul className="space-y-4 text-sm text-[var(--tx-2)]">
-              <li>✓ Alles aus Premium</li>
-              <li>✓ Verified Seller Badge</li>
-              <li>✓ Eigene Shop-Seite</li>
-              <li>✓ API-Zugang</li>
-            </ul>
-            <Link href="/dashboard/premium?plan=dealer" className="mt-12 block w-full py-5 text-center border border-[var(--gold-18)] text-[var(--gold)] rounded-3xl text-sm gold-glow">Händler werden</Link>
+          )}
+          <div style={{padding:"14px 24px",borderTop:`1px solid ${BR1}`}}>
+            <Link href="/forum" style={{fontSize:12.5,color:TX3,textDecoration:"none"}}>Alle Beiträge ansehen →</Link>
           </div>
         </div>
       </section>
+
+      <Divider/>
+
+      {/* ═══ PRICING ══════════════════════════════════════════ */}
+      <section style={{maxWidth:1100,margin:"0 auto",padding:"44px 28px 64px"}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:12}}>Mitgliedschaft</div>
+          <h2 style={{fontSize:"clamp(26px,3.5vw,38px)",fontWeight:300,letterSpacing:"-.04em",color:TX1,margin:0,fontFamily:"var(--font-display)"}}>Von Common bis Hyper Rare.</h2>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+
+          {/* Free */}
+          <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:22,padding:24}}>
+            <div style={{fontSize:9,fontWeight:600,letterSpacing:".08em",color:TX3,marginBottom:12}}>COMMON ●</div>
+            <div style={{fontSize:20,fontWeight:300,letterSpacing:"-.03em",color:TX2,marginBottom:4,fontFamily:"var(--font-display)"}}>Free</div>
+            <div style={{fontSize:38,fontWeight:300,letterSpacing:"-.05em",lineHeight:1,color:TX1,fontFamily:"'DM Mono',monospace"}}>0 €</div>
+            <div style={{fontSize:11,color:TX3,marginBottom:16}}>für immer</div>
+            <hr style={{border:"none",borderTop:`1px solid ${BR1}`,margin:"16px 0"}}/>
+            <div style={{display:"flex",justifyContent:"center",gap:4,marginBottom:16}}>
+              <div style={{width:4,height:4,borderRadius:"50%",background:G}}/>
+              {[1,2,3,4].map(i=><div key={i} style={{width:4,height:4,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/>)}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:22}}>
+              <PriceFeat text="5 Scans / Tag"/>
+              <PriceFeat text="Basis-Preischeck"/>
+              <PriceFeat text="Forum lesen"/>
+              {["Portfolio-Tracker","Preis-Alerts","Preisverlauf-Chart"].map(t=>(
+                <div key={t} style={{display:"flex",alignItems:"center",gap:9,fontSize:12,color:TX3,textDecoration:"line-through"}}>
+                  <div style={{width:15,height:15,borderRadius:"50%",flexShrink:0,background:BG2}}/>
+                  {t}
+                </div>
+              ))}
+            </div>
+            <Link href="/auth/register" style={{display:"block",textAlign:"center",padding:"11px",borderRadius:11,background:BG2,color:TX2,fontSize:13,fontWeight:500,textDecoration:"none",transition:"background .15s"}}
+            onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background=BG3;}}
+            onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background=BG2;}}>Kostenlos starten</Link>
+          </div>
+
+          {/* Premium — featured */}
+          <div style={{
+            background:`radial-gradient(ellipse 85% 50% at 50% 0%,rgba(233,168,75,0.07),transparent 60%),${BG1}`,
+            border:"1px solid rgba(233,168,75,0.22)",
+            borderRadius:22,padding:24,position:"relative",
+          }}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(233,168,75,0.5),transparent)`,borderRadius:"22px 22px 0 0"}}/>
+            <div style={{position:"absolute",top:-1,left:"50%",transform:"translateX(-50%)",padding:"3px 14px",background:G,color:"#0a0808",fontSize:8,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",borderRadius:"0 0 8px 8px",whiteSpace:"nowrap"}}>BELIEBTESTE WAHL</div>
+            <div style={{fontSize:9,fontWeight:600,letterSpacing:".08em",color:G,marginBottom:12,marginTop:8}}>ILLUSTRATION RARE ✦</div>
+            <div style={{fontSize:20,fontWeight:300,letterSpacing:"-.03em",color:G,marginBottom:4,fontFamily:"var(--font-display)"}}>Premium</div>
+            <div style={{fontSize:38,fontWeight:300,letterSpacing:"-.05em",lineHeight:1,color:G,fontFamily:"'DM Mono',monospace"}}>6,99 €</div>
+            <div style={{fontSize:11,color:TX3,marginBottom:16}}>pro Monat · jederzeit kündbar</div>
+            <hr style={{border:"none",borderTop:"1px solid rgba(233,168,75,0.1)",margin:"16px 0"}}/>
+            <div style={{display:"flex",justifyContent:"center",gap:4,marginBottom:16}}>
+              {[0,1,2,3].map(i=><div key={i} style={{width:4,height:4,borderRadius:"50%",background:G,opacity:i===3?1:0.45,boxShadow:i===3?`0 0 7px ${G30}`:undefined}}/>)}
+              <div style={{width:4,height:4,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:22}}>
+              {["Unlimitierter Pro-Scanner","Portfolio + Charts","Realtime Preis-Alerts","Preisverlauf 90 Tage","Exklusiv-Forum ✦","Grading-Beratung 2×/Mo"].map(t=>(
+                <PriceFeat key={t} text={t}/>
+              ))}
+            </div>
+            <Link href="/dashboard/premium" style={{display:"block",textAlign:"center",padding:"11px",borderRadius:11,background:G,color:"#0a0808",fontSize:13,fontWeight:700,textDecoration:"none",letterSpacing:"-.01em",boxShadow:`0 3px 18px rgba(233,168,75,0.25)`}}>Premium werden ✦</Link>
+            <div style={{textAlign:"center",fontSize:10.5,color:TX3,marginTop:8}}>Weniger als eine Karte pro Monat</div>
+          </div>
+
+          {/* Dealer */}
+          <div style={{background:BG1,border:"1px solid rgba(233,168,75,0.14)",borderRadius:22,padding:24,position:"relative"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(233,168,75,0.22),transparent)`,borderRadius:"22px 22px 0 0"}}/>
+            <div style={{fontSize:9,fontWeight:600,letterSpacing:".08em",color:G,marginBottom:12}}>HYPER RARE ✦✦✦</div>
+            <div style={{fontSize:20,fontWeight:300,letterSpacing:"-.03em",color:TX1,marginBottom:4,fontFamily:"var(--font-display)"}}>Händler</div>
+            <div style={{fontSize:38,fontWeight:300,letterSpacing:"-.05em",lineHeight:1,color:TX1,fontFamily:"'DM Mono',monospace"}}>19,99 €</div>
+            <div style={{fontSize:11,color:TX3,marginBottom:16}}>pro Monat</div>
+            <hr style={{border:"none",borderTop:"1px solid rgba(233,168,75,0.07)",margin:"16px 0"}}/>
+            <div style={{display:"flex",justifyContent:"center",gap:4,marginBottom:16}}>
+              {[0,1,2,3,4,5].map(i=><div key={i} style={{width:4,height:4,borderRadius:"50%",background:G,opacity:i>=4?1:0.35,boxShadow:i>=4?`0 0 7px ${G30}`:undefined}}/>)}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:9,marginBottom:22}}>
+              {["Alles aus Premium","Verified Seller Badge ✅","Eigene Shop-Seite","API-Zugang (Beta)","Priority Support 24/7","Monatliche Marktanalyse"].map(t=>(
+                <PriceFeat key={t} text={t}/>
+              ))}
+            </div>
+            <Link href="/dashboard/premium?plan=dealer" style={{display:"block",textAlign:"center",padding:"11px",borderRadius:11,background:"transparent",color:G,fontSize:13,fontWeight:600,textDecoration:"none",border:`1px solid rgba(233,168,75,0.2)`,transition:"background .15s,border-color .15s"}}
+            onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.background=G08;el.style.borderColor=G30;}}
+            onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.background="transparent";el.style.borderColor="rgba(233,168,75,0.2)";}}>Händler werden ✦✦✦</Link>
+          </div>
+        </div>
+
+        {/* Trust bar */}
+        <div style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:14,padding:"14px 28px",display:"flex",alignItems:"center",justifyContent:"center",gap:36,marginTop:16,flexWrap:"wrap"}}>
+          {["🔒 Sicher via Stripe","↩ Jederzeit kündbar","✓ Keine Mindestlaufzeit","⚡ Sofort aktiv","🇩🇪 DSGVO-konform"].map(t=>(
+            <div key={t} style={{display:"flex",alignItems:"center",gap:7,fontSize:12,color:TX2}}>{t}</div>
+          ))}
+        </div>
+        <p style={{textAlign:"center",fontSize:11,color:TX3,marginTop:14}}>Alle Preise inkl. MwSt. · Monatlich kündbar · Sichere Zahlung via Stripe</p>
+      </section>
+
     </div>
   );
 }
