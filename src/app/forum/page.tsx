@@ -34,7 +34,14 @@ export default function ForumPage() {
         sb.from("forum_posts").select("id,title,upvotes,created_at,profiles(username),forum_categories(name)").order("created_at",{ascending:false}).limit(40),
         sb.from("forum_categories").select("id,name").order("name"),
       ]);
-      setPosts(pR.data as Post[]??[]);setCats(cR.data??[]);setLoading(false);
+      const normalized = (pR.data ?? []).map((p: any) => ({
+        ...p,
+        profiles:         Array.isArray(p.profiles)         ? p.profiles[0]         : p.profiles,
+        forum_categories: Array.isArray(p.forum_categories) ? p.forum_categories[0] : p.forum_categories,
+      })) as Post[];
+      setPosts(normalized);
+      setCats(cR.data ?? []);
+      setLoading(false);
     }
     load();
   },[]);
