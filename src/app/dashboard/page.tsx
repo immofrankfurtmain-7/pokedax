@@ -1,191 +1,72 @@
-﻿"use client";
-import { useState, useEffect } from "react";
-import Link from "next/link";
+﻿// src/app/dashboard/premium/page.tsx
 
-const B1="#0C0C1A",B2="#101020",B3="#161628",B4="#1E1E38";
-const BR1="rgba(255,255,255,0.048)",BR2="rgba(255,255,255,0.080)";
-const T1="#EDEAF6",T2="#8A89A8",T3="#454462";
-const G="#E9A84B",G18="rgba(233,168,75,0.18)",G06="rgba(233,168,75,0.06)";
-const GREEN="#4BBF82",RED="#E04558";
-
-interface CollectionCard {
-  id:string;card_id:string;quantity:number;condition?:string;
-  cards?:{name:string;name_de?:string;image_url?:string;price_market?:number;set_id:string;number:string};
-}
-
-function StatCard({label,value,sub,color}:{label:string;value:string;sub?:string;color?:string}) {
-  return(
-    <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:14,padding:"16px 18px"}}>
-      <div style={{fontSize:9.5,color:T3,marginBottom:6,letterSpacing:".04em",textTransform:"uppercase",fontWeight:600}}>{label}</div>
-      <div style={{fontSize:24,fontWeight:550,letterSpacing:"-.035em",color:color??T1,lineHeight:1}}>{value}</div>
-      {sub&&<div style={{fontSize:10,color:T3,marginTop:4}}>{sub}</div>}
-    </div>
-  );
-}
-
-export default function DashboardPage() {
-  const [user,setUser]=useState<any>(null);
-  const [profile,setProfile]=useState<any>(null);
-  const [collection,setCollection]=useState<CollectionCard[]>([]);
-  const [wishlist,setWishlist]=useState<any[]>([]);
-  const [tab,setTab]=useState<"sammlung"|"wunschliste"|"scans">("sammlung");
-  const [loading,setLoading]=useState(true);
-
-  useEffect(()=>{
-    async function load(){
-      const {createClient}=await import("@/lib/supabase/client");
-      const sb=createClient();
-      const {data:{user}}=await sb.auth.getUser();
-      if(!user){window.location.href="/auth/login";return;}
-      setUser(user);
-      const [profRes,colRes,wishRes]=await Promise.all([
-        sb.from("profiles").select("*").eq("id",user.id).single(),
-        sb.from("user_collection").select("*,cards(name,name_de,image_url,price_market,set_id,number)").eq("user_id",user.id).limit(40),
-        sb.from("user_wishlist").select("*,cards(name,name_de,image_url,price_market,set_id,number)").eq("user_id",user.id).limit(40),
-      ]);
-      setProfile(profRes.data);
-      setCollection(colRes.data??[]);
-      setWishlist(wishRes.data??[]);
-      setLoading(false);
-    }
-    load();
-  },[]);
-
-  const totalValue=collection.reduce((acc,c)=>acc+(c.cards?.price_market??0)*(c.quantity??1),0);
-  const wishValue=wishlist.reduce((acc,w)=>acc+(w.cards?.price_market??0),0);
-
-  if(loading)return(
-    <div style={{minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center",color:T3}}>
-      Lade Dashboard…
-    </div>
-  );
-
-  return(
-    <div style={{minHeight:"80vh",color:T1}}>
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"32px 24px"}}>
-
-        {/* Header with user card */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:12,marginBottom:28,alignItems:"start"}}>
-          <div>
-            <h1 style={{fontSize:22,fontWeight:500,letterSpacing:"-.03em",color:T1,marginBottom:4}}>
-              Willkommen, {profile?.username??user?.email?.split("@")[0]}
-            </h1>
-            <p style={{fontSize:12,color:T3}}>
-              {profile?.is_premium?"✦ Premium-Mitglied":"Free-Mitglied"} · Mitglied seit {new Date(user?.created_at).toLocaleDateString("de-DE",{month:"long",year:"numeric"})}
-            </p>
+export default function PremiumPage() {
+  return (
+    <div className="min-h-screen bg-[var(--canvas)] py-20">
+      <div className="max-w-5xl mx-auto px-6">
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-2 px-6 py-2 rounded-3xl border border-[var(--gold-12)] bg-[var(--gold-05)] text-[var(--gold)] text-xs tracking-widest mb-6">
+            MITGLIEDSCHAFT
           </div>
-          {!profile?.is_premium&&(
-            <Link href="/dashboard/premium" style={{
-              padding:"9px 18px",borderRadius:9,
-              background:G06,color:G,border:`1px solid ${G18}`,
-              fontSize:12,fontWeight:500,textDecoration:"none",whiteSpace:"nowrap",
-            }}>✦ Premium werden</Link>
-          )}
+          <h1 className="font-display text-6xl font-light tracking-[-0.06em] mb-6">
+            Wähle deine Stufe
+          </h1>
+          <p className="text-[var(--tx-2)] max-w-md mx-auto">Von Common bis Hyper Rare – für jeden Sammler die passende Stufe.</p>
         </div>
 
-        {/* Stats row */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:24}}>
-          <StatCard label="Sammlungswert" value={`${totalValue.toFixed(0)}€`} color={G}/>
-          <StatCard label="Karten gesamt" value={collection.reduce((a,c)=>a+(c.quantity??1),0).toString()}/>
-          <StatCard label="Wunschliste" value={`${wishValue.toFixed(0)}€`} sub={`${wishlist.length} Karten`}/>
-          <StatCard label="Sets" value={new Set(collection.map(c=>c.cards?.set_id)).size.toString()} sub="verschiedene Sets"/>
-        </div>
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {/* Free */}
+          <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10">
+            <div className="uppercase text-xs tracking-widest text-[var(--tx-3)] mb-8">COMMON</div>
+            <div className="text-5xl font-light mb-1">Free</div>
+            <div className="text-[var(--tx-3)] mb-12">für immer</div>
 
-        {/* Sparkline */}
-        <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"18px 20px",marginBottom:20}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <div>
-              <div style={{fontSize:10,color:T3,marginBottom:2}}>Portfolio-Entwicklung</div>
-              <div style={{fontSize:26,fontWeight:550,letterSpacing:"-.04em",color:T1}}>{totalValue.toFixed(0)}€</div>
-            </div>
-            <div style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 10px",borderRadius:5,fontSize:11,fontWeight:500,color:GREEN,background:"rgba(75,191,130,0.08)",border:"1px solid rgba(75,191,130,0.15)"}}>▲ +0,0% · 30T</div>
+            <ul className="space-y-5 text-sm mb-12">
+              <li className="flex items-center gap-3"><span className="text-emerald-400">✓</span> 5 Scans pro Tag</li>
+              <li className="flex items-center gap-3"><span className="text-emerald-400">✓</span> Basis-Preischeck</li>
+              <li className="flex items-center gap-3"><span className="text-emerald-400">✓</span> Forum lesen</li>
+              <li className="flex items-center gap-3 text-[var(--tx-3)]"><span>✕</span> Portfolio Tracking</li>
+            </ul>
+
+            <div className="text-center py-4 border border-[var(--br-2)] rounded-2xl text-sm font-medium text-[var(--tx-2)]">Aktuell aktiv</div>
           </div>
-          <svg width="100%" height="48" viewBox="0 0 600 48" preserveAspectRatio="none">
-            <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#E9A84B" stopOpacity=".18"/><stop offset="100%" stopColor="#E9A84B" stopOpacity="0"/></linearGradient></defs>
-            <path d="M0 38 C80 36,140 32,200 26 S280 18,340 14 S420 8,480 5 S560 2,600 1 L600 48 L0 48Z" fill="url(#dg)"/>
-            <path d="M0 38 C80 36,140 32,200 26 S280 18,340 14 S420 8,480 5 S560 2,600 1" fill="none" stroke="#E9A84B" strokeWidth="1.5" opacity=".65"/>
-          </svg>
-        </div>
 
-        {/* Tabs */}
-        <div style={{display:"flex",gap:3,marginBottom:16}}>
-          {(["sammlung","wunschliste","scans"] as const).map(t=>(
-            <button key={t} onClick={()=>setTab(t)} style={{
-              padding:"6px 16px",borderRadius:8,fontSize:12,fontWeight:500,cursor:"pointer",border:"none",
-              background:tab===t?B3:B2,color:tab===t?T1:T3,
-              transition:"all .12s",
-            }}>
-              {t==="sammlung"?"Sammlung":t==="wunschliste"?"Wunschliste":"Scan-Verlauf"}
-              {t==="sammlung"&&collection.length>0&&<span style={{marginLeft:6,fontSize:10,color:T3}}>({collection.length})</span>}
-              {t==="wunschliste"&&wishlist.length>0&&<span style={{marginLeft:6,fontSize:10,color:T3}}>({wishlist.length})</span>}
-            </button>
-          ))}
-        </div>
+          {/* Premium – highlighted */}
+          <div className="bg-gradient-to-b from-[var(--gold-08)] to-[var(--bg-1)] border border-[var(--gold-18)] rounded-3xl p-10 relative gold-glow scale-105">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[var(--gold)] text-[#0a0a0a] text-xs font-bold px-8 py-1 rounded-b-2xl">EMPFOHLEN</div>
+            
+            <div className="uppercase text-xs tracking-widest text-[var(--gold)] mb-8">ILLUSTRATION RARE</div>
+            <div className="flex items-baseline gap-3 mb-1">
+              <span className="text-6xl font-light text-[var(--gold)]">6,99</span>
+              <span className="text-[var(--gold)]">€ / Monat</span>
+            </div>
 
-        {/* Content */}
-        {tab==="sammlung"&&(
-          collection.length===0?(
-            <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"48px",textAlign:"center"}}>
-              <div style={{fontSize:14,color:T3,marginBottom:12}}>Sammlung ist noch leer</div>
-              <Link href="/scanner" style={{fontSize:12,color:G,textDecoration:"none"}}>Karte scannen um zu beginnen →</Link>
-            </div>
-          ):(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
-              {collection.map(item=>{
-                const card=item.cards;
-                if(!card)return null;
-                const img=card.image_url??`https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
-                return(
-                  <div key={item.id} style={{background:B2,border:`1px solid ${BR1}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{aspectRatio:"3/4",background:B1,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={card.name_de??card.name} style={{width:"100%",height:"100%",objectFit:"contain",padding:4}}/>
-                      {item.quantity>1&&<div style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.7)",color:T1,fontSize:9,fontWeight:600,padding:"2px 5px",borderRadius:4}}>×{item.quantity}</div>}
-                    </div>
-                    <div style={{padding:"9px 11px 11px"}}>
-                      <div style={{fontSize:11.5,fontWeight:500,color:T1,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{card.name_de??card.name}</div>
-                      <div style={{fontSize:13,fontWeight:550,fontFamily:"'DM Mono',monospace",color:G}}>{card.price_market?`${card.price_market.toFixed(2)}€`:"–"}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-        {tab==="wunschliste"&&(
-          wishlist.length===0?(
-            <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"48px",textAlign:"center"}}>
-              <div style={{fontSize:14,color:T3,marginBottom:12}}>Wunschliste ist leer</div>
-              <Link href="/preischeck" style={{fontSize:12,color:G,textDecoration:"none"}}>Karten suchen und hinzufügen →</Link>
-            </div>
-          ):(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
-              {wishlist.map(item=>{
-                const card=item.cards;
-                if(!card)return null;
-                const img=card.image_url??`https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
-                return(
-                  <div key={item.id} style={{background:B2,border:`1px solid ${BR1}`,borderRadius:12,overflow:"hidden"}}>
-                    <div style={{aspectRatio:"3/4",background:B1,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={card.name_de??card.name} style={{width:"100%",height:"100%",objectFit:"contain",padding:4}}/>
-                    </div>
-                    <div style={{padding:"9px 11px 11px"}}>
-                      <div style={{fontSize:11.5,fontWeight:500,color:T1,marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{card.name_de??card.name}</div>
-                      <div style={{fontSize:13,fontWeight:550,fontFamily:"'DM Mono',monospace",color:G}}>{card.price_market?`${card.price_market.toFixed(2)}€`:"–"}</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-        {tab==="scans"&&(
-          <div style={{background:B2,border:`1px solid ${BR2}`,borderRadius:16,padding:"48px",textAlign:"center"}}>
-            <div style={{fontSize:14,color:T3,marginBottom:12}}>Scan-Verlauf</div>
-            <Link href="/scanner" style={{fontSize:12,color:G,textDecoration:"none"}}>Karte jetzt scannen →</Link>
+            <ul className="space-y-5 text-sm mt-12 mb-12">
+              <li className="flex items-center gap-3 text-[var(--tx-1)]"><span className="text-emerald-400">✓</span> Unlimitierte Scans</li>
+              <li className="flex items-center gap-3 text-[var(--tx-1)]"><span className="text-emerald-400">✓</span> Vollständiges Portfolio + Charts</li>
+              <li className="flex items-center gap-3 text-[var(--tx-1)]"><span className="text-emerald-400">✓</span> Preis-Alerts</li>
+              <li className="flex items-center gap-3 text-[var(--tx-1)]"><span className="text-emerald-400">✓</span> Exklusives Forum</li>
+            </ul>
+
+            <div className="text-center py-4 bg-[var(--gold)] text-[#0a0a0a] font-semibold rounded-2xl gold-glow">Jetzt Premium werden</div>
           </div>
-        )}
+
+          {/* Dealer */}
+          <div className="bg-[var(--bg-1)] border border-[var(--br-1)] rounded-3xl p-10">
+            <div className="uppercase text-xs tracking-widest text-[var(--gold)] mb-8">HYPER RARE</div>
+            <div className="text-5xl font-light mb-1">19,99 €</div>
+            <div className="text-[var(--tx-3)] mb-12">pro Monat</div>
+
+            <ul className="space-y-5 text-sm mb-12">
+              <li className="flex items-center gap-3"><span className="text-emerald-400">✓</span> Alles aus Premium</li>
+              <li className="flex items-center gap-3"><span className="text-emerald-400">✓</span> Verified Seller Badge</li>
+              <li className="flex items-center gap-3"><span className="text-emerald-400">✓</span> Eigene Shop-Seite</li>
+              <li className="flex items-center gap-3"><span className="text-emerald-400">✓</span> API-Zugang</li>
+            </ul>
+
+            <div className="text-center py-4 border border-[var(--gold-18)] text-[var(--gold)] font-medium rounded-2xl gold-glow">Händler werden</div>
+          </div>
+        </div>
       </div>
     </div>
   );
