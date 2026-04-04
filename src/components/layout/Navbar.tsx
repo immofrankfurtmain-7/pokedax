@@ -5,210 +5,194 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
-  { href:"/preischeck", label:"Preischeck" },
-  { href:"/scanner",    label:"Scanner"    },
-  { href:"/portfolio",  label:"Portfolio"  },
-  { href:"/fantasy",    label:"Fantasy"    },
-  { href:"/forum",      label:"Forum"      },
+  { href:"/preischeck", label:"Preischeck"   },
+  { href:"/scanner",    label:"Scanner"      },
+  { href:"/portfolio",  label:"Portfolio"    },
+  { href:"/fantasy",    label:"Fantasy"      },
+  { href:"/forum",      label:"Forum"        },
 ];
 
-const G="#E9A84B", G18="rgba(233,168,75,0.18)", G08="rgba(233,168,75,0.08)";
-const TX1="#f0f0f5", TX2="#a8a8b8", TX3="#6b6b7a";
-const BG1="#111113", BR2="rgba(255,255,255,0.085)";
-
 export default function Navbar() {
-  const pathname  = usePathname();
-  const router    = useRouter();
-  const [user,   setUser]   = useState<any>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const router   = useRouter();
+  const [user, setUser]       = useState<any>(null);
+  const [open, setOpen]       = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const sb = createClient();
     sb.auth.getUser().then(({ data: { user } }) => setUser(user));
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
-    });
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_e, s) => setUser(s?.user ?? null));
     return () => subscription.unsubscribe();
   }, []);
 
-  // Close menu on route change
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  useEffect(() => { setOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   async function signOut() {
     await createClient().auth.signOut();
     router.push("/");
   }
 
+  const NAV_LINK_STYLE = (active: boolean): React.CSSProperties => ({
+    padding:"10px 18px", borderRadius:16,
+    fontSize:14, fontWeight:400,
+    color: active ? "#E9A84B" : "#a8a8b8",
+    textDecoration:"none",
+    background: active ? "rgba(233,168,75,0.06)" : "transparent",
+    transition:"color .2s, background .2s",
+    whiteSpace:"nowrap" as const,
+  });
+
   return (
     <>
-      <header style={{ position:"sticky", top:0, zIndex:50, padding:"12px 16px 0" }}>
+      <header style={{
+        position:"sticky", top:0, zIndex:100,
+        padding: scrolled ? "10px 24px 0" : "16px 24px 0",
+        transition:"padding .3s",
+      }}>
         <nav style={{
-          height:54, padding:"0 18px",
+          height:72,
+          padding:"0 28px",
           display:"flex", alignItems:"center", justifyContent:"space-between",
-          background:"rgba(10,10,10,0.92)",
-          border:`1px solid ${BR2}`,
-          borderRadius:22,
-          backdropFilter:"blur(36px) saturate(200%)",
-          WebkitBackdropFilter:"blur(36px) saturate(200%)",
+          background: scrolled ? "rgba(10,10,10,0.96)" : "rgba(10,10,10,0.85)",
+          border:`1px solid rgba(255,255,255,${scrolled ? "0.10" : "0.07"})`,
+          borderRadius:24,
+          backdropFilter:"blur(40px) saturate(180%)",
+          WebkitBackdropFilter:"blur(40px) saturate(180%)",
+          transition:"all .3s",
         }}>
-          {/* Logo — gold */}
+
+          {/* Logo */}
           <Link href="/" style={{
-            fontSize:17, fontWeight:300, letterSpacing:"-.035em",
-            color:G, textDecoration:"none",
+            fontSize:22, fontWeight:300, letterSpacing:"-.055em",
+            color:"#E9A84B", textDecoration:"none",
             fontFamily:"var(--font-display)",
             flexShrink:0,
           }}>
             pokédax
           </Link>
 
-          {/* Desktop links */}
-          <div style={{ display:"flex", gap:1 }} className="nav-desktop">
+          {/* Desktop nav */}
+          <div className="nav-desktop" style={{ display:"flex", alignItems:"center", gap:2 }}>
             {LINKS.map(l => {
               const active = pathname === l.href || pathname.startsWith(l.href + "/");
               return (
-                <Link key={l.href} href={l.href} style={{
-                  padding:"5px 13px", borderRadius:8,
-                  fontSize:12.5, fontWeight:400,
-                  color: active ? TX1 : TX2,
-                  textDecoration:"none", position:"relative",
-                  transition:"color .12s",
-                }}>
+                <Link key={l.href} href={l.href} className="gold-glow" style={NAV_LINK_STYLE(active)}>
                   {l.label}
-                  {active && (
-                    <span style={{
-                      position:"absolute", bottom:-2, left:13, right:13,
-                      height:1, background:G, opacity:.55, borderRadius:1,
-                    }}/>
-                  )}
                 </Link>
               );
             })}
           </div>
 
           {/* Desktop actions */}
-          <div style={{ display:"flex", alignItems:"center", gap:7 }} className="nav-desktop">
-            <Link href="/dashboard/premium" style={{
-              padding:"5px 12px", borderRadius:8,
-              fontSize:11.5, fontWeight:500,
-              background:G08, color:G,
-              border:`1px solid ${G18}`, textDecoration:"none",
-            }}>✦ Premium</Link>
+          <div className="nav-desktop" style={{ display:"flex", alignItems:"center", gap:10 }}>
             {user ? (
-              <button onClick={signOut} style={{
-                padding:"5px 13px", borderRadius:8, fontSize:12,
-                color:TX2, border:`1px solid ${BR2}`,
-                background:"transparent", cursor:"pointer",
-              }}>Abmelden</button>
-            ) : (
               <>
-                <Link href="/auth/login" style={{
-                  padding:"5px 13px", borderRadius:8, fontSize:12,
-                  color:TX2, border:`1px solid ${BR2}`,
-                  background:"transparent", textDecoration:"none",
-                }}>Anmelden</Link>
-                <Link href="/auth/register" style={{
-                  padding:"6px 15px", borderRadius:8, fontSize:12, fontWeight:500,
-                  background:G, color:"#0a0808", textDecoration:"none",
-                  letterSpacing:"-.01em",
-                }}>Registrieren</Link>
+                <Link href="/portfolio" className="gold-glow" style={{
+                  padding:"8px 18px", borderRadius:14,
+                  fontSize:13.5, color:"#a8a8b8",
+                  border:"1px solid rgba(255,255,255,0.10)",
+                  textDecoration:"none",
+                }}>Portfolio</Link>
+                <button onClick={signOut} style={{
+                  padding:"8px 18px", borderRadius:14,
+                  fontSize:13.5, color:"#6b6b7a",
+                  border:"none", background:"transparent", cursor:"pointer",
+                }}>Abmelden</button>
               </>
+            ) : (
+              <Link href="/auth/login" className="gold-glow" style={{
+                padding:"8px 20px", borderRadius:14,
+                fontSize:13.5, color:"#a8a8b8",
+                border:"1px solid rgba(255,255,255,0.10)",
+                textDecoration:"none",
+              }}>Anmelden</Link>
             )}
+            <Link href="/dashboard/premium" className="gold-glow" style={{
+              padding:"9px 22px", borderRadius:20,
+              fontSize:13.5, fontWeight:500,
+              background:"#E9A84B", color:"#0a0808",
+              textDecoration:"none", letterSpacing:"-.01em",
+            }}>Premium</Link>
           </div>
 
-          {/* Mobile: Premium pill + Hamburger */}
-          <div style={{ display:"flex", alignItems:"center", gap:8 }} className="nav-mobile">
-            <Link href="/dashboard/premium" style={{
-              padding:"4px 10px", borderRadius:7,
-              fontSize:11, fontWeight:600,
-              background:G08, color:G,
-              border:`1px solid ${G18}`, textDecoration:"none",
-            }}>✦</Link>
-            <button
-              onClick={() => setMenuOpen(o => !o)}
-              style={{
-                width:36, height:36, borderRadius:9,
-                background:menuOpen ? "rgba(255,255,255,0.06)" : "transparent",
-                border:`1px solid ${menuOpen ? BR2 : "rgba(255,255,255,0.06)"}`,
-                display:"flex", flexDirection:"column",
-                alignItems:"center", justifyContent:"center", gap:5,
-                cursor:"pointer", padding:0,
-                transition:"all .15s",
-              }}
-              aria-label="Menü"
-            >
-              <span style={{
-                display:"block", width:16, height:1.5,
-                background:menuOpen ? G : TX2,
+          {/* Mobile burger */}
+          <button
+            className="nav-mobile"
+            onClick={() => setOpen(o => !o)}
+            style={{
+              width:40, height:40, borderRadius:12,
+              background: open ? "rgba(233,168,75,0.08)" : "transparent",
+              border:`1px solid ${open ? "rgba(233,168,75,0.2)" : "rgba(255,255,255,0.08)"}`,
+              display:"flex", flexDirection:"column",
+              alignItems:"center", justifyContent:"center", gap:5,
+              cursor:"pointer", padding:0, flexShrink:0,
+              transition:"all .2s",
+            }}
+            aria-label="Menü"
+          >
+            {[0,1,2].map(i => (
+              <span key={i} style={{
+                display:"block", width:18, height:1.5,
+                background: open ? "#E9A84B" : "#a8a8b8",
                 borderRadius:1,
-                transform:menuOpen ? "rotate(45deg) translate(0,5px)" : "none",
-                transition:"all .2s",
+                transform: open
+                  ? i===0 ? "rotate(45deg) translate(0,4.5px)"
+                  : i===1 ? "scaleX(0)"
+                  : "rotate(-45deg) translate(0,-4.5px)"
+                  : "none",
+                transition:"all .22s var(--ease)",
+                opacity: open && i===1 ? 0 : 1,
               }}/>
-              <span style={{
-                display:"block", width:16, height:1.5,
-                background:menuOpen ? G : TX2,
-                borderRadius:1,
-                opacity:menuOpen ? 0 : 1,
-                transition:"all .2s",
-              }}/>
-              <span style={{
-                display:"block", width:16, height:1.5,
-                background:menuOpen ? G : TX2,
-                borderRadius:1,
-                transform:menuOpen ? "rotate(-45deg) translate(0,-5px)" : "none",
-                transition:"all .2s",
-              }}/>
-            </button>
-          </div>
+            ))}
+          </button>
         </nav>
 
-        {/* Mobile dropdown menu */}
-        {menuOpen && (
+        {/* Mobile dropdown */}
+        {open && (
           <div style={{
             marginTop:8,
-            background:"rgba(10,10,10,0.97)",
-            border:`1px solid ${BR2}`,
-            borderRadius:18,
-            padding:"8px",
-            backdropFilter:"blur(36px)",
-            WebkitBackdropFilter:"blur(36px)",
+            background:"rgba(10,10,10,0.98)",
+            border:"1px solid rgba(255,255,255,0.10)",
+            borderRadius:22,
+            padding:12,
+            backdropFilter:"blur(40px)",
+            WebkitBackdropFilter:"blur(40px)",
           }}>
             {LINKS.map(l => {
-              const active = pathname === l.href || pathname.startsWith(l.href + "/");
+              const active = pathname === l.href;
               return (
                 <Link key={l.href} href={l.href} style={{
                   display:"flex", alignItems:"center",
-                  padding:"12px 16px", borderRadius:12,
-                  fontSize:15, fontWeight:400,
-                  color: active ? G : TX1,
+                  padding:"14px 18px", borderRadius:14, marginBottom:2,
+                  fontSize:16, fontWeight:400,
+                  color: active ? "#E9A84B" : "#f0f0f5",
                   textDecoration:"none",
-                  background: active ? G08 : "transparent",
-                  borderLeft: active ? `2px solid ${G}` : "2px solid transparent",
-                  transition:"all .1s",
+                  background: active ? "rgba(233,168,75,0.06)" : "transparent",
+                  borderLeft:`2px solid ${active ? "#E9A84B" : "transparent"}`,
                 }}>
                   {l.label}
                 </Link>
               );
             })}
-            <div style={{ borderTop:`1px solid rgba(255,255,255,0.05)`, margin:"8px 0 4px", padding:"8px 0 0" }}>
-              {user ? (
-                <button onClick={signOut} style={{
-                  display:"block", width:"100%", padding:"12px 16px",
-                  borderRadius:12, fontSize:15, color:TX2,
-                  background:"transparent", border:"none", cursor:"pointer", textAlign:"left",
-                }}>Abmelden</button>
-              ) : (
-                <>
-                  <Link href="/auth/login" style={{
-                    display:"block", padding:"12px 16px", borderRadius:12,
-                    fontSize:15, color:TX2, textDecoration:"none",
-                  }}>Anmelden</Link>
-                  <Link href="/auth/register" style={{
-                    display:"block", padding:"12px 16px", borderRadius:12, marginTop:4,
-                    fontSize:15, fontWeight:500,
-                    background:G, color:"#0a0808", textDecoration:"none",
-                    textAlign:"center",
-                  }}>Kostenlos registrieren</Link>
-                </>
+            <div style={{ margin:"10px 0 6px", borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:10 }}>
+              <Link href="/dashboard/premium" style={{
+                display:"block", padding:"14px 18px", borderRadius:14,
+                fontSize:16, fontWeight:500,
+                background:"#E9A84B", color:"#0a0808",
+                textDecoration:"none", textAlign:"center",
+              }}>Premium werden</Link>
+              {!user && (
+                <Link href="/auth/login" style={{
+                  display:"block", padding:"14px 18px", marginTop:6, borderRadius:14,
+                  fontSize:16, color:"#a8a8b8", textDecoration:"none", textAlign:"center",
+                }}>Anmelden</Link>
               )}
             </div>
           </div>
@@ -216,11 +200,11 @@ export default function Navbar() {
       </header>
 
       <style>{`
-        .nav-desktop { display: flex !important; }
-        .nav-mobile  { display: none  !important; }
-        @media (max-width: 768px) {
-          .nav-desktop { display: none  !important; }
-          .nav-mobile  { display: flex  !important; }
+        .nav-desktop { display:flex!important; }
+        .nav-mobile  { display:none!important; }
+        @media(max-width:768px){
+          .nav-desktop { display:none!important; }
+          .nav-mobile  { display:flex!important; }
         }
       `}</style>
     </>
