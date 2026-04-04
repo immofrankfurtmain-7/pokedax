@@ -2,102 +2,85 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
-const BG1="#111113",BG3="#222228";
-const BR1="rgba(255,255,255,0.050)",BR2="rgba(255,255,255,0.085)";
+const BG1="#111113",BR1="rgba(255,255,255,0.06)";
 const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a";
 const GREEN="#4BBF82",RED="#E04558";
-
-interface Post { id:string;title:string;upvotes:number;created_at:string;profiles?:{username:string};forum_categories?:{name:string}; }
-interface Cat  { id:string;name:string; }
-const CS: Record<string,{c:string;bg:string;br:string}> = {
-  Preise:      {c:G,      bg:G08,                         br:G18},
-  News:        {c:G,      bg:G08,                         br:G18},
-  Sammlung:    {c:GREEN,  bg:"rgba(75,191,130,0.08)",      br:"rgba(75,191,130,0.18)"},
-  Strategie:   {c:"#C084FC",bg:"rgba(192,132,252,0.08)",  br:"rgba(192,132,252,0.18)"},
-  Tausch:      {c:"#7DD3FC",bg:"rgba(125,211,252,0.08)",  br:"rgba(125,211,252,0.18)"},
-  "Fake-Check":{c:"#3BBDB6",bg:"rgba(59,189,182,0.08)",   br:"rgba(59,189,182,0.18)"},
+interface Post{id:string;title:string;upvotes:number;created_at:string;profiles?:{username:string};forum_categories?:{name:string};}
+const CS:Record<string,{c:string}>={
+  Preise:{c:G},News:{c:G},Sammlung:{c:GREEN},
+  Strategie:{c:"#C084FC"},Tausch:{c:"#7DD3FC"},"Fake-Check":{c:"#3BBDB6"},
 };
-function ago(d:string) {
-  const h=Math.floor((Date.now()-new Date(d).getTime())/3600000);
-  return h<1?"Gerade":h<24?`vor ${h} Std.`:`vor ${Math.floor(h/24)}d`;
-}
-export default function ForumPage() {
-  const [posts,setPosts]=useState<Post[]>([]);
-  const [cats,setCats]=useState<Cat[]>([]);
-  const [active,setActive]=useState("alle");
-  const [loading,setLoading]=useState(true);
+function ago(d:string){const h=Math.floor((Date.now()-new Date(d).getTime())/3600000);return h<1?"Gerade":h<24?`vor ${h} Std.`:`vor ${Math.floor(h/24)} T.`;}
+export default function ForumPage(){
+  const[posts,setPosts]=useState<Post[]>([]);
+  const[cats,setCats]=useState<{id:string;name:string}[]>([]);
+  const[active,setActive]=useState("alle");
+  const[loading,setLoading]=useState(true);
   useEffect(()=>{
     async function load(){
-      const {createClient}=await import("@/lib/supabase/client");
+      const{createClient}=await import("@/lib/supabase/client");
       const sb=createClient();
-      const [pR,cR]=await Promise.all([
+      const[pR,cR]=await Promise.all([
         sb.from("forum_posts").select("id,title,upvotes,created_at,profiles(username),forum_categories(name)").order("created_at",{ascending:false}).limit(40),
         sb.from("forum_categories").select("id,name").order("name"),
       ]);
-      const normalized = (pR.data ?? []).map((p: any) => ({
-        ...p,
-        profiles:         Array.isArray(p.profiles)         ? p.profiles[0]         : p.profiles,
-        forum_categories: Array.isArray(p.forum_categories) ? p.forum_categories[0] : p.forum_categories,
-      })) as Post[];
-      setPosts(normalized);
-      setCats(cR.data ?? []);
-      setLoading(false);
+      const norm=(pR.data??[]).map((p:any)=>({...p,profiles:Array.isArray(p.profiles)?p.profiles[0]:p.profiles,forum_categories:Array.isArray(p.forum_categories)?p.forum_categories[0]:p.forum_categories})) as Post[];
+      setPosts(norm);setCats(cR.data??[]);setLoading(false);
     }
     load();
   },[]);
   const filtered=active==="alle"?posts:posts.filter(p=>p.forum_categories?.name===active);
   return(
     <div style={{minHeight:"80vh",color:TX1}}>
-      <div style={{maxWidth:860,margin:"0 auto",padding:"44px 28px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:28}}>
+      <div style={{maxWidth:1000,margin:"0 auto",padding:"72px 24px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:48}}>
           <div>
-            <h1 style={{fontSize:24,fontWeight:300,letterSpacing:"-.04em",color:TX1,marginBottom:5,fontFamily:"var(--font-display)"}}>Forum</h1>
-            <p style={{fontSize:12.5,color:TX3}}>{posts.length} Beiträge · Community</p>
+            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(36px,5vw,56px)",fontWeight:300,letterSpacing:"-.07em",color:TX1,marginBottom:8}}>Community</h1>
+            <p style={{fontSize:15,color:TX3}}>{posts.length} Beiträge</p>
           </div>
-          <Link href="/forum/new" style={{padding:"10px 20px",borderRadius:10,background:G,color:"#0a0808",fontSize:12.5,fontWeight:600,textDecoration:"none",boxShadow:"0 2px 14px rgba(233,168,75,0.2)"}}>+ Beitrag erstellen</Link>
+          <Link href="/forum/new" className="gold-glow" style={{padding:"14px 28px",borderRadius:22,background:G,color:"#0a0808",fontSize:14,fontWeight:600,textDecoration:"none"}}>+ Beitrag</Link>
         </div>
-        <div style={{display:"flex",gap:6,marginBottom:22,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:8,marginBottom:36,flexWrap:"wrap"}}>
           {["alle",...cats.map(c=>c.name)].map(cat=>{
             const on=active===cat;
-            const cs=cat!=="alle"?CS[cat]:null;
+            const c=cat!=="alle"?CS[cat]?.c:null;
             return(
-              <button key={cat} onClick={()=>setActive(cat)} style={{padding:"5px 14px",borderRadius:8,fontSize:11.5,fontWeight:500,cursor:"pointer",background:on?(cs?cs.bg:G08):"transparent",color:on?(cs?cs.c:G):TX3,border:`1px solid ${on?(cs?cs.br:G18):BR1}`,transition:"all .12s"}}>
+              <button key={cat} onClick={()=>setActive(cat)} style={{padding:"8px 18px",borderRadius:14,fontSize:13.5,fontWeight:500,cursor:"pointer",background:on?(c?"rgba(233,168,75,0.06)":"rgba(233,168,75,0.06)"):"transparent",color:on?(c??G):TX3,border:`1px solid ${on?"rgba(233,168,75,0.2)":"rgba(255,255,255,0.06)"}`,transition:"all .15s"}}>
                 {cat==="alle"?"Alle":cat}
               </button>
             );
           })}
         </div>
-        <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:22,overflow:"hidden"}}>
-          {loading?<div style={{padding:"48px",textAlign:"center",color:TX3}}>Lädt…</div>
-          :filtered.length===0?<div style={{padding:"48px",textAlign:"center"}}>
-              <div style={{fontSize:13.5,color:TX3,marginBottom:12}}>Noch keine Beiträge</div>
-              <Link href="/forum/new" style={{fontSize:13,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
-            </div>
-          :filtered.map((post,i)=>{
-            const cat=post.forum_categories?.name??"Allgemein";
-            const cs=CS[cat]??{c:TX2,bg:BR1,br:BR2};
-            const author=post.profiles?.username??"Anonym";
-            return(
-              <Link key={post.id} href={`/forum/post/${post.id}`} style={{textDecoration:"none"}}>
-                <div style={{display:"flex",alignItems:"flex-start",gap:14,padding:"18px 24px",borderBottom:i<filtered.length-1?"1px solid rgba(255,255,255,0.032)":"none",cursor:"pointer",transition:"background .1s"}}
-                onMouseEnter={e=>{(e.currentTarget as HTMLElement).style.background="rgba(255,255,255,0.015)";}}
-                onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.background="transparent";}}>
-                  <div style={{width:32,height:32,borderRadius:9,background:BG3,border:`1px solid ${BR2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12.5,fontWeight:600,color:TX2,flexShrink:0,marginTop:1}}>{author[0]?.toUpperCase()}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5,flexWrap:"wrap"}}>
-                      <span style={{fontSize:12,fontWeight:500,color:TX1}}>{author}</span>
-                      <span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:cs.bg,color:cs.c,border:`1px solid ${cs.br}`,letterSpacing:".04em"}}>{cat}</span>
-                      <span style={{fontSize:10,color:TX3,marginLeft:"auto"}}>{ago(post.created_at)}</span>
-                    </div>
-                    <div style={{fontSize:13.5,fontWeight:500,color:TX1,marginBottom:4,letterSpacing:"-.013em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{post.title}</div>
-                    <span style={{fontSize:10,color:TX3}}>↑ {post.upvotes??0}</span>
+        {loading?<div style={{textAlign:"center",padding:80,color:TX3,fontSize:15}}>Lädt…</div>
+        :filtered.length===0?<div style={{textAlign:"center",padding:80}}>
+            <p style={{fontSize:16,color:TX3,marginBottom:20}}>Noch keine Beiträge</p>
+            <Link href="/forum/new" style={{fontSize:15,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
+          </div>
+        :(
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
+            {filtered.map(post=>{
+              const cat=post.forum_categories?.name??"Forum";
+              const c=CS[cat]?.c??G;
+              const author=post.profiles?.username??"Anonym";
+              return(
+                <Link key={post.id} href={`/forum/post/${post.id}`} className="card-hover" style={{
+                  background:BG1,border:`1px solid ${BR1}`,
+                  borderRadius:28,padding:28,
+                  textDecoration:"none",display:"block",
+                }}>
+                  <div style={{fontSize:10,fontWeight:600,letterSpacing:".08em",textTransform:"uppercase",color:c,marginBottom:14}}>{cat}</div>
+                  <div style={{fontSize:16,fontWeight:500,color:TX1,lineHeight:1.45,marginBottom:24,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{post.title}</div>
+                  <div style={{fontSize:12,color:TX3,display:"flex",gap:8,alignItems:"center"}}>
+                    <span>{author}</span>
+                    <span style={{width:3,height:3,borderRadius:"50%",background:TX3,display:"inline-block"}}/>
+                    <span>{ago(post.created_at)}</span>
+                    <span style={{marginLeft:"auto"}}>↑ {post.upvotes??0}</span>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-          {!loading&&filtered.length>0&&<div style={{padding:"13px 24px",borderTop:`1px solid ${BR1}`,fontSize:12,color:TX3}}>{filtered.length} Beiträge</div>}
-        </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

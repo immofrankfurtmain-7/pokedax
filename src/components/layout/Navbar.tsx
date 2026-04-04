@@ -5,19 +5,18 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
-  { href:"/preischeck", label:"Preischeck"   },
-  { href:"/scanner",    label:"Scanner"      },
-  { href:"/portfolio",  label:"Portfolio"    },
-  { href:"/fantasy",    label:"Fantasy"      },
-  { href:"/forum",      label:"Forum"        },
+  { href:"/preischeck", label:"Preischeck"    },
+  { href:"/scanner",    label:"Scanner"       },
+  { href:"/portfolio",  label:"Portfolio"     },
+  { href:"/fantasy",    label:"Fantasy League"},
+  { href:"/forum",      label:"Forum"         },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const router   = useRouter();
-  const [user, setUser]       = useState<any>(null);
-  const [open, setOpen]       = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [user, setUser]   = useState<any>(null);
+  const [open, setOpen]   = useState(false);
 
   useEffect(() => {
     const sb = createClient();
@@ -28,62 +27,85 @@ export default function Navbar() {
 
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   async function signOut() {
     await createClient().auth.signOut();
     router.push("/");
   }
 
-  const NAV_LINK_STYLE = (active: boolean): React.CSSProperties => ({
-    padding:"10px 18px", borderRadius:16,
-    fontSize:14, fontWeight:400,
-    color: active ? "#E9A84B" : "#a8a8b8",
-    textDecoration:"none",
-    background: active ? "rgba(233,168,75,0.06)" : "transparent",
-    transition:"color .2s, background .2s",
-    whiteSpace:"nowrap" as const,
-  });
-
   return (
     <>
-      <header style={{
-        position:"sticky", top:0, zIndex:100,
-        padding: scrolled ? "10px 24px 0" : "16px 24px 0",
-        transition:"padding .3s",
+      {/* Ticker */}
+      <div style={{
+        background:"#111113",
+        borderBottom:"1px solid rgba(255,255,255,0.1)",
+        padding:"12px 0",
+        overflow:"hidden",
+        whiteSpace:"nowrap",
       }}>
-        <nav style={{
-          height:72,
-          padding:"0 28px",
-          display:"flex", alignItems:"center", justifyContent:"space-between",
-          background: scrolled ? "rgba(10,10,10,0.96)" : "rgba(10,10,10,0.85)",
-          border:`1px solid rgba(255,255,255,${scrolled ? "0.10" : "0.07"})`,
-          borderRadius:24,
-          backdropFilter:"blur(40px) saturate(180%)",
-          WebkitBackdropFilter:"blur(40px) saturate(180%)",
-          transition:"all .3s",
+        <div style={{
+          display:"inline-flex",
+          animation:"ticker-scroll 50s linear infinite",
+          fontSize:11,
+          fontWeight:500,
+          letterSpacing:".14em",
+          color:"#E9A84B",
+          textTransform:"uppercase",
+          gap:0,
         }}>
+          {Array.from({length:4}).map((_,i)=>(
+            <span key={i} style={{paddingRight:48}}>
+              LIVE&nbsp;•&nbsp;Glurak ex +12,4 %&nbsp;•&nbsp;Mewtu ex +5,7 %&nbsp;•&nbsp;Umbreon ex +8,2 %&nbsp;•&nbsp;Pikachu ex −3,1 %&nbsp;•&nbsp;Lugia ex +18,3 %&nbsp;•&nbsp;Gardevoir ex +6,9 %&nbsp;•&nbsp;Dragonite ex +18,3 %
+            </span>
+          ))}
+        </div>
+      </div>
 
+      {/* Navbar */}
+      <nav style={{
+        borderBottom:"1px solid rgba(255,255,255,0.1)",
+        background:"rgba(10,10,10,0.95)",
+        backdropFilter:"blur(40px)",
+        WebkitBackdropFilter:"blur(40px)",
+        position:"sticky",
+        top:0,
+        zIndex:50,
+      }}>
+        <div style={{
+          maxWidth:1200,
+          margin:"0 auto",
+          padding:"0 24px",
+          height:80,
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"space-between",
+        }}>
           {/* Logo */}
           <Link href="/" style={{
-            fontSize:22, fontWeight:300, letterSpacing:"-.055em",
-            color:"#E9A84B", textDecoration:"none",
             fontFamily:"var(--font-display)",
+            fontSize:28,
+            fontWeight:300,
+            letterSpacing:"-.095em",
+            color:"#f0f0f5",
+            textDecoration:"none",
             flexShrink:0,
           }}>
             pokédax
           </Link>
 
-          {/* Desktop nav */}
-          <div className="nav-desktop" style={{ display:"flex", alignItems:"center", gap:2 }}>
+          {/* Desktop links */}
+          <div className="nav-desktop" style={{display:"flex",alignItems:"center",gap:4}}>
             {LINKS.map(l => {
-              const active = pathname === l.href || pathname.startsWith(l.href + "/");
+              const active = pathname === l.href || pathname.startsWith(l.href+"/");
               return (
-                <Link key={l.href} href={l.href} className="gold-glow" style={NAV_LINK_STYLE(active)}>
+                <Link key={l.href} href={l.href} className="gold-glow" style={{
+                  padding:"12px 24px",
+                  borderRadius:18,
+                  fontSize:13.5,
+                  fontWeight:500,
+                  color: active ? "#E9A84B" : "#a8a8b8",
+                  textDecoration:"none",
+                  background: active ? "rgba(233,168,75,0.06)" : "transparent",
+                }}>
                   {l.label}
                 </Link>
               );
@@ -91,120 +113,97 @@ export default function Navbar() {
           </div>
 
           {/* Desktop actions */}
-          <div className="nav-desktop" style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div className="nav-desktop" style={{display:"flex",alignItems:"center",gap:16}}>
             {user ? (
-              <>
-                <Link href="/portfolio" className="gold-glow" style={{
-                  padding:"8px 18px", borderRadius:14,
-                  fontSize:13.5, color:"#a8a8b8",
-                  border:"1px solid rgba(255,255,255,0.10)",
-                  textDecoration:"none",
-                }}>Portfolio</Link>
-                <button onClick={signOut} style={{
-                  padding:"8px 18px", borderRadius:14,
-                  fontSize:13.5, color:"#6b6b7a",
-                  border:"none", background:"transparent", cursor:"pointer",
-                }}>Abmelden</button>
-              </>
+              <button onClick={signOut} className="gold-glow" style={{
+                padding:"12px 28px", borderRadius:18,
+                fontSize:13.5, color:"#a8a8b8",
+                border:"none", background:"transparent", cursor:"pointer",
+              }}>Abmelden</button>
             ) : (
               <Link href="/auth/login" className="gold-glow" style={{
-                padding:"8px 20px", borderRadius:14,
-                fontSize:13.5, color:"#a8a8b8",
-                border:"1px solid rgba(255,255,255,0.10)",
-                textDecoration:"none",
+                padding:"12px 28px", borderRadius:18,
+                fontSize:13.5, color:"#a8a8b8", textDecoration:"none",
               }}>Anmelden</Link>
             )}
             <Link href="/dashboard/premium" className="gold-glow" style={{
-              padding:"9px 22px", borderRadius:20,
-              fontSize:13.5, fontWeight:500,
+              padding:"12px 32px", borderRadius:24,
+              fontSize:13.5, fontWeight:600,
               background:"#E9A84B", color:"#0a0808",
-              textDecoration:"none", letterSpacing:"-.01em",
+              textDecoration:"none",
             }}>Premium</Link>
           </div>
 
           {/* Mobile burger */}
-          <button
-            className="nav-mobile"
-            onClick={() => setOpen(o => !o)}
-            style={{
-              width:40, height:40, borderRadius:12,
-              background: open ? "rgba(233,168,75,0.08)" : "transparent",
-              border:`1px solid ${open ? "rgba(233,168,75,0.2)" : "rgba(255,255,255,0.08)"}`,
-              display:"flex", flexDirection:"column",
-              alignItems:"center", justifyContent:"center", gap:5,
-              cursor:"pointer", padding:0, flexShrink:0,
-              transition:"all .2s",
-            }}
-            aria-label="Menü"
-          >
-            {[0,1,2].map(i => (
+          <button className="nav-mobile" onClick={() => setOpen(o=>!o)} style={{
+            width:44, height:44, borderRadius:14,
+            background:"transparent",
+            border:"1px solid rgba(255,255,255,0.1)",
+            display:"flex", flexDirection:"column",
+            alignItems:"center", justifyContent:"center", gap:5,
+            cursor:"pointer", padding:0,
+            transition:"all .2s",
+          }} aria-label="Menü">
+            {[0,1,2].map(i=>(
               <span key={i} style={{
-                display:"block", width:18, height:1.5,
+                display:"block", width:20, height:1.5,
                 background: open ? "#E9A84B" : "#a8a8b8",
                 borderRadius:1,
                 transform: open
-                  ? i===0 ? "rotate(45deg) translate(0,4.5px)"
+                  ? i===0 ? "rotate(45deg) translate(0,5px)"
                   : i===1 ? "scaleX(0)"
-                  : "rotate(-45deg) translate(0,-4.5px)"
+                  : "rotate(-45deg) translate(0,-5px)"
                   : "none",
-                transition:"all .22s var(--ease)",
                 opacity: open && i===1 ? 0 : 1,
+                transition:"all .22s var(--ease)",
               }}/>
             ))}
           </button>
-        </nav>
+        </div>
 
         {/* Mobile dropdown */}
         {open && (
           <div style={{
-            marginTop:8,
+            borderTop:"1px solid rgba(255,255,255,0.06)",
             background:"rgba(10,10,10,0.98)",
-            border:"1px solid rgba(255,255,255,0.10)",
-            borderRadius:22,
-            padding:12,
             backdropFilter:"blur(40px)",
-            WebkitBackdropFilter:"blur(40px)",
+            padding:"12px 16px 20px",
           }}>
-            {LINKS.map(l => {
-              const active = pathname === l.href;
-              return (
-                <Link key={l.href} href={l.href} style={{
-                  display:"flex", alignItems:"center",
-                  padding:"14px 18px", borderRadius:14, marginBottom:2,
-                  fontSize:16, fontWeight:400,
-                  color: active ? "#E9A84B" : "#f0f0f5",
-                  textDecoration:"none",
-                  background: active ? "rgba(233,168,75,0.06)" : "transparent",
-                  borderLeft:`2px solid ${active ? "#E9A84B" : "transparent"}`,
-                }}>
-                  {l.label}
-                </Link>
-              );
-            })}
-            <div style={{ margin:"10px 0 6px", borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:10 }}>
+            {LINKS.map(l => (
+              <Link key={l.href} href={l.href} style={{
+                display:"block", padding:"16px 20px",
+                borderRadius:16, marginBottom:2,
+                fontSize:18, fontWeight:400,
+                color: pathname===l.href ? "#E9A84B" : "#f0f0f5",
+                textDecoration:"none",
+                background: pathname===l.href ? "rgba(233,168,75,0.06)" : "transparent",
+              }}>{l.label}</Link>
+            ))}
+            <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",margin:"12px 0",paddingTop:12}}>
               <Link href="/dashboard/premium" style={{
-                display:"block", padding:"14px 18px", borderRadius:14,
-                fontSize:16, fontWeight:500,
+                display:"block", padding:"16px 20px", borderRadius:18,
+                fontSize:18, fontWeight:600,
                 background:"#E9A84B", color:"#0a0808",
                 textDecoration:"none", textAlign:"center",
               }}>Premium werden</Link>
               {!user && (
                 <Link href="/auth/login" style={{
-                  display:"block", padding:"14px 18px", marginTop:6, borderRadius:14,
-                  fontSize:16, color:"#a8a8b8", textDecoration:"none", textAlign:"center",
+                  display:"block", padding:"14px 20px", marginTop:8,
+                  borderRadius:16, fontSize:16, color:"#a8a8b8",
+                  textDecoration:"none", textAlign:"center",
                 }}>Anmelden</Link>
               )}
             </div>
           </div>
         )}
-      </header>
+      </nav>
 
       <style>{`
-        .nav-desktop { display:flex!important; }
-        .nav-mobile  { display:none!important; }
+        .nav-desktop{display:flex!important}
+        .nav-mobile{display:none!important}
         @media(max-width:768px){
-          .nav-desktop { display:none!important; }
-          .nav-mobile  { display:flex!important; }
+          .nav-desktop{display:none!important}
+          .nav-mobile{display:flex!important}
         }
       `}</style>
     </>

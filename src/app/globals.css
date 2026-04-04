@@ -27,19 +27,22 @@
   --font-body:    'Inter', system-ui, sans-serif;
   --font-mono:    'DM Mono', monospace;
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
-  --r-xl: 28px;
-  --r-2xl: 36px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
 body {
-  background: var(--canvas);
-  color: var(--tx-1);
+  background-color: #0a0a0a;
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(233,168,75,0.13) 0%, transparent 62%),
+    radial-gradient(circle at 80% 80%, rgba(233,168,75,0.10) 0%, transparent 68%),
+    radial-gradient(circle at 45% 95%, rgba(233,168,75,0.07) 0%, transparent 55%);
+  background-attachment: fixed;
+  color: #f0f0f5;
   font-family: var(--font-body);
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -47,55 +50,59 @@ body {
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-thumb { background: rgba(233,168,75,0.2); border-radius: 2px; }
 
-@keyframes blink        { 0%,100%{opacity:1}  50%{opacity:.15} }
+@keyframes blink        { 0%,100%{opacity:1} 50%{opacity:.15} }
 @keyframes ticker-scroll{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
-@keyframes fade-up      { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fade-up      { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
-/* ── GOLD GLOW — the signature effect ── */
+/* ═══════════════════════════════════════════════════════
+   GOLD GLOW — exact match to HTML reference
+   inset: -130%, opacity 0.52, scale 1.6 on hover
+   ═══════════════════════════════════════════════════════ */
 .gold-glow {
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   position: relative;
   overflow: hidden;
-  transition:
-    transform   0.55s var(--ease),
-    box-shadow  0.55s var(--ease),
-    border-color 0.3s var(--ease),
-    color 0.2s;
 }
 .gold-glow::before {
   content: '';
   position: absolute;
-  inset: -60%;
-  background: radial-gradient(circle at center, rgba(233,168,75,0.25) 0%, transparent 68%);
+  inset: -130%;
+  background: radial-gradient(circle at center, rgba(233,168,75,0.52) 0%, transparent 85%);
   opacity: 0;
-  transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
 }
 .gold-glow:hover::before {
   opacity: 1;
-  transform: scale(1.2);
+  transform: scale(1.6);
 }
 .gold-glow:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 0 0 1px rgba(233,168,75,0.35), 0 28px 60px -12px rgba(233,168,75,0.35);
+  transform: translateY(-10px);
+  box-shadow: 0 0 0 1px #E9A84B, 0 65px 140px -45px rgba(233,168,75,0.75);
 }
 .gold-glow > * { position: relative; z-index: 1; }
 
-/* ── CARD HOVER ── */
+/* ── card-hover (for article/post cards) ── */
 .card-hover {
-  transition:
-    transform  0.55s var(--ease),
-    box-shadow 0.55s var(--ease),
-    border-color 0.3s;
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
+  overflow: hidden;
 }
+.card-hover::before {
+  content: '';
+  position: absolute;
+  inset: -130%;
+  background: radial-gradient(circle at center, rgba(233,168,75,0.52) 0%, transparent 85%);
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+.card-hover:hover::before { opacity: 1; transform: scale(1.6); }
 .card-hover:hover {
-  transform: translateY(-10px) scale(1.025);
-  box-shadow:
-    0 40px 80px -20px rgba(233,168,75,0.28),
-    0 0 0 1px rgba(233,168,75,0.18);
-  border-color: rgba(233,168,75,0.22) !important;
+  transform: translateY(-10px);
+  box-shadow: 0 0 0 1px #E9A84B, 0 65px 140px -45px rgba(233,168,75,0.75);
 }
-
-/* ── SECTION FADE IN ── */
-.fade-up { animation: fade-up 0.7s var(--ease) both; }
+.card-hover > * { position: relative; z-index: 1; }
