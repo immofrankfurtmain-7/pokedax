@@ -5,135 +5,161 @@
 @tailwind utilities;
 
 :root {
-  --canvas: #0a0a0a;
-  --bg-1: #111113;
-  --bg-2: #1a1a1f;
-  --bg-3: #222228;
-  --br-1: rgba(255,255,255,0.06);
-  --br-2: rgba(255,255,255,0.10);
-  --gold:    #E9A84B;
-  --gold-30: rgba(233,168,75,0.30);
-  --gold-18: rgba(233,168,75,0.18);
-  --gold-12: rgba(233,168,75,0.12);
-  --gold-08: rgba(233,168,75,0.08);
-  --gold-05: rgba(233,168,75,0.05);
-  --green: #4BBF82;
-  --red:   #E04558;
-  --tx-1: #f0f0f5;
-  --tx-2: #a8a8b8;
-  --tx-3: #6b6b7a;
+  --canvas:  #09090b;
+  --bg-1:    #111114;
+  --bg-2:    #18181c;
+  --bg-3:    #202025;
+  --br-1:    rgba(255,255,255,0.045);
+  --br-2:    rgba(255,255,255,0.085);
+  --br-3:    rgba(255,255,255,0.13);
+  --tx-1:    #ededf2;
+  --tx-2:    #a4a4b4;
+  --tx-3:    #62626f;
+  /* Warmer, tiefer — echtes Champagner-Gold */
+  --gold:     #D4A843;
+  --gold-40:  rgba(212,168,67,0.40);
+  --gold-25:  rgba(212,168,67,0.25);
+  --gold-15:  rgba(212,168,67,0.15);
+  --gold-08:  rgba(212,168,67,0.08);
+  --gold-04:  rgba(212,168,67,0.04);
+  --green:   #3db87a;
+  --red:     #dc4a5a;
   --font-display: 'Satoshi', 'Inter', system-ui, sans-serif;
   --font-body:    'Inter', system-ui, sans-serif;
-  --font-mono:    'DM Mono', monospace;
-  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --font-mono:    'DM Mono', 'Fira Mono', monospace;
+  --ease:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 
 body {
-  background-color: #0a0a0a;
+  background-color: var(--canvas);
   background-image:
-    radial-gradient(circle at 20% 25%, rgba(233,168,75,0.13) 0%, transparent 62%),
-    radial-gradient(circle at 80% 80%, rgba(233,168,75,0.10) 0%, transparent 68%),
-    radial-gradient(circle at 45% 95%, rgba(233,168,75,0.07) 0%, transparent 55%);
+    radial-gradient(ellipse 80% 50% at 15% 20%, rgba(212,168,67,0.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 75%, rgba(212,168,67,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 100%, rgba(212,168,67,0.05) 0%, transparent 50%);
   background-attachment: fixed;
-  color: #f0f0f5;
+  color: var(--tx-1);
   font-family: var(--font-body);
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
-::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-thumb { background: rgba(233,168,75,0.2); border-radius: 2px; }
+::-webkit-scrollbar { width: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(212,168,67,0.18); border-radius: 2px; }
 
-@keyframes blink        { 0%,100%{opacity:1} 50%{opacity:.15} }
-@keyframes ticker-scroll{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
-@keyframes fade-up      { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-@keyframes pulse        { 0%,100%{opacity:.4} 50%{opacity:.65} }
-@keyframes spin         { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+/* ── Keyframes ── */
+@keyframes blink         { 0%,100%{opacity:1} 50%{opacity:.12} }
+@keyframes ticker-scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+@keyframes fade-up       { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse         { 0%,100%{opacity:.35} 50%{opacity:.55} }
+@keyframes spin          { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes shimmer       { from{background-position:200% 0} to{background-position:-200% 0} }
 
-/* ═══════════════════════════════════════════════════
-   GOLD GLOW — signature effect, exact reference
-   ═══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   GOLD GLOW — sanft, warm, elegant
+   Kein harter Ring. Reines weiches Leuchten.
+   ══════════════════════════════════════════════════════ */
 .gold-glow {
-  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   position: relative;
   overflow: hidden;
+  transition:
+    transform  0.65s var(--ease),
+    box-shadow 0.65s var(--ease),
+    border-color 0.3s;
 }
 .gold-glow::before {
   content: '';
   position: absolute;
-  inset: -130%;
-  background: radial-gradient(circle at center, rgba(233,168,75,0.52) 0%, transparent 85%);
+  inset: -80%;
+  background: radial-gradient(
+    ellipse 70% 70% at center,
+    rgba(212,168,67,0.38) 0%,
+    rgba(212,168,67,0.12) 40%,
+    transparent 72%
+  );
   opacity: 0;
-  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 0.65s var(--ease), transform 0.65s var(--ease);
   z-index: 0;
   border-radius: inherit;
   pointer-events: none;
 }
-.gold-glow:hover::before { opacity: 1; transform: scale(1.6); }
+.gold-glow:hover::before {
+  opacity: 1;
+  transform: scale(1.15);
+}
 .gold-glow:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 0 0 1px #E9A84B, 0 65px 140px -45px rgba(233,168,75,0.75);
+  transform: translateY(-6px);
+  box-shadow:
+    0 2px 0 rgba(212,168,67,0.20),
+    0 20px 60px -12px rgba(212,168,67,0.35),
+    0 40px 100px -20px rgba(212,168,67,0.18);
+  border-color: rgba(212,168,67,0.28) !important;
 }
 .gold-glow > * { position: relative; z-index: 1; }
 
-/* card-hover same system */
+/* card-hover — identisch, aber etwas stärker für Karten */
 .card-hover {
-  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   position: relative;
   overflow: hidden;
+  transition:
+    transform  0.65s var(--ease),
+    box-shadow 0.65s var(--ease),
+    border-color 0.3s;
 }
 .card-hover::before {
   content: '';
   position: absolute;
-  inset: -130%;
-  background: radial-gradient(circle at center, rgba(233,168,75,0.52) 0%, transparent 85%);
+  inset: -80%;
+  background: radial-gradient(
+    ellipse 70% 70% at center,
+    rgba(212,168,67,0.35) 0%,
+    rgba(212,168,67,0.10) 45%,
+    transparent 72%
+  );
   opacity: 0;
-  transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: opacity 0.65s var(--ease), transform 0.65s var(--ease);
   z-index: 0;
   pointer-events: none;
 }
-.card-hover:hover::before { opacity: 1; transform: scale(1.6); }
+.card-hover:hover::before {
+  opacity: 1;
+  transform: scale(1.1);
+}
 .card-hover:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 0 0 1px #E9A84B, 0 65px 140px -45px rgba(233,168,75,0.75);
+  transform: translateY(-8px) scale(1.015);
+  box-shadow:
+    0 2px 0 rgba(212,168,67,0.15),
+    0 24px 56px -12px rgba(212,168,67,0.32),
+    0 48px 96px -24px rgba(212,168,67,0.14);
+  border-color: rgba(212,168,67,0.22) !important;
 }
 .card-hover > * { position: relative; z-index: 1; }
 
-/* ── Mobile optimizations ── */
+/* ── Mobile ── */
 @media (max-width: 768px) {
-  /* Reduce hero padding on mobile */
-  .hero-section {
-    padding-top: 64px !important;
-    padding-bottom: 80px !important;
+  .gold-glow:hover, .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px -8px rgba(212,168,67,0.28);
   }
-  /* Reduce font sizes on mobile */
-  h1 { letter-spacing: -.06em !important; }
-  /* Stack grids on mobile */
-  .mobile-stack {
-    grid-template-columns: 1fr !important;
+  button, a[href] { min-height: 44px; }
+}
+@media (max-width: 480px) {
+  .gold-glow:hover, .card-hover:hover {
+    transform: none;
+    box-shadow: 0 0 0 1px rgba(212,168,67,0.25);
   }
-  /* Reduce gold-glow on mobile (heavy on performance) */
-  .gold-glow:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0 0 1px #E9A84B, 0 20px 40px -10px rgba(233,168,75,0.4);
-  }
-  .card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 0 0 1px #E9A84B, 0 20px 40px -10px rgba(233,168,75,0.4);
-  }
-  /* Better touch targets */
-  button, a { min-height: 44px; }
-  /* Ticker smaller on mobile */
-  .ticker-text { font-size: 10px !important; letter-spacing: .08em !important; }
 }
 
-@media (max-width: 480px) {
-  body { font-size: 15px; }
-  .gold-glow:hover, .card-hover:hover { transform: none; box-shadow: 0 0 0 1px rgba(233,168,75,0.4); }
+/* ── Nav desktop/mobile ── */
+.nav-desktop { display: flex !important; }
+.nav-mobile  { display: none  !important; }
+@media (max-width: 768px) {
+  .nav-desktop { display: none  !important; }
+  .nav-mobile  { display: flex  !important; }
 }
