@@ -366,7 +366,7 @@ export default async function HomePage() {
             </div>
             <Link href="/forum" style={{fontSize:13,color:TX3,textDecoration:"none"}}>Alle Beiträge →</Link>
           </div>
-          <div style={{display:"grid",gap:14} className="forum-cards-grid"}>
+          <div style={{display:"grid",gap:14}} className="forum-cards-grid">
             {(posts as any[]).map((post:any)=>{
               const cat = post.forum_categories?.name??"Forum";
               const h   = Math.floor((Date.now()-new Date(post.created_at).getTime())/3600000);
@@ -393,7 +393,7 @@ export default async function HomePage() {
           PORTFOLIO + WELCOME
           ═══════════════════════════════════════════════ */}
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
-        <div style={{display:"grid",gap:14} className="portfolio-welcome-grid"}>
+        <div style={{display:"grid",gap:14}} className="portfolio-welcome-grid">
           <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:28,padding:"clamp(36px,4vw,56px)"}}>
             <Label>Dein Portfolio</Label>
             <div style={{fontFamily:"var(--font-display)",fontSize:"clamp(40px,5vw,68px)",fontWeight:300,letterSpacing:"-.07em",color:TX1,lineHeight:1,marginBottom:10}}>4.872 €</div>

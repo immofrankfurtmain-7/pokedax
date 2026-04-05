@@ -56,7 +56,7 @@ export default function PortfolioPage() {
         </div>
 
         {/* Stats row */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)"}} className="portfolio-stats-grid" style={{,gap:12,marginBottom:32} className="portfolio-stats-grid">
+        <div className="portfolio-stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:32}}>
           {[
             {l:"Sammlungswert",v:`${totalVal.toLocaleString("de-DE",{minimumFractionDigits:2})} €`,big:true},
             {l:"Karten gesamt",v:col.reduce((a,c)=>a+(c.quantity??1),0).toString()},

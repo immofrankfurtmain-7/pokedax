@@ -1,11 +1,10 @@
-﻿# PokéDax v6.7 — Mobile Fix (alle 8 Bugs behoben)
+﻿# PokéDax v6.7 — Mobile Fix (syntax korrigiert)
 $root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
 $enc  = New-Object System.Text.UTF8Encoding $true
 Write-Host ""
-Write-Host "pokEdax v6.7 — Mobile komplett gefixt" -ForegroundColor Yellow
-Write-Host "======================================" -ForegroundColor Yellow
+Write-Host "pokEdax v6.7 — Mobile Fix (alle Syntax-Fehler behoben)" -ForegroundColor Yellow
+Write-Host "========================================================" -ForegroundColor Yellow
 Write-Host ""
-
 $dirs = @(
   "$root\src\app","$root\src\app\preischeck","$root\src\app\portfolio",
   "$root\src\app\scanner","$root\src\app\fantasy","$root\src\app\leaderboard",
@@ -30,19 +29,7 @@ cmd /c mkdir "$root\src\app\profil\[username]" 2>$null
 cmd /c mkdir "$root\src\app\forum\post\[id]" 2>$null
 $oldPage = "$root\src\app\auth\callback\page.tsx"
 if (Test-Path $oldPage) { Remove-Item $oldPage -Force }
-
-Write-Host "Mobile Fixes (8 Bugs):" -ForegroundColor Cyan
-Write-Host "  [1] Karten-Grid: horizontal scroll auf Mobile" -ForegroundColor White
-Write-Host "  [2] Scanner-Sektion: 2-col -> 1-col" -ForegroundColor White
-Write-Host "  [3] Fantasy-Sektion: 2-col -> 1-col" -ForegroundColor White
-Write-Host "  [4] Portfolio+Welcome: 2-col -> 1-col" -ForegroundColor White
-Write-Host "  [5] Forum-Cards: 3-col -> 1-col" -ForegroundColor White
-Write-Host "  [6] Pricing: 3-col -> 1-col" -ForegroundColor White
-Write-Host "  [7] Footer: 4-col -> 2-col, kein horizontales Scrollen" -ForegroundColor White
-Write-Host "  [8] Fantasy E-Mail Form: inline -> stacked" -ForegroundColor White
-Write-Host "  + Portfolio overflow fix, Stats grid 2-col" -ForegroundColor White
-Write-Host ""
-Write-Host "Schreibe Dateien..." -ForegroundColor DarkGray
+Write-Host "Schreibe Dateien..." -ForegroundColor Cyan
 
 $nextconfig = @'
 /** @type {import('next').NextConfig} */
@@ -635,7 +622,7 @@ export default function Footer() {
   return (
     <footer style={{borderTop:`1px solid ${BR1}`,marginTop:0}}>
       <div style={{maxWidth:1240,margin:"0 auto",padding:"clamp(60px,8vw,100px) clamp(16px,3vw,32px) clamp(40px,5vw,60px)"}}>
-        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:"clamp(32px,5vw,64px)",marginBottom:56} className="footer-grid-4col">
+        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:"clamp(32px,5vw,64px)",marginBottom:56}} className="footer-grid-4col">
           <div className="footer-brand-col">
             <div style={{fontFamily:"var(--font-display)",fontSize:20,fontWeight:300,letterSpacing:"-.08em",color:G,marginBottom:16}}>pokédax</div>
             <p style={{fontSize:13.5,color:TX3,lineHeight:1.85,maxWidth:220,marginBottom:28}}>Quiet Collector Luxury.<br/>Präzise Preise. Edle Tools.<br/>Für ernsthafte Sammler.</p>
@@ -1211,7 +1198,7 @@ export default async function HomePage() {
             </div>
             <Link href="/forum" style={{fontSize:13,color:TX3,textDecoration:"none"}}>Alle Beiträge →</Link>
           </div>
-          <div style={{display:"grid",gap:14} className="forum-cards-grid"}>
+          <div style={{display:"grid",gap:14}} className="forum-cards-grid">
             {(posts as any[]).map((post:any)=>{
               const cat = post.forum_categories?.name??"Forum";
               const h   = Math.floor((Date.now()-new Date(post.created_at).getTime())/3600000);
@@ -1238,7 +1225,7 @@ export default async function HomePage() {
           PORTFOLIO + WELCOME
           ═══════════════════════════════════════════════ */}
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
-        <div style={{display:"grid",gap:14} className="portfolio-welcome-grid"}>
+        <div style={{display:"grid",gap:14}} className="portfolio-welcome-grid">
           <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:28,padding:"clamp(36px,4vw,56px)"}}>
             <Label>Dein Portfolio</Label>
             <div style={{fontFamily:"var(--font-display)",fontSize:"clamp(40px,5vw,68px)",fontWeight:300,letterSpacing:"-.07em",color:TX1,lineHeight:1,marginBottom:10}}>4.872 €</div>
@@ -1622,7 +1609,7 @@ export default function ScannerPage() {
           overflow:"hidden",position:"relative",
         }}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(233,168,75,0.4),transparent)`}}/>
-          <div style={{display:"grid",minHeight:480}} className="scanner-split" style={{}}>
+          <div className="scanner-split" style={{display:"grid",minHeight:480}}>
 
             {/* Upload side */}
             <div style={{padding:"clamp(32px,5vw,64px)",display:"flex",flexDirection:"column",justifyContent:"center",borderRight:`1px solid ${BR1}`}}>
@@ -1780,7 +1767,7 @@ export default function PortfolioPage() {
         </div>
 
         {/* Stats row */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)"}} className="portfolio-stats-grid" style={{,gap:12,marginBottom:32} className="portfolio-stats-grid">
+        <div className="portfolio-stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:32}}>
           {[
             {l:"Sammlungswert",v:`${totalVal.toLocaleString("de-DE",{minimumFractionDigits:2})} €`,big:true},
             {l:"Karten gesamt",v:col.reduce((a,c)=>a+(c.quantity??1),0).toString()},
@@ -4906,10 +4893,10 @@ $logoBytes = [System.Convert]::FromBase64String($logoB64)
 [System.IO.File]::WriteAllBytes("$root\public\pokedax-logo.png", $logoBytes)
 
 Write-Host ""
-Write-Host "======================================" -ForegroundColor Yellow
-Write-Host "v6.7 Mobile Fix fertig!" -ForegroundColor Yellow
-Write-Host "======================================" -ForegroundColor Yellow
+Write-Host "========================================================" -ForegroundColor Yellow
+Write-Host "v6.7 fertig — Mobile komplett gefixt!" -ForegroundColor Yellow
+Write-Host "========================================================" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "GitHub Desktop -> Commit 'v6.7: mobile komplett gefixt'" -ForegroundColor Yellow
+Write-Host "GitHub Desktop -> Commit 'v6.7: mobile fix'" -ForegroundColor Yellow
 Write-Host "-> Push -> Vercel" -ForegroundColor White
 Write-Host ""
