@@ -273,8 +273,8 @@ export default async function HomePage() {
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
         <div style={{
           background:BG1,border:`1px solid ${BR2}`,borderRadius:32,
-          overflow:"hidden",position:"relative",}} className="scanner-split" style={{
-        }}>
+          overflow:"hidden",position:"relative",}} className="scanner-split" style={
+        }>
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
           <div style={{padding:"clamp(40px,5vw,72px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
             <Label>KI-Scanner · Gemini Flash</Label>
