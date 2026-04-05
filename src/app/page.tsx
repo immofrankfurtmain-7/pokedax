@@ -273,7 +273,7 @@ export default async function HomePage() {
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
         <div style={{
           background:BG1,border:`1px solid ${BR2}`,borderRadius:32,
-          overflow:"hidden",position:"relative"}} className="scanner-split">
+          overflow:"hidden",position:"relative",display:"grid",gridTemplateColumns:"1fr 1fr",minHeight:400}} className="scanner-split">
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
           <div style={{padding:"clamp(40px,5vw,72px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
             <Label>KI-Scanner · Gemini Flash</Label>
@@ -317,7 +317,7 @@ export default async function HomePage() {
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
         <div style={{
           background:BG1,border:`1px solid ${BR2}`,borderRadius:32,
-          overflow:"hidden",position:"relative"}} className="fantasy-split">
+          overflow:"hidden",position:"relative",display:"grid",gridTemplateColumns:"1fr 1fr",minHeight:400}} className="fantasy-split">
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
           <div style={{padding:"clamp(40px,5vw,72px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
             <Label>Fantasy League</Label>
@@ -364,7 +364,7 @@ export default async function HomePage() {
             </div>
             <Link href="/forum" style={{fontSize:13,color:TX3,textDecoration:"none"}}>Alle Beiträge →</Link>
           </div>
-          <div style={{display:"grid",gap:14}} className="forum-cards-grid">
+          <div className="forum-cards-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
             {(posts as any[]).map((post:any)=>{
               const cat = post.forum_categories?.name??"Forum";
               const h   = Math.floor((Date.now()-new Date(post.created_at).getTime())/3600000);
@@ -391,7 +391,7 @@ export default async function HomePage() {
           PORTFOLIO + WELCOME
           ═══════════════════════════════════════════════ */}
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
-        <div style={{display:"grid",gap:14}} className="portfolio-welcome-grid">
+        <div className="portfolio-welcome-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
           <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:28,padding:"clamp(36px,4vw,56px)"}}>
             <Label>Dein Portfolio</Label>
             <div style={{fontFamily:"var(--font-display)",fontSize:"clamp(40px,5vw,68px)",fontWeight:300,letterSpacing:"-.07em",color:TX1,lineHeight:1,marginBottom:10}}>4.872 €</div>
@@ -435,7 +435,7 @@ export default async function HomePage() {
           <p style={{fontSize:15,color:TX3}}>Wähle deine Stufe. Kündige jederzeit.</p>
         </div>
 
-        <div className="pricing-plans-grid" style={{display:"grid",gap:14,marginBottom:28}}>
+        <div className="pricing-plans-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:28}}>
           {/* Free */}
           <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:28,padding:"clamp(28px,3.5vw,44px)"}}>
             <div style={{fontSize:9.5,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:16}}>COMMON ●</div>
