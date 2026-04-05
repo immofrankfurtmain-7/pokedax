@@ -166,3 +166,112 @@ body {
 
 /* NUCLEAR: Hide any rogue canvas backgrounds */
 canvas[aria-hidden="true"] { display: none !important; pointer-events: none !important; }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE OVERRIDES — alle 8 Bugs aus den Screenshots
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* Fix 1: overflow-x global — verhindert horizontales Scrollen */
+  body, #__next, main { overflow-x: hidden !important; }
+
+  /* Fix 2: zwei-spalten-grids → einspaltigs */
+  .grid-2col { grid-template-columns: 1fr !important; }
+
+  /* Fix 3: Scanner-Sektion (home + /scanner) — 2-col → 1-col */
+  .scanner-split {
+    grid-template-columns: 1fr !important;
+    min-height: unset !important;
+  }
+  .scanner-split > div:first-child {
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  }
+
+  /* Fix 4: Fantasy-Sektion (home) — 2-col → 1-col */
+  .fantasy-split {
+    grid-template-columns: 1fr !important;
+    min-height: unset !important;
+  }
+  .fantasy-split > div:last-child { display: none !important; }
+
+  /* Fix 5: Portfolio+Welcome (home) — 2-col → 1-col */
+  .portfolio-welcome-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fix 6: Forum-Cards (home) — 3-col → 1-col */
+  .forum-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fix 7: Pricing-Grid (home + premium) — 3-col → 1-col */
+  .pricing-plans-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fix 8: Karten-Grid (home) — horizontal scroll statt 5-col */
+  .cards-scroll-mobile {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 10px !important;
+    padding-bottom: 8px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .cards-scroll-mobile > * {
+    flex-shrink: 0 !important;
+    width: 140px !important;
+    scroll-snap-align: start !important;
+  }
+
+  /* Fix 9: Footer — 4-col → 2-col auf mobile */
+  .footer-grid-4col {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+  }
+  .footer-brand-col {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Fix 10: Fantasy E-Mail Form — flex → column */
+  .notify-form-row {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .notify-form-row input,
+  .notify-form-row button {
+    width: 100% !important;
+  }
+
+  /* Fix 11: Portfolio stats grid — 4-col → 2-col */
+  .portfolio-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Fix 12: Section padding auf mobile reduzieren */
+  .section-padding-mobile {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Fix 13: Portfolio page — content nicht abschneiden */
+  .portfolio-header {
+    padding: 24px 16px !important;
+    overflow: hidden !important;
+  }
+  .portfolio-username {
+    font-size: clamp(22px, 6vw, 40px) !important;
+    word-break: break-word !important;
+  }
+}
+
+/* Tablet: 641–1024px */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .pricing-plans-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .footer-grid-4col {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

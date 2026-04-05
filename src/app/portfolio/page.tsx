@@ -40,7 +40,7 @@ export default function PortfolioPage() {
   const items = tab==="sammlung" ? col : wish;
 
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
+    <div style={{color:TX1,minHeight:"80vh",overflowX:"hidden"}}>
       <div style={{maxWidth:1200,margin:"0 auto",padding:"80px 24px"}}>
 
         {/* Header */}
@@ -56,7 +56,7 @@ export default function PortfolioPage() {
         </div>
 
         {/* Stats row */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:32}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)"}} className="portfolio-stats-grid" style={{,gap:12,marginBottom:32} className="portfolio-stats-grid">
           {[
             {l:"Sammlungswert",v:`${totalVal.toLocaleString("de-DE",{minimumFractionDigits:2})} €`,big:true},
             {l:"Karten gesamt",v:col.reduce((a,c)=>a+(c.quantity??1),0).toString()},

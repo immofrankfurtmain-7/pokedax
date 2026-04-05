@@ -50,7 +50,7 @@ export default function ScannerPage() {
           overflow:"hidden",position:"relative",
         }}>
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(233,168,75,0.4),transparent)`}}/>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",minHeight:480}}>
+          <div style={{display:"grid",minHeight:480}} className="scanner-split" style={{}}>
 
             {/* Upload side */}
             <div style={{padding:"clamp(32px,5vw,64px)",display:"flex",flexDirection:"column",justifyContent:"center",borderRight:`1px solid ${BR1}`}}>

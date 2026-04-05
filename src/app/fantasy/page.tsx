@@ -17,7 +17,7 @@ export default function FantasyPage() {
           Stelle dein Dream-Team aus den wertvollsten Karten zusammen und tritt gegen andere Sammler an. Monatliche Preise. Echte Kursgewinne.
         </p>
         {!done?(
-          <div style={{display:"flex",gap:10,maxWidth:440,margin:"0 auto 48px"}}>
+          <div style={{display:"flex",gap:10,maxWidth:440,margin:"0 auto 48px"}} className="notify-form-row">
             <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="deine@email.de" type="email" style={{flex:1,padding:"16px 20px",borderRadius:18,background:BG1,border:`1px solid rgba(255,255,255,0.1)`,color:TX1,fontSize:15,outline:"none"}}/>
             <button onClick={()=>setDone(true)} className="gold-glow" style={{padding:"16px 28px",borderRadius:18,background:G,color:"#0a0808",fontSize:15,fontWeight:600,border:"none",cursor:"pointer",whiteSpace:"nowrap"}}>Benachrichtigen</button>
           </div>

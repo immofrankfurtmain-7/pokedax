@@ -5,8 +5,8 @@ export default function Footer() {
   return (
     <footer style={{borderTop:`1px solid ${BR1}`,marginTop:0}}>
       <div style={{maxWidth:1240,margin:"0 auto",padding:"clamp(60px,8vw,100px) clamp(16px,3vw,32px) clamp(40px,5vw,60px)"}}>
-        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:"clamp(32px,5vw,64px)",marginBottom:56}}>
-          <div>
+        <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:"clamp(32px,5vw,64px)",marginBottom:56} className="footer-grid-4col">
+          <div className="footer-brand-col">
             <div style={{fontFamily:"var(--font-display)",fontSize:20,fontWeight:300,letterSpacing:"-.08em",color:G,marginBottom:16}}>pokédax</div>
             <p style={{fontSize:13.5,color:TX3,lineHeight:1.85,maxWidth:220,marginBottom:28}}>Quiet Collector Luxury.<br/>Präzise Preise. Edle Tools.<br/>Für ernsthafte Sammler.</p>
             <div style={{display:"flex",gap:8}}>
