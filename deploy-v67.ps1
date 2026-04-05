@@ -1,43 +1,31 @@
-﻿# PokéDax v6.7 — Mobile Fix (final, alle Syntax-Fehler behoben)
+﻿# PokéDax v6.7 — Mobile Fix FINAL
 $root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
 $enc  = New-Object System.Text.UTF8Encoding $true
-Write-Host ""
-Write-Host "pokEdax v6.7 — Mobile Fix FINAL" -ForegroundColor Yellow
-Write-Host "================================" -ForegroundColor Yellow
+Write-Host "pokEdax v6.7 Mobile Fix FINAL" -ForegroundColor Yellow
 Write-Host ""
 $dirs = @(
-  "$root\src\app","$root\src\app\preischeck","$root\src\app\portfolio",
-  "$root\src\app\scanner","$root\src\app\fantasy","$root\src\app\leaderboard",
-  "$root\src\app\settings","$root\src\app\forum",
+  "$root\src\app","$root\src\app\preischeck","$root\src\app\portfolio","$root\src\app\scanner",
+  "$root\src\app\fantasy","$root\src\app\leaderboard","$root\src\app\settings","$root\src\app\forum",
   "$root\src\app\dashboard","$root\src\app\dashboard\premium",
   "$root\src\app\auth","$root\src\app\auth\login","$root\src\app\auth\register","$root\src\app\auth\callback",
   "$root\src\app\api\cards\search","$root\src\app\api\cards\sets",
-  "$root\src\app\api\admin\sync-sets","$root\src\app\api\admin\sync-cards",
-  "$root\src\app\api\stats","$root\src\app\api\stripe\checkout",
-  "$root\src\app\api\webhooks\stripe","$root\src\app\api\scans",
+  "$root\src\app\api\admin\sync-sets","$root\src\app\api\admin\sync-cards","$root\src\app\api\stats",
+  "$root\src\app\api\stripe\checkout","$root\src\app\api\webhooks\stripe","$root\src\app\api\scans",
   "$root\src\components\layout","$root\src\components\ui","$root\src\components\premium",
   "$root\public","$root\src\app\impressum","$root\src\app\datenschutz","$root\src\app\agb",
   "$root\src\lib","$root\src\lib\supabase","$root\src\hooks"
 )
-foreach ($d in $dirs) {
-  if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
-}
-if (-not (Test-Path "$root\src\app\profil")) {
-  New-Item -ItemType Directory -Path "$root\src\app\profil" -Force | Out-Null
-}
+foreach ($d in $dirs) { if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null } }
+if (-not (Test-Path "$root\src\app\profil")) { New-Item -ItemType Directory -Path "$root\src\app\profil" -Force | Out-Null }
 cmd /c mkdir "$root\src\app\profil\[username]" 2>$null
 cmd /c mkdir "$root\src\app\forum\post\[id]" 2>$null
 $oldPage = "$root\src\app\auth\callback\page.tsx"
 if (Test-Path $oldPage) { Remove-Item $oldPage -Force }
-Write-Host "Schreibe Dateien..." -ForegroundColor Cyan
 
 $nextconfig = @'
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  images: { remotePatterns: [{ protocol:"https",hostname:"assets.tcgdex.net"},{ protocol:"https",hostname:"images.tcgdex.net"}] },
-};
+const nextConfig = { images: { remotePatterns: [{ protocol:"https",hostname:"assets.tcgdex.net"},{ protocol:"https",hostname:"images.tcgdex.net"}] } };
 module.exports = nextConfig;
-
 '@
 [System.IO.File]::WriteAllText("$root\next.config.js", $nextconfig, $enc)
 Write-Host "  OK  next.config.js" -ForegroundColor Green
@@ -789,10 +777,7 @@ Write-Host "  OK  not-found.tsx" -ForegroundColor Green
 $supa_client = @'
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 export function createClient() {
-  return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  return createSupabaseClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 }
 '@
 [System.IO.File]::WriteAllText("$root\src\lib\supabase\client.ts", $supa_client, $enc)
@@ -1100,8 +1085,7 @@ export default async function HomePage() {
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
         <div style={{
           background:BG1,border:`1px solid ${BR2}`,borderRadius:32,
-          overflow:"hidden",position:"relative",}} className="scanner-split" style={{
-        }}>
+          overflow:"hidden",position:"relative"}} className="scanner-split">
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
           <div style={{padding:"clamp(40px,5vw,72px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
             <Label>KI-Scanner · Gemini Flash</Label>
@@ -1145,8 +1129,7 @@ export default async function HomePage() {
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
         <div style={{
           background:BG1,border:`1px solid ${BR2}`,borderRadius:32,
-          overflow:"hidden",position:"relative",}} className="fantasy-split" style={{
-        }}>
+          overflow:"hidden",position:"relative"}} className="fantasy-split">
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
           <div style={{padding:"clamp(40px,5vw,72px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
             <Label>Fantasy League</Label>
@@ -1264,7 +1247,7 @@ export default async function HomePage() {
           <p style={{fontSize:15,color:TX3}}>Wähle deine Stufe. Kündige jederzeit.</p>
         </div>
 
-        <div style={{className="pricing-plans-grid" style={{display:"grid",gap:14,marginBottom:28}}>
+        <div className="pricing-plans-grid" style={{display:"grid",gap:14,marginBottom:28}}>
           {/* Free */}
           <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:28,padding:"clamp(28px,3.5vw,44px)"}}>
             <div style={{fontSize:9.5,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:16}}>COMMON ●</div>
@@ -3543,7 +3526,6 @@ export function usePremium(): PremiumState {
 [System.IO.File]::WriteAllText("$root\src\hooks\usePremium.ts", $usePremium, $enc)
 Write-Host "  OK  usePremium.ts" -ForegroundColor Green
 
-Write-Host ""
 Write-Host "APIs:" -ForegroundColor DarkGray
 
 $searchRoute = @'
@@ -4888,10 +4870,6 @@ $logoBytes = [System.Convert]::FromBase64String($logoB64)
 [System.IO.File]::WriteAllBytes("$root\public\pokedax-logo.png", $logoBytes)
 
 Write-Host ""
-Write-Host "================================" -ForegroundColor Yellow
-Write-Host "v6.7 FINAL — bereit fuer Vercel!" -ForegroundColor Yellow  
-Write-Host "================================" -ForegroundColor Yellow
-Write-Host ""
+Write-Host "v6.7 FINAL fertig!" -ForegroundColor Yellow
 Write-Host "GitHub Desktop -> Commit 'v6.7: mobile fix final'" -ForegroundColor Yellow
 Write-Host "-> Push -> Vercel" -ForegroundColor White
-Write-Host ""

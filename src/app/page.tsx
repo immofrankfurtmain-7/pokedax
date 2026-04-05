@@ -273,8 +273,7 @@ export default async function HomePage() {
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
         <div style={{
           background:BG1,border:`1px solid ${BR2}`,borderRadius:32,
-          overflow:"hidden",position:"relative",}} className="scanner-split" style={{
-        }}>
+          overflow:"hidden",position:"relative"}} className="scanner-split">
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
           <div style={{padding:"clamp(40px,5vw,72px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
             <Label>KI-Scanner · Gemini Flash</Label>
@@ -318,8 +317,7 @@ export default async function HomePage() {
       <section style={{maxWidth:1240,margin:"0 auto",padding:"clamp(72px,10vw,140px) clamp(16px,3vw,32px)"}}>
         <div style={{
           background:BG1,border:`1px solid ${BR2}`,borderRadius:32,
-          overflow:"hidden",position:"relative",}} className="fantasy-split" style={{
-        }}>
+          overflow:"hidden",position:"relative"}} className="fantasy-split">
           <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
           <div style={{padding:"clamp(40px,5vw,72px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
             <Label>Fantasy League</Label>
@@ -437,7 +435,7 @@ export default async function HomePage() {
           <p style={{fontSize:15,color:TX3}}>Wähle deine Stufe. Kündige jederzeit.</p>
         </div>
 
-        <div style={{className="pricing-plans-grid" style={{display:"grid",gap:14,marginBottom:28}}>
+        <div className="pricing-plans-grid" style={{display:"grid",gap:14,marginBottom:28}}>
           {/* Free */}
           <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:28,padding:"clamp(28px,3.5vw,44px)"}}>
             <div style={{fontSize:9.5,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:16}}>COMMON ●</div>
