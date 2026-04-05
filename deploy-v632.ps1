@@ -1,4 +1,47 @@
-﻿"use client";
+﻿# PokéDax v6.3.2 — Forum TypeScript Fix + Auth Callback Fix
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+Write-Host "pokEdax v6.3.2 — Forum + Auth Fix" -ForegroundColor Cyan
+Write-Host ""
+
+# 1. Loesche kolliderende auth/callback/page.tsx
+$oldPage = "$root\src\app\auth\callback\page.tsx"
+if (Test-Path $oldPage) {
+  Remove-Item $oldPage -Force
+  Write-Host "  DEL  auth/callback/page.tsx" -ForegroundColor Yellow
+}
+if (-not (Test-Path "$root\src\app\auth\callback")) {
+  New-Item -ItemType Directory -Path "$root\src\app\auth\callback" -Force | Out-Null
+}
+
+$route = @'
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+export async function GET(request: NextRequest) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/portfolio";
+
+  if (code) {
+    const sb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { error } = await sb.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
+  }
+  return NextResponse.redirect(`${origin}/auth/login?error=auth_error`);
+}
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\auth\callback\route.ts", $route, $enc)
+Write-Host "  OK   auth/callback/route.ts" -ForegroundColor Green
+
+$forum = @'
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
@@ -152,3 +195,13 @@ export default function ForumPage() {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\forum\page.tsx", $forum, $enc)
+Write-Host "  OK   forum/page.tsx (Array.from fix)" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "v6.3.2 fertig!" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit 'v6.3.2: forum + auth fix'" -ForegroundColor Yellow
+Write-Host "-> Push -> Vercel" -ForegroundColor White
+Write-Host ""
