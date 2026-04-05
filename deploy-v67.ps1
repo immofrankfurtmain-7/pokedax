@@ -1,9 +1,9 @@
-﻿# PokéDax v6.7 — Mobile Fix (syntax korrigiert)
+﻿# PokéDax v6.7 — Mobile Fix (final, alle Syntax-Fehler behoben)
 $root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
 $enc  = New-Object System.Text.UTF8Encoding $true
 Write-Host ""
-Write-Host "pokEdax v6.7 — Mobile Fix (alle Syntax-Fehler behoben)" -ForegroundColor Yellow
-Write-Host "========================================================" -ForegroundColor Yellow
+Write-Host "pokEdax v6.7 — Mobile Fix FINAL" -ForegroundColor Yellow
+Write-Host "================================" -ForegroundColor Yellow
 Write-Host ""
 $dirs = @(
   "$root\src\app","$root\src\app\preischeck","$root\src\app\portfolio",
@@ -34,12 +34,7 @@ Write-Host "Schreibe Dateien..." -ForegroundColor Cyan
 $nextconfig = @'
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "assets.tcgdex.net" },
-      { protocol: "https", hostname: "images.tcgdex.net" },
-    ],
-  },
+  images: { remotePatterns: [{ protocol:"https",hostname:"assets.tcgdex.net"},{ protocol:"https",hostname:"images.tcgdex.net"}] },
 };
 module.exports = nextConfig;
 
@@ -53,7 +48,7 @@ export const metadata: Metadata = { title: "Anmelden | pokédax" };
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div style={{position:"relative",minHeight:"100vh",background:"#09090b",overflow:"hidden"}}>
-      <div style={{position:"absolute",inset:0,pointerEvents:"none",background:"radial-gradient(ellipse 80% 50% at 15% 20%, rgba(212,168,67,0.09) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 85% 75%, rgba(212,168,67,0.07) 0%, transparent 55%)"}}/>
+      <div style={{position:"absolute",inset:0,pointerEvents:"none",background:"radial-gradient(ellipse 80% 50% at 15% 20%, rgba(212,168,67,0.09) 0%, transparent 60%)"}}/>
       <div style={{position:"relative",zIndex:1}}>{children}</div>
     </div>
   );
@@ -1269,7 +1264,7 @@ export default async function HomePage() {
           <p style={{fontSize:15,color:TX3}}>Wähle deine Stufe. Kündige jederzeit.</p>
         </div>
 
-        <div style={{display:"grid",gap:14,marginBottom:28}} className="pricing-plans-grid" style={{}}>
+        <div style={{className="pricing-plans-grid" style={{display:"grid",gap:14,marginBottom:28}}>
           {/* Free */}
           <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:28,padding:"clamp(28px,3.5vw,44px)"}}>
             <div style={{fontSize:9.5,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:16}}>COMMON ●</div>
@@ -4893,10 +4888,10 @@ $logoBytes = [System.Convert]::FromBase64String($logoB64)
 [System.IO.File]::WriteAllBytes("$root\public\pokedax-logo.png", $logoBytes)
 
 Write-Host ""
-Write-Host "========================================================" -ForegroundColor Yellow
-Write-Host "v6.7 fertig — Mobile komplett gefixt!" -ForegroundColor Yellow
-Write-Host "========================================================" -ForegroundColor Yellow
+Write-Host "================================" -ForegroundColor Yellow
+Write-Host "v6.7 FINAL — bereit fuer Vercel!" -ForegroundColor Yellow  
+Write-Host "================================" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "GitHub Desktop -> Commit 'v6.7: mobile fix'" -ForegroundColor Yellow
+Write-Host "GitHub Desktop -> Commit 'v6.7: mobile fix final'" -ForegroundColor Yellow
 Write-Host "-> Push -> Vercel" -ForegroundColor White
 Write-Host ""
