@@ -1,7 +1,12 @@
-﻿import type { Metadata } from "next";
+# PokéDax — Fix: Auth Layout Canvas Kill
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+
+$authLayout = @'
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Anmelden | pokÃ©dax",
+  title: "Anmelden | pokédax",
 };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -23,3 +28,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     </div>
   );
 }
+'@
+
+[System.IO.File]::WriteAllText("$root\src\app\auth\layout.tsx", $authLayout, $enc)
+Write-Host "  OK  auth/layout.tsx (MewtwoCanvas entfernt)" -ForegroundColor Green
+Write-Host ""
+Write-Host "GitHub Desktop -> Commit 'fix: remove MewtwoCanvas from auth layout'" -ForegroundColor Yellow
+Write-Host "-> Push -> Vercel" -ForegroundColor White
