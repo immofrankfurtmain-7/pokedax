@@ -87,9 +87,7 @@ export default async function HomePage() {
   return (
     <div style={{color:TX1}}>
 
-      {/* ═══════════════════════════════════════════════
-          HERO
-          ═══════════════════════════════════════════════ */}
+  
       <section style={{
         maxWidth:1000,margin:"0 auto",
         padding:"clamp(100px,14vw,200px) clamp(16px,3vw,32px) clamp(100px,13vw,180px)",
