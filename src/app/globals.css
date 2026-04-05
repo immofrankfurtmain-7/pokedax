@@ -163,3 +163,6 @@ body {
   .nav-desktop { display: none  !important; }
   .nav-mobile  { display: flex  !important; }
 }
+
+/* NUCLEAR: Hide any rogue canvas backgrounds */
+canvas[aria-hidden="true"] { display: none !important; pointer-events: none !important; }

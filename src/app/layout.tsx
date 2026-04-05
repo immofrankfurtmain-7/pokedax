@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com"/>
         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous"/>
       </head>
-      <body>
+      <body style={{background:"#09090b"}}>
         <Navbar/>
         <main style={{ minHeight:"70vh" }}>{children}</main>
         <Footer/>

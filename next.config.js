@@ -2,14 +2,15 @@
 const nextConfig = {
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'images.pokemontcg.io' },
-      { protocol: 'https', hostname: '*.supabase.co' },
-      { protocol: 'https', hostname: 'assets.tcgdex.net' },
+      { protocol: "https", hostname: "assets.tcgdex.net" },
+      { protocol: "https", hostname: "images.tcgdex.net" },
+      { protocol: "https", hostname: "tcgdex.net" },
+      { protocol: "https", hostname: "www.tcgdex.net" },
     ],
   },
   experimental: {
-    missingSuspenseWithCSRBailout: false,
+    serverActions: { allowedOrigins: ["pokedax2.vercel.app"] },
   },
-  output: undefined,
-}
-module.exports = nextConfig
+};
+
+module.exports = nextConfig;
