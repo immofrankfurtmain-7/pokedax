@@ -1,4 +1,9 @@
-﻿import Link from "next/link";
+﻿# PokéDax — Hotfix Footer.tsx
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+
+$footer = @'
+import Link from "next/link";
 const G="#D4A843", TX1="#ededf2", TX2="#a4a4b4", TX3="#62626f";
 const BG1="#111114", BR1="rgba(255,255,255,0.045)";
 export default function Footer() {
@@ -38,3 +43,10 @@ export default function Footer() {
     </footer>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\components\layout\Footer.tsx", $footer, $enc)
+Write-Host "  OK  Footer.tsx" -ForegroundColor Green
+Write-Host ""
+Write-Host "GitHub Desktop -> Commit 'hotfix: footer syntax'" -ForegroundColor Yellow
+Write-Host "-> Push -> Vercel" -ForegroundColor White
