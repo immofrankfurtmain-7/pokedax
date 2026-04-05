@@ -11,10 +11,6 @@
   --bg-3: #222228;
   --br-1: rgba(255,255,255,0.06);
   --br-2: rgba(255,255,255,0.10);
-  --br-3: rgba(255,255,255,0.16);
-  --tx-1: #f0f0f5;
-  --tx-2: #a8a8b8;
-  --tx-3: #6b6b7a;
   --gold:    #E9A84B;
   --gold-30: rgba(233,168,75,0.30);
   --gold-18: rgba(233,168,75,0.18);
@@ -23,6 +19,9 @@
   --gold-05: rgba(233,168,75,0.05);
   --green: #4BBF82;
   --red:   #E04558;
+  --tx-1: #f0f0f5;
+  --tx-2: #a8a8b8;
+  --tx-3: #6b6b7a;
   --font-display: 'Satoshi', 'Inter', system-ui, sans-serif;
   --font-body:    'Inter', system-ui, sans-serif;
   --font-mono:    'DM Mono', monospace;
@@ -45,6 +44,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar { width: 3px; }
@@ -53,11 +53,12 @@ body {
 @keyframes blink        { 0%,100%{opacity:1} 50%{opacity:.15} }
 @keyframes ticker-scroll{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
 @keyframes fade-up      { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse        { 0%,100%{opacity:.4} 50%{opacity:.65} }
+@keyframes spin         { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
-/* ═══════════════════════════════════════════════════════
-   GOLD GLOW — exact match to HTML reference
-   inset: -130%, opacity 0.52, scale 1.6 on hover
-   ═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   GOLD GLOW — signature effect, exact reference
+   ═══════════════════════════════════════════════════ */
 .gold-glow {
   transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   position: relative;
@@ -74,17 +75,14 @@ body {
   border-radius: inherit;
   pointer-events: none;
 }
-.gold-glow:hover::before {
-  opacity: 1;
-  transform: scale(1.6);
-}
+.gold-glow:hover::before { opacity: 1; transform: scale(1.6); }
 .gold-glow:hover {
   transform: translateY(-10px);
   box-shadow: 0 0 0 1px #E9A84B, 0 65px 140px -45px rgba(233,168,75,0.75);
 }
 .gold-glow > * { position: relative; z-index: 1; }
 
-/* ── card-hover (for article/post cards) ── */
+/* card-hover same system */
 .card-hover {
   transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
   position: relative;
@@ -106,3 +104,36 @@ body {
   box-shadow: 0 0 0 1px #E9A84B, 0 65px 140px -45px rgba(233,168,75,0.75);
 }
 .card-hover > * { position: relative; z-index: 1; }
+
+/* ── Mobile optimizations ── */
+@media (max-width: 768px) {
+  /* Reduce hero padding on mobile */
+  .hero-section {
+    padding-top: 64px !important;
+    padding-bottom: 80px !important;
+  }
+  /* Reduce font sizes on mobile */
+  h1 { letter-spacing: -.06em !important; }
+  /* Stack grids on mobile */
+  .mobile-stack {
+    grid-template-columns: 1fr !important;
+  }
+  /* Reduce gold-glow on mobile (heavy on performance) */
+  .gold-glow:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px #E9A84B, 0 20px 40px -10px rgba(233,168,75,0.4);
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 1px #E9A84B, 0 20px 40px -10px rgba(233,168,75,0.4);
+  }
+  /* Better touch targets */
+  button, a { min-height: 44px; }
+  /* Ticker smaller on mobile */
+  .ticker-text { font-size: 10px !important; letter-spacing: .08em !important; }
+}
+
+@media (max-width: 480px) {
+  body { font-size: 15px; }
+  .gold-glow:hover, .card-hover:hover { transform: none; box-shadow: 0 0 0 1px rgba(233,168,75,0.4); }
+}
