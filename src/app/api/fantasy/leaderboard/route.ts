@@ -5,14 +5,11 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const season = getCurrentSeason();
 
-  // Get all teams for current season
+  const selectTeams = "id, name, season, user_id, profiles!fantasy_teams_user_id_fkey(username, avatar_url), fantasy_picks(bought_at_price, quantity, cards!fantasy_picks_card_id_fkey(price_market))";
+
   const { data: teams } = await supabase
     .from("fantasy_teams")
-    .select(\`
-      id, name, season, user_id,
-      profiles!fantasy_teams_user_id_fkey(username, avatar_url),
-      fantasy_picks(bought_at_price, quantity, cards!fantasy_picks_card_id_fkey(price_market))
-    \`)
+    .select(selectTeams)
     .eq("season", season)
     .limit(50);
 
@@ -28,15 +25,15 @@ export async function GET(request: NextRequest) {
       const qty     = p.quantity ?? 1;
       currentValue += current * qty;
       boughtValue  += bought  * qty;
-      score += ((current - bought) / bought) * 100;
+      if (bought > 0) score += ((current - bought) / bought) * 100;
     }
 
     return {
-      id:           t.id,
-      name:         t.name,
-      username:     t.profiles?.username ?? "Anonym",
-      avatar_url:   t.profiles?.avatar_url,
-      picks_count:  picks.length,
+      id:            t.id,
+      name:          t.name,
+      username:      t.profiles?.username ?? "Anonym",
+      avatar_url:    t.profiles?.avatar_url,
+      picks_count:   picks.length,
       current_value: Math.round(currentValue * 100) / 100,
       bought_value:  Math.round(boughtValue * 100) / 100,
       score:         Math.round(score * 10) / 10,
@@ -49,5 +46,5 @@ export async function GET(request: NextRequest) {
 function getCurrentSeason(): string {
   const now = new Date();
   const q = Math.ceil((now.getMonth() + 1) / 3);
-  return \`\${now.getFullYear()}-Q\${q}\`;
+  return now.getFullYear() + "-Q" + q;
 }
