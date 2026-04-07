@@ -45,9 +45,12 @@ export default function ForumNewPage() {
     setSubmitting(true);
     setError("");
 
+    const { data: { session } } = await createClient().auth.getSession();
+    const fh: Record<string,string> = {"Content-Type":"application/json"};
+    if (session?.access_token) fh["Authorization"] = `Bearer ${session.access_token}`;
     const res = await fetch("/api/forum/posts", {
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers: fh,
       body:JSON.stringify({ category_id:catId, title:title.trim(), content:content.trim(), tags:[] }),
     });
     const data = await res.json();

@@ -1,11 +1,11 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createRouteClient } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createRouteClient(request);
     const { data: { user } } = await supabase.auth.getUser();
 
     // ── Parse body ─────────────────────────────────────

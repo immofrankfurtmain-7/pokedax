@@ -1,8 +1,8 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createRouteClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
+  const supabase = await createRouteClient(request);
   const post_id = new URL(request.url).searchParams.get("post_id");
   if (!post_id) return NextResponse.json({ replies: [] });
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  const supabase = await createRouteClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
 

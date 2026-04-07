@@ -11,19 +11,21 @@ const supabase = createClient(
 export async function GET() {
   const { data, error } = await supabase
     .from("sets")
-    .select("id, name, name_de, series, total, release_date")
+    .select("id, name, name_de, series, total, release_date, symbol_url, logo_url")
     .order("release_date", { ascending: false });
 
   if (error) return NextResponse.json({ sets: [] });
 
-  // Show DE name if available
   const sets = (data || []).map(s => ({
-    id:   s.id,
-    name: s.name_de || s.name,
-    name_en: s.name,
-    name_de: s.name_de,
-    serie: s.series,
-    total: s.total,
+    id:          s.id,
+    name:        s.name_de || s.name,
+    name_en:     s.name,
+    name_de:     s.name_de,
+    series:      s.series,
+    total:       s.total,
+    release_date: s.release_date,
+    symbol_url:  s.symbol_url,
+    logo_url:    s.logo_url,
   }));
 
   return NextResponse.json({ sets });

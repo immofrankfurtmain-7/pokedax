@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G12="rgba(212,168,67,0.12)",G08="rgba(212,168,67,0.08)",G04="rgba(212,168,67,0.04)";
 const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
@@ -51,9 +52,10 @@ function TeamBuilder({onAdded}:{onAdded:()=>void}) {
   async function addCard(card:any) {
     setAdding(card.id);
     setMsg(null);
+    const h = await getAuthHeaders();
     const res = await fetch("/api/fantasy/team", {
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers: h,
       body: JSON.stringify({ card_id: card.id }),
     });
     const data = await res.json();
@@ -112,10 +114,19 @@ export default function FantasyPage() {
   const [removing, setRemoving]       = useState<string|null>(null);
   const season = getCurrentSeason();
 
+  async function getAuthHeaders(): Promise<Record<string,string>> {
+    const sb = createClient();
+    const { data: { session } } = await sb.auth.getSession();
+    const h: Record<string,string> = {"Content-Type":"application/json"};
+    if (session?.access_token) h["Authorization"] = `Bearer ${session.access_token}`;
+    return h;
+  }
+
   async function loadTeam() {
     setLoading(true);
     try {
-      const res = await fetch("/api/fantasy/team");
+      const h = await getAuthHeaders();
+      const res = await fetch("/api/fantasy/team", { headers: h });
       if (!res.ok) { setLoading(false); return; }
       const data = await res.json();
       setTeam(data.team);
@@ -136,7 +147,8 @@ export default function FantasyPage() {
 
   async function removePick(pickId:string) {
     setRemoving(pickId);
-    await fetch(`/api/fantasy/team?pick_id=${pickId}`, { method:"DELETE" });
+    const dh = await getAuthHeaders();
+    await fetch(`/api/fantasy/team?pick_id=${pickId}`, { method:"DELETE", headers: dh });
     await loadTeam();
     setRemoving(null);
   }

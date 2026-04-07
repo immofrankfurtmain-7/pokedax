@@ -1,8 +1,9 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createRouteClient } from "@/lib/supabase/server";
 
 // GET /api/marketplace?card_id=xxx&type=offer|want
 export async function GET(request: NextRequest) {
+  const supabase = await createRouteClient(request);
   const { searchParams } = new URL(request.url);
   const card_id = searchParams.get("card_id");
   const type    = searchParams.get("type"); // "offer" | "want" | null (both)
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/marketplace — create listing
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  const supabase = await createRouteClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
 

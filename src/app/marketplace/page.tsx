@@ -67,9 +67,13 @@ export default function MarketplacePage() {
   async function submitListing() {
     if (!fCard) { setFMsg("Bitte eine Karte auswählen."); return; }
     setFLoading(true);
+    const sb = createClient();
+    const { data: { session } } = await sb.auth.getSession();
+    const headers: Record<string,string> = {"Content-Type":"application/json"};
+    if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
     const res = await fetch("/api/marketplace", {
       method:"POST",
-      headers:{"Content-Type":"application/json"},
+      headers,
       body:JSON.stringify({card_id:fCard.id,type:fType,price:parseFloat(fPrice)||null,condition:fCond,note:fNote}),
     });
     const data = await res.json();
