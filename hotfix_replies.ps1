@@ -1,4 +1,8 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+﻿# Hotfix: forum replies route
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -47,3 +51,8 @@ export async function POST(request: NextRequest) {
   const reply = { ...data, profiles: Array.isArray((data as any)?.profiles) ? (data as any).profiles[0] : (data as any)?.profiles };
   return NextResponse.json({ reply });
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\api\forum\replies\route.ts", $r, $enc)
+Write-Host "OK forum/replies/route.ts" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit -> Push" -ForegroundColor Yellow
