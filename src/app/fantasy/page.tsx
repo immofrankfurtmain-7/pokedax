@@ -114,10 +114,15 @@ export default function FantasyPage() {
 
   async function loadTeam() {
     setLoading(true);
-    const res = await fetch("/api/fantasy/team");
-    const data = await res.json();
-    setTeam(data.team);
-    setPicks(data.picks ?? []);
+    try {
+      const res = await fetch("/api/fantasy/team");
+      if (!res.ok) { setLoading(false); return; }
+      const data = await res.json();
+      setTeam(data.team);
+      setPicks(data.picks ?? []);
+    } catch (e) {
+      console.error("Fantasy team load error:", e);
+    }
     setLoading(false);
   }
 

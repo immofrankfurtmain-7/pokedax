@@ -6,9 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
   { href:"/preischeck",        label:"Preischeck"    },
+  { href:"/sets",              label:"Sets"          },
   { href:"/scanner",           label:"Scanner"       },
   { href:"/portfolio",         label:"Portfolio"     },
-  { href:"/fantasy",           label:"Fantasy League"},
+  { href:"/marketplace",       label:"Marktplatz"    },
+  { href:"/fantasy",           label:"Fantasy"       },
   { href:"/forum",             label:"Forum"         },
 ];
 
@@ -125,10 +127,7 @@ export default function Navbar() {
           <div className="nav-desktop" style={{display:"flex",alignItems:"center",gap:10}}>
             {user ? (
               <>
-                <Link href="/portfolio" style={{padding:"9px 18px",borderRadius:14,fontSize:13.5,color:"var(--tx-2)",textDecoration:"none"}}>
-                  Portfolio
-                </Link>
-                <button onClick={signOut} style={{padding:"9px 18px",borderRadius:14,fontSize:13.5,color:"var(--tx-3)",border:"none",background:"transparent",cursor:"pointer"}}>
+<button onClick={signOut} style={{padding:"9px 18px",borderRadius:14,fontSize:13.5,color:"var(--tx-3)",border:"none",background:"transparent",cursor:"pointer"}}>
                   Abmelden
                 </button>
               </>
