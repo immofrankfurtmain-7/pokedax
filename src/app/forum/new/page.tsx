@@ -1,120 +1,138 @@
-﻿// src/app/forum/new/page.tsx
-"use client";
-
-import { useState } from "react";
+﻿"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
-const categories = [
-  { name: "Preise", value: "preise" },
-  { name: "Sammlung", value: "sammlung" },
-  { name: "Strategie", value: "strategie" },
-  { name: "News", value: "news" },
-  { name: "Tausch", value: "tausch" },
-  { name: "Fake-Check", value: "fake-check" },
-];
+const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
+const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
+const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",RED="#dc4a5a";
 
-export default function NewPostPage() {
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const CAT_CONFIG: Record<string,{color:string}> = {
+  Preisdiskussion:{color:"#E9A84B"},Neuigkeiten:{color:"#60A5FA"},
+  Einsteiger:{color:"#34D399"},Sammlung:{color:"#A78BFA"},
+  Strategie:{color:"#F472B6"},Tausch:{color:"#38BDF8"},
+  "Fake-Check":{color:"#FB923C"},Marktplatz:{color:"#C084FC"},
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title || !category || !content) return;
+interface Category { id:string; name:string; color:string; }
 
-    setIsSubmitting(true);
+export default function ForumNewPage() {
+  const router = useRouter();
+  const [user,       setUser]       = useState<any>(null);
+  const [cats,       setCats]       = useState<Category[]>([]);
+  const [title,      setTitle]      = useState("");
+  const [content,    setContent]    = useState("");
+  const [catId,      setCatId]      = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error,      setError]      = useState("");
 
-    // Simulierte Verzögerung (später echte Supabase-Speicherung)
-    setTimeout(() => {
-      alert("Beitrag wurde erfolgreich erstellt! (In der echten Version würde er jetzt gespeichert werden)");
-      setIsSubmitting(false);
-      // Redirect zur Forum-Übersicht
-      window.location.href = "/forum";
-    }, 1200);
-  };
+  useEffect(() => {
+    const sb = createClient();
+    sb.auth.getUser().then(({data:{user}}) => {
+      setUser(user);
+      if (!user) router.push("/auth/login?redirect=/forum/new");
+    });
+    // Load categories from Supabase directly (no custom API needed)
+    sb.from("forum_categories").select("id, name, color").order("name")
+      .then(({data}) => setCats(data ?? []));
+  }, []);
+
+  async function submit() {
+    if (!title.trim()) { setError("Titel darf nicht leer sein."); return; }
+    if (!catId)        { setError("Bitte eine Kategorie wählen."); return; }
+    if (content.trim().length < 10) { setError("Inhalt zu kurz (min. 10 Zeichen)."); return; }
+    setSubmitting(true);
+    setError("");
+
+    const res = await fetch("/api/forum/posts", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ category_id:catId, title:title.trim(), content:content.trim(), tags:[] }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Fehler beim Erstellen.");
+      setSubmitting(false);
+      return;
+    }
+    router.push(data.post?.id ? `/forum/post/${data.post.id}` : "/forum");
+  }
+
+  if (!user) return (
+    <div style={{color:TX1,minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{fontSize:14,color:TX3}}>Weiterleitung…</div>
+    </div>
+  );
 
   return (
-    <div className="bg-[var(--bg-base)] text-[var(--tx-1)] min-h-screen pb-20">
-      <div className="max-w-3xl mx-auto px-10 pt-12">
+    <div style={{color:TX1,minHeight:"80vh"}}>
+      <div style={{maxWidth:740,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
 
-        {/* Back Button */}
-        <Link 
-          href="/forum" 
-          className="inline-flex items-center gap-2 text-[var(--tx-2)] hover:text-[var(--tx-1)] transition-colors mb-10"
-        >
-          ← Zurück zum Forum
-        </Link>
+        <Link href="/forum" style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,color:TX3,textDecoration:"none",marginBottom:28}}>← Forum</Link>
 
-        <div className="mb-12">
-          <h1 className="text-5xl font-light tracking-[-2px]">Neuer Beitrag</h1>
-          <p className="text-[var(--tx-2)] mt-3">Teile deine Gedanken mit der Community</p>
+        <div style={{marginBottom:32}}>
+          <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(24px,4vw,40px)",fontWeight:200,letterSpacing:"-.05em",marginBottom:6}}>Neuer Beitrag</h1>
+          <p style={{fontSize:13,color:TX3}}>Als @{user?.email?.split("@")[0]??user?.id?.slice(0,8)}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-10">
-          
-          {/* Titel */}
-          <div>
-            <label className="block text-sm text-[var(--tx-3)] mb-3">Titel des Beitrags</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="z. B. Charizard UPC – lohnt sich Grading noch?"
-              className="w-full bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl px-8 py-5 text-lg outline-none focus:border-[var(--g18)] transition-colors"
-              required
-            />
-          </div>
+        <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:22,overflow:"hidden",position:"relative"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(212,168,67,0.25),transparent)`}}/>
 
-          {/* Kategorie */}
-          <div>
-            <label className="block text-sm text-[var(--tx-3)] mb-3">Kategorie</label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {categories.map((cat) => (
-                <button
-                  key={cat.value}
-                  type="button"
-                  onClick={() => setCategory(cat.value)}
-                  className={`py-4 rounded-3xl text-sm font-medium transition-all ${
-                    category === cat.value 
-                      ? "bg-[var(--g)] text-black" 
-                      : "bg-[var(--bg-1)] border border-[var(--br-2)] hover:border-[var(--g18)]"
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
+          <div style={{padding:24}}>
+            {/* Category */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:10,fontWeight:500,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:10}}>Kategorie</div>
+              <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                {cats.map(c=>{
+                  const cfg = CAT_CONFIG[c.name]??{color:G};
+                  const on  = catId===c.id;
+                  return (
+                    <button key={c.id} onClick={()=>setCatId(c.id)} style={{
+                      padding:"6px 14px",borderRadius:9,fontSize:12,fontWeight:400,border:"none",cursor:"pointer",
+                      background:on?`${cfg.color}15`:"transparent",color:on?cfg.color:TX3,
+                      outline:`1px solid ${on?cfg.color+"30":BR1}`,transition:"all .15s",
+                    }}>{c.name}</button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Title */}
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:10,fontWeight:500,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:8}}>Titel</div>
+              <input value={title} onChange={e=>setTitle(e.target.value)} maxLength={200}
+                placeholder="Worüber möchtest du diskutieren?"
+                style={{width:"100%",padding:"12px 16px",borderRadius:12,background:"rgba(0,0,0,0.3)",border:`1px solid ${BR2}`,color:TX1,fontSize:14,outline:"none",fontFamily:"inherit",transition:"border-color .2s"}}
+                onFocus={e=>(e.target.style.borderColor="rgba(212,168,67,0.2)")}
+                onBlur={e=>(e.target.style.borderColor="rgba(255,255,255,0.085)")}/>
+              <div style={{fontSize:10,color:TX3,marginTop:4,textAlign:"right"}}>{title.length}/200</div>
+            </div>
+
+            {/* Content */}
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:10,fontWeight:500,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:8}}>Inhalt</div>
+              <textarea value={content} onChange={e=>setContent(e.target.value)} rows={8}
+                placeholder="Schreibe deinen Beitrag…"
+                style={{width:"100%",padding:"12px 16px",borderRadius:12,background:"rgba(0,0,0,0.3)",border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none",fontFamily:"inherit",resize:"vertical",lineHeight:1.7,transition:"border-color .2s"}}
+                onFocus={e=>(e.target.style.borderColor="rgba(212,168,67,0.2)")}
+                onBlur={e=>(e.target.style.borderColor="rgba(255,255,255,0.085)")}/>
+              <div style={{fontSize:10,color:TX3,marginTop:4}}>{content.length} Zeichen</div>
+            </div>
+
+            {error&&<div style={{fontSize:12,color:RED,marginBottom:14,padding:"10px 14px",borderRadius:9,background:"rgba(220,74,90,0.08)",border:"1px solid rgba(220,74,90,0.2)"}}>{error}</div>}
+
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <Link href="/forum" style={{padding:"11px 22px",borderRadius:12,background:"transparent",color:TX2,fontSize:13,textDecoration:"none",border:`1px solid ${BR1}`}}>Abbrechen</Link>
+              <button onClick={submit} disabled={submitting} style={{
+                padding:"11px 28px",borderRadius:12,background:G,color:"#0a0808",
+                fontSize:13,fontWeight:400,border:"none",cursor:submitting?"wait":"pointer",
+                boxShadow:`0 2px 16px rgba(212,168,67,0.2)`,
+                opacity:submitting?0.7:1,
+              }}>{submitting?"Wird veröffentlicht…":"Beitrag veröffentlichen"}</button>
             </div>
           </div>
-
-          {/* Inhalt */}
-          <div>
-            <label className="block text-sm text-[var(--tx-3)] mb-3">Dein Beitrag</label>
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Schreibe hier deinen Beitrag... Sei respektvoll und hilfreich."
-              className="w-full bg-[var(--bg-1)] border border-[var(--br-2)] rounded-3xl px-8 py-6 text-[17px] outline-none focus:border-[var(--g18)] transition-colors min-h-[280px] resize-y"
-              required
-            />
-          </div>
-
-          {/* Submit Button */}
-          <div className="pt-6">
-            <button
-              type="submit"
-              disabled={isSubmitting || !title || !category || !content}
-              className="w-full py-5 bg-[var(--g)] text-black font-medium rounded-3xl text-lg hover:bg-[#f5c16e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Beitrag wird erstellt..." : "Beitrag veröffentlichen"}
-            </button>
-          </div>
-
-          <p className="text-center text-xs text-[var(--tx-3)]">
-            Dein Beitrag wird nach manueller Prüfung freigeschaltet.
-          </p>
-        </form>
-
+        </div>
       </div>
     </div>
   );

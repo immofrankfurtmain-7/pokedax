@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
@@ -25,16 +26,20 @@ interface Card {
 }
 
 export default function PreischeckPage() {
-  const [query,  setQuery]  = useState("");
+  const searchParams = useSearchParams();
+  const [query,  setQuery]  = useState(searchParams.get("q")??"");
+  const [setFilter, setSetFilter] = useState(searchParams.get("set")??"");
   const [sort,   setSort]   = useState("price_desc");
   const [cards,  setCards]  = useState<Card[]>([]);
   const [loading,setLoading]= useState(true);
   const [total,  setTotal]  = useState(0);
+  const [selectedCard, setSelectedCard] = useState<Card|null>(null);
 
-  const load = useCallback(async (q:string, s:string) => {
+  const load = useCallback(async (q:string, s:string, setId?:string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ q, sort:s, limit:"24" });
+      if (setId) params.set("set_id", setId);
       const r = await fetch(`/api/cards/search?${params}`);
       const d = await r.json();
       setCards(d.cards ?? []);
@@ -43,10 +48,17 @@ export default function PreischeckPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load("", "price_desc"); }, [load]);
+  useEffect(() => {
+    const q = searchParams.get("q")??"";
+    const set = searchParams.get("set")??"";
+    setQuery(q);
+    setSetFilter(set);
+    load(q, "price_desc", set);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setSetFilter("");
     load(query, sort);
   };
 
@@ -148,7 +160,7 @@ export default function PreischeckPage() {
                 ? ((card.price_market??0)-card.price_avg30)/card.price_avg30*100 : null;
               const pctCapped = pct!==null ? Math.min(Math.abs(pct),99)*Math.sign(pct) : null;
               return (
-                <Link key={card.id} href={`/preischeck?q=${encodeURIComponent(card.name)}`}
+                <Link key={card.id} href={`/preischeck/${card.id}`}
                   className="card-hover"
                   style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:24,overflow:"hidden",textDecoration:"none",display:"block",position:"relative"}}>
                   {/* Image */}

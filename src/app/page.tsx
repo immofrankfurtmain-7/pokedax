@@ -111,7 +111,7 @@ export default async function HomePage() {
         {/* Headline */}
         <h1 style={{
           fontFamily:"var(--font-display)",
-          fontSize:"clamp(48px,8vw,96px)",
+          fontSize:"clamp(36px,7vw,88px)",
           fontWeight:300,
           letterSpacing:"-.09em",
           lineHeight:0.96,
@@ -120,12 +120,7 @@ export default async function HomePage() {
         }}>
           Deine Karten.<br/>
           Ihr wahrer{" "}
-          <span style={{
-            color:G,
-            background:`linear-gradient(135deg,#D4A843,#e8c068,#c49030)`,
-            WebkitBackgroundClip:"text",
-            WebkitTextFillColor:"transparent",
-          }}>Wert</span>.
+          <span style={{color:G}}>Wert.</span>
         </h1>
 
         {/* Sub */}

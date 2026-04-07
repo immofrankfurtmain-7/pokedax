@@ -4,10 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import {
-  ArrowLeft, Heart, MessageSquare, Flag, Pin, Lock, Flame,
-  Eye, Send, Shield, Star, Trophy, Zap, ChevronUp
-} from "lucide-react";
+// icons replaced with inline
 
 interface Post {
   id: string;
@@ -66,10 +63,10 @@ const CATEGORY_STYLES: Record<string, { color: string; glow: string; label: stri
 };
 
 function getBadgeIcon(profile: Post["profiles"] | Reply["profiles"]) {
-  if (profile.badge_champion)   return { icon: <Trophy size={10} />, label: "Champion",     color: "#ffd700" };
-  if (profile.badge_elite4)     return { icon: <Star size={10} />,   label: "Top Vier",      color: "#c864ff" };
-  if (profile.badge_gym_leader) return { icon: <Shield size={10} />, label: "Arenaleiter",  color: "#00c8ff" };
-  if (profile.badge_trainer)    return { icon: <Zap size={10} />,    label: "Trainer",       color: "#00ff96" };
+  if (profile.badge_champion)   return { icon: 🏆, label: "Champion",     color: "#ffd700" };
+  if (profile.badge_elite4)     return { icon: ⭐,   label: "Top Vier",      color: "#c864ff" };
+  if (profile.badge_gym_leader) return { icon: 🛡, label: "Arenaleiter",  color: "#00c8ff" };
+  if (profile.badge_trainer)    return { icon: ⚡,    label: "Trainer",       color: "#00ff96" };
   return null;
 }
 
@@ -298,7 +295,7 @@ export default function PostDetailPage() {
           className="inline-flex items-center gap-2 mb-6 transition-colors hover:text-white"
           style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px" }}
         >
-          <ArrowLeft size={14} />
+          ←
           Zurück zum Forum
         </Link>
 
@@ -317,17 +314,17 @@ export default function PostDetailPage() {
           </span>
           {post.is_pinned && (
             <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs" style={{ color: "#00ffff", background: "rgba(0,255,255,0.1)" }}>
-              <Pin size={10} /> Angeheftet
+              📌 Angeheftet
             </span>
           )}
           {post.is_locked && (
             <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs" style={{ color: "#ff8800", background: "rgba(255,136,0,0.1)" }}>
-              <Lock size={10} /> Gesperrt
+              🔒 Gesperrt
             </span>
           )}
           {post.is_hot && (
             <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs" style={{ color: "#ff4444", background: "rgba(255,68,68,0.1)" }}>
-              <Flame size={10} /> Hot
+              🔥 Hot
             </span>
           )}
         </div>
@@ -358,7 +355,7 @@ export default function PostDetailPage() {
               </div>
               <div className="flex items-center gap-4" style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>
                 <div className="flex items-center gap-1">
-                  <Eye size={12} />
+                  👁
                   {post.view_count}
                 </div>
                 <span>{new Date(post.created_at).toLocaleDateString("de-DE")}</span>
@@ -413,12 +410,12 @@ export default function PostDetailPage() {
                   cursor: currentUser ? "pointer" : "not-allowed",
                 }}
               >
-                <Heart size={13} fill={liked ? "currentColor" : "none"} />
+                ♥
                 {post.upvotes + (liked ? 1 : 0)}
               </button>
 
               <div className="flex items-center gap-1.5" style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>
-                <MessageSquare size={13} />
+                💬
                 {post.reply_count} Antworten
               </div>
             </div>
@@ -435,7 +432,7 @@ export default function PostDetailPage() {
                   cursor: "pointer",
                 }}
               >
-                <Flag size={11} />
+                ⚑
                 Melden
               </button>
             )}
@@ -502,7 +499,7 @@ export default function PostDetailPage() {
                             });
                           }}
                         >
-                          <ChevronUp size={12} />
+                          ▲
                           {reply.upvotes || 0}
                         </button>
                       </div>
@@ -568,7 +565,7 @@ export default function PostDetailPage() {
                         cursor: replyContent.trim() ? "pointer" : "not-allowed",
                       }}
                     >
-                      <Send size={13} />
+                      →
                       {submitting ? "Senden..." : "Antworten"}
                     </button>
                   </div>
@@ -600,7 +597,7 @@ export default function PostDetailPage() {
             className="rounded-xl p-4 flex items-center gap-3"
             style={{ background: "rgba(255,136,0,0.08)", border: "1px solid rgba(255,136,0,0.2)" }}
           >
-            <Lock size={16} style={{ color: "#ff8800" }} />
+            🔒
             <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}>
               Dieser Beitrag wurde gesperrt. Neue Antworten sind nicht möglich.
             </p>
