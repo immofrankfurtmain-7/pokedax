@@ -1,4 +1,8 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+﻿# Hotfix marketplace route (duplicate supabase fix)
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+import { NextRequest, NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
 
 // GET /api/marketplace?card_id=xxx&type=offer|want
@@ -67,3 +71,8 @@ export async function DELETE(request: NextRequest) {
 
   return NextResponse.json({ ok: true });
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\api\marketplace\route.ts", $r, $enc)
+Write-Host "OK marketplace/route.ts" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit 'hotfix: marketplace duplicate supabase' -> Push" -ForegroundColor Yellow
