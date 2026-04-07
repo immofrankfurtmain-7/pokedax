@@ -1,4 +1,8 @@
-﻿"use client";
+﻿# Hotfix fantasy page (getAuthHeaders scope)
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -300,3 +304,8 @@ export default function FantasyPage() {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\fantasy\page.tsx", $r, $enc)
+Write-Host "OK fantasy/page.tsx" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit 'hotfix: fantasy auth scope' -> Push" -ForegroundColor Yellow
