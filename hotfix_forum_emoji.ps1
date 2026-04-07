@@ -1,4 +1,9 @@
-﻿"use client";
+﻿# PokéDax — Hotfix forum post detail (emoji syntax)
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+
+$forumPost = @'
+"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -607,3 +612,9 @@ export default function PostDetailPage() {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\forum\post\[id]\page.tsx", $forumPost, $enc)
+Write-Host "  OK  forum/post/[id]/page.tsx" -ForegroundColor Green
+Write-Host ""
+Write-Host "GitHub Desktop -> Commit 'hotfix: forum emoji syntax' -> Push" -ForegroundColor Yellow
