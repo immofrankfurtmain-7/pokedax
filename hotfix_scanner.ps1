@@ -1,4 +1,8 @@
-﻿"use client";
+﻿# Hotfix scanner - add useRouter import
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+"use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -391,3 +395,8 @@ export default function ScannerPage() {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\scanner\page.tsx", $r, $enc)
+Write-Host "OK scanner/page.tsx" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit -> Push" -ForegroundColor Yellow
