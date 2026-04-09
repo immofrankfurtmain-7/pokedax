@@ -1,5 +1,18 @@
-﻿Ausgabe
+﻿# Hotfix profil - LiteralPath fix for [username] folder
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
 
+# Use -LiteralPath to handle square brackets correctly
+$profilDir = Join-Path $root "src\app\profil"
+$usernameDir = Join-Path $profilDir "[username]"
+
+New-Item -ItemType Directory -Path $profilDir -Force | Out-Null
+New-Item -ItemType Directory -LiteralPath $usernameDir -Force | Out-Null
+
+Write-Host "Ordner: $usernameDir" -ForegroundColor DarkGray
+
+
+$r = @'
 import { createClient } from "@supabase/supabase-js";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -186,3 +199,19 @@ export default async function ProfilePage({ params }: Props) {
     </div>
   );
 }
+
+'@
+
+$filePath = Join-Path $usernameDir "page.tsx"
+[System.IO.File]::WriteAllText($filePath, $r, $enc)
+Write-Host "  OK  $filePath" -ForegroundColor Green
+
+# Verify file exists
+if (Test-Path -LiteralPath $filePath) {
+    Write-Host "  Datei verifiziert: $(Get-Item -LiteralPath $filePath | Select-Object -ExpandProperty Length) bytes" -ForegroundColor Green
+} else {
+    Write-Host "  FEHLER: Datei nicht gefunden!" -ForegroundColor Red
+}
+
+Write-Host ""
+Write-Host "GitHub Desktop -> Commit -> Push" -ForegroundColor Yellow
