@@ -29,19 +29,23 @@ interface Card {
   is_holo:boolean|null; is_reverse_holo:boolean|null;
 }
 
-function PriceChart({avg7, avg30, market}: {avg7:number|null; avg30:number|null; market:number|null}) {
+function PriceChart({avg7, avg30, market, history}: {avg7:number|null; avg30:number|null; market:number|null; history?:{price_market:number;recorded_at:string}[]}) {
   if (!market) return null;
 
-  const p30 = avg30 ?? market * 0.85;
-  const p7  = avg7  ?? market * 0.94;
-  const now = market;
-
-  // Generate mock price history from the 3 data points
-  const pts = [
-    p30, p30*1.02, p30*0.98, p30*1.05, p30*1.01,
-    p7*0.97, p7, p7*1.03, p7*0.99, p7*1.02,
-    now*0.98, now*1.01, now*0.99, now,
-  ];
+  // Use real history if available, else interpolate from averages
+  let pts: number[];
+  if (history && history.length >= 3) {
+    pts = history.map(h => h.price_market).reverse();
+  } else {
+    const p30 = avg30 ?? market * 0.88;
+    const p7  = avg7  ?? market * 0.96;
+    const now = market;
+    pts = [
+      p30, p30*1.02, p30*0.98, p30*1.04, p30*1.01,
+      p7*0.97, p7, p7*1.02, p7*0.99, p7*1.01,
+      now*0.98, now*1.01, now*0.99, now,
+    ];
+  }
 
   const min = Math.min(...pts) * 0.97;
   const max = Math.max(...pts) * 1.03;
@@ -111,8 +115,17 @@ export default function CardDetailPage() {
   const [user,    setUser]    = useState<any>(null);
   const [adding,  setAdding]  = useState(false);
 
+  const [priceHistory, setPriceHistory] = useState<{price_market:number;recorded_at:string}[]>([]);
+
   useEffect(() => {
     const sb = createClient();
+    // Load price history
+    sb.from("price_history")
+      .select("price_market, recorded_at")
+      .eq("card_id", cardId)
+      .order("recorded_at", { ascending: false })
+      .limit(30)
+      .then(({ data }) => setPriceHistory(data ?? []));
     // Load card
     sb.from("cards")
       .select("id,name,name_de,set_id,number,types,rarity,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo")
@@ -302,7 +315,7 @@ export default function CardDetailPage() {
             </div>
 
             {/* Price chart */}
-            <PriceChart avg7={card.price_avg7} avg30={card.price_avg30} market={card.price_market}/>
+            <PriceChart avg7={card.price_avg7} avg30={card.price_avg30} market={card.price_market} history={priceHistory}/>
 
             {/* Card stats */}
             <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:18,overflow:"hidden",marginBottom:14}}>
