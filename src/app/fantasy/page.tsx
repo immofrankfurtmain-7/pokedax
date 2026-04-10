@@ -1,7 +1,6 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G12="rgba(212,168,67,0.12)",G08="rgba(212,168,67,0.08)",G04="rgba(212,168,67,0.04)";
 const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
@@ -32,14 +31,6 @@ function ScoreBar({pct,max}:{pct:number;max:number}) {
   );
 }
 
-async function getAuthHeaders(): Promise<Record<string,string>> {
-  const sb = createClient();
-  const { data: { session } } = await sb.auth.getSession();
-  const h: Record<string,string> = {"Content-Type":"application/json"};
-  if (session?.access_token) h["Authorization"] = `Bearer ${session.access_token}`;
-  return h;
-}
-
 function TeamBuilder({onAdded}:{onAdded:()=>void}) {
   const [query, setQuery]     = useState("");
   const [results, setResults] = useState<any[]>([]);
@@ -60,10 +51,9 @@ function TeamBuilder({onAdded}:{onAdded:()=>void}) {
   async function addCard(card:any) {
     setAdding(card.id);
     setMsg(null);
-    const h = await getAuthHeaders();
     const res = await fetch("/api/fantasy/team", {
       method:"POST",
-      headers: h,
+      headers:{"Content-Type":"application/json"},
       body: JSON.stringify({ card_id: card.id }),
     });
     const data = await res.json();
@@ -124,16 +114,10 @@ export default function FantasyPage() {
 
   async function loadTeam() {
     setLoading(true);
-    try {
-      const h = await getAuthHeaders();
-      const res = await fetch("/api/fantasy/team", { headers: h });
-      if (!res.ok) { setLoading(false); return; }
-      const data = await res.json();
-      setTeam(data.team);
-      setPicks(data.picks ?? []);
-    } catch (e) {
-      console.error("Fantasy team load error:", e);
-    }
+    const res = await fetch("/api/fantasy/team");
+    const data = await res.json();
+    setTeam(data.team);
+    setPicks(data.picks ?? []);
     setLoading(false);
   }
 
@@ -147,8 +131,7 @@ export default function FantasyPage() {
 
   async function removePick(pickId:string) {
     setRemoving(pickId);
-    const dh = await getAuthHeaders();
-    await fetch(`/api/fantasy/team?pick_id=${pickId}`, { method:"DELETE", headers: dh });
+    await fetch(`/api/fantasy/team?pick_id=${pickId}`, { method:"DELETE" });
     await loadTeam();
     setRemoving(null);
   }

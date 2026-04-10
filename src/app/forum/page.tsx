@@ -3,347 +3,152 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
-const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
-const BG1="#111114",BG2="#18181c",BG3="#1e1e22",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
+const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
+const BG1="#111113",BR1="rgba(255,255,255,0.06)",BR2="rgba(255,255,255,0.10)";
+const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a";
+const GREEN="#4BBF82",RED="#E04558";
 
-const CAT_CONFIG: Record<string,{color:string;icon:string}> = {
-  Preisdiskussion: {color:"#E9A84B",icon:"◈"},
-  Neuigkeiten:     {color:"#60A5FA",icon:"◉"},
-  Einsteiger:      {color:"#34D399",icon:"◎"},
-  Sammlung:        {color:"#A78BFA",icon:"◇"},
-  Strategie:       {color:"#F472B6",icon:"◆"},
-  Tausch:          {color:"#38BDF8",icon:"◈"},
-  "Fake-Check":    {color:"#FB923C",icon:"⚠"},
-  Marktplatz:      {color:"#C084FC",icon:"◉"},
+const CAT_COLORS: Record<string,string> = {
+  Preise:G, News:G, Sammlung:GREEN, Strategie:"#C084FC",
+  Tausch:"#7DD3FC", "Fake-Check":"#3BBDB6", Einsteiger:"#FCD34D",
+  Neuigkeiten:G, Preisdiskussion:G, Marktplatz:"#C084FC",
 };
 
 interface Post {
-  id:string; title:string; content?:string; upvotes:number; created_at:string;
-  reply_count?:number; view_count?:number; is_pinned?:boolean; is_hot?:boolean;
-  profiles?:{username:string;avatar_url:string|null;is_premium?:boolean};
-  forum_categories?:{name:string};
+  id:string;title:string;upvotes:number;created_at:string;
+  profiles?:{username:string};forum_categories?:{name:string};
 }
 
-function timeAgo(d:string) {
-  const mins = Math.floor((Date.now()-new Date(d).getTime())/60000);
-  if (mins<1) return "Gerade";
-  if (mins<60) return `${mins} Min.`;
-  const h = Math.floor(mins/60);
-  if (h<24) return `${h} Std.`;
-  const days = Math.floor(h/24);
-  if (days<7) return `${days} T.`;
-  return `${Math.floor(days/7)} Wo.`;
-}
-
-function Avatar({username, size=28}:{username:string;size?:number}) {
-  const colors = [G,"#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
-  const c = colors[username.charCodeAt(0)%colors.length];
-  return (
-    <div style={{width:size,height:size,borderRadius:"50%",background:`${c}18`,border:`1px solid ${c}30`,
-      display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.45,color:c,fontWeight:500,flexShrink:0}}>
-      {username[0].toUpperCase()}
-    </div>
-  );
-}
-
-function PostRow({post,onUpvote}:{post:Post;onUpvote:(id:string)=>void}) {
-  const cat = post.forum_categories?.name ?? "Forum";
-  const cfg = CAT_CONFIG[cat] ?? {color:G,icon:"●"};
-  const author = post.profiles?.username ?? "Anonym";
-
-  return (
-    <div style={{
-      display:"flex",alignItems:"flex-start",gap:0,
-      borderBottom:`1px solid ${BR1}`,
-      transition:"background .12s",
-    }}
-    onMouseEnter={e=>(e.currentTarget.style.background=BG2)}
-    onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
-
-      {/* Upvote column */}
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 12px 14px 16px",flexShrink:0,minWidth:52}}>
-        <button onClick={(e)=>{e.preventDefault();e.stopPropagation();onUpvote(post.id);}} style={{
-          width:28,height:28,borderRadius:8,background:"transparent",border:`1px solid ${BR2}`,
-          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
-          fontSize:11,color:TX3,transition:"all .15s",
-        }}
-        onMouseEnter={e=>{(e.currentTarget as any).style.borderColor=G;(e.currentTarget as any).style.color=G;}}
-        onMouseLeave={e=>{(e.currentTarget as any).style.borderColor="rgba(255,255,255,0.085)";(e.currentTarget as any).style.color=TX3;}}>
-          ▲
-        </button>
-        <div style={{fontSize:12,fontWeight:500,color:post.upvotes>0?TX2:TX3,marginTop:4,fontFamily:"var(--font-mono)",lineHeight:1}}>
-          {post.upvotes}
-        </div>
-      </div>
-
-      {/* Main content */}
-      <Link href={`/forum/post/${post.id}`} style={{flex:1,padding:"14px 16px 14px 0",textDecoration:"none",display:"block",minWidth:0}}>
-        {/* Top row: badges */}
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
-          {post.is_pinned&&(
-            <span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:"rgba(212,168,67,0.1)",color:G,border:`0.5px solid ${G18}`}}>📌 GEPINNT</span>
-          )}
-          {post.is_hot&&(
-            <span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:"rgba(239,68,68,0.1)",color:"#f87171",border:"0.5px solid rgba(239,68,68,0.2)"}}>🔥 HOT</span>
-          )}
-          <span style={{
-            fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:5,
-            background:`${cfg.color}12`,color:cfg.color,
-            border:`0.5px solid ${cfg.color}25`,letterSpacing:".04em",
-          }}>{cfg.icon} {cat.toUpperCase()}</span>
-        </div>
-
-        {/* Title */}
-        <div style={{fontSize:14,fontWeight:400,color:TX1,lineHeight:1.4,marginBottom:8,
-          overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-          {post.title}
-        </div>
-
-        {/* Meta row */}
-        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-          <Avatar username={author} size={18}/>
-          <span style={{fontSize:11,color:TX2}}>@{author}</span>
-          {post.profiles?.is_premium&&<span style={{fontSize:8,color:G,fontWeight:600}}>✦</span>}
-          <span style={{width:2,height:2,borderRadius:"50%",background:TX3,flexShrink:0}}/>
-          <span style={{fontSize:11,color:TX3}}>{timeAgo(post.created_at)}</span>
-          <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12}}>
-            {(post.reply_count??0)>0&&(
-              <span style={{fontSize:11,color:TX3,display:"flex",alignItems:"center",gap:4}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                {post.reply_count}
-              </span>
-            )}
-            {(post.view_count??0)>0&&(
-              <span style={{fontSize:11,color:TX3,display:"flex",alignItems:"center",gap:4}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                {post.view_count}
-              </span>
-            )}
-          </span>
-        </div>
-      </Link>
-    </div>
-  );
+function ago(d:string) {
+  const h=Math.floor((Date.now()-new Date(d).getTime())/3600000);
+  return h<1?"Gerade":h<24?`vor ${h} Std.`:`vor ${Math.floor(h/24)} T.`;
 }
 
 export default function ForumPage() {
   const [posts,   setPosts]   = useState<Post[]>([]);
   const [cats,    setCats]    = useState<string[]>([]);
-  const [cat,     setCat]     = useState("alle");
-  const [sort,    setSort]    = useState<"hot"|"neu"|"top">("hot");
-  const [search,  setSearch]  = useState("");
+  const [active,  setActive]  = useState("alle");
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState("");
 
-  useEffect(() => { load(); }, []);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const sb = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      const [pR, cR] = await Promise.all([
-        sb.from("forum_posts")
-          .select("id,title,content,upvotes,created_at,profiles(username,avatar_url,is_premium),forum_categories(name)")
-          .order("created_at",{ascending:false})
-          .limit(60),
-        sb.from("forum_categories").select("name").order("name"),
-      ]);
-      const normalized = (pR.data??[]).map((p:any)=>({
-        ...p,
-        profiles: Array.isArray(p.profiles)?p.profiles[0]:p.profiles,
-        forum_categories: Array.isArray(p.forum_categories)?p.forum_categories[0]:p.forum_categories,
-      }));
-      setPosts(normalized as Post[]);
-      const uniqueCats = Array.from(new Set(normalized.map((p:any)=>p.forum_categories?.name).filter(Boolean))) as string[];
-      setCats(uniqueCats);
-    } catch(e) { console.error(e); }
-    setLoading(false);
-  }
-
-  async function upvote(postId: string) {
-    const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const post = posts.find(p=>p.id===postId);
-    if (!post) return;
-    await sb.from("forum_posts").update({upvotes:(post.upvotes??0)+1}).eq("id",postId);
-    setPosts(prev=>prev.map(p=>p.id===postId?{...p,upvotes:(p.upvotes??0)+1}:p));
-  }
-
-  // Filter + sort
-  let filtered = posts.filter(p => {
-    if (cat!=="alle" && p.forum_categories?.name!==cat) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!p.title.toLowerCase().includes(q) && !(p.profiles?.username??'').toLowerCase().includes(q)) return false;
+  useEffect(()=>{
+    async function load() {
+      try {
+        const sb = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
+        const [pR, cR] = await Promise.all([
+          sb.from("forum_posts")
+            .select("id,title,upvotes,created_at,profiles(username),forum_categories(name)")
+            .order("created_at",{ascending:false})
+            .limit(48),
+          sb.from("forum_categories").select("name").order("name"),
+        ]);
+        if (pR.error) throw pR.error;
+        const normalized = (pR.data??[]).map((p:any)=>({
+          ...p,
+          profiles: Array.isArray(p.profiles)?p.profiles[0]:p.profiles,
+          forum_categories: Array.isArray(p.forum_categories)?p.forum_categories[0]:p.forum_categories,
+        })) as Post[];
+        setPosts(normalized);
+        const uniqueCats = [...new Set(normalized.map(p=>p.forum_categories?.name).filter(Boolean))] as string[];
+        setCats(uniqueCats);
+      } catch(e:any) {
+        setError("Beiträge konnten nicht geladen werden.");
+        console.error(e);
+      }
+      setLoading(false);
     }
-    return true;
-  });
+    load();
+  },[]);
 
-  if (sort==="top")  filtered = [...filtered].sort((a,b)=>(b.upvotes??0)-(a.upvotes??0));
-  if (sort==="hot")  filtered = [...filtered].sort((a,b)=>{
-    const scoreA = (a.upvotes??0)*2 + (a.reply_count??0)*3 + (a.view_count??0)*0.1;
-    const scoreB = (b.upvotes??0)*2 + (b.reply_count??0)*3 + (b.view_count??0)*0.1;
-    return scoreB - scoreA;
-  });
-
-  // Pinned first
-  const pinned  = filtered.filter(p=>p.is_pinned);
-  const regular = filtered.filter(p=>!p.is_pinned);
-  const sorted  = [...pinned, ...regular];
-
-  const stats = {
-    total: posts.length,
-    today: posts.filter(p=>new Date(p.created_at)>new Date(Date.now()-86400000)).length,
-    topCat: cats.reduce((top,c)=>{
-      const count = posts.filter(p=>p.forum_categories?.name===c).length;
-      return count>(posts.filter(p=>p.forum_categories?.name===top).length) ? c : top;
-    }, cats[0]??''),
-  };
+  const filtered = active==="alle"
+    ? posts
+    : posts.filter(p=>p.forum_categories?.name===active);
 
   return (
     <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1160,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"clamp(40px,8vw,80px) clamp(16px,4vw,24px)"}}>
 
-        {/* Page header */}
-        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:14,marginBottom:"clamp(28px,4vw,44px)"}}>
+        {/* Header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:48,flexWrap:"wrap",gap:16}}>
           <div>
-            <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-              <span style={{width:16,height:0.5,background:TX3}}/>Community
-            </div>
-            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(26px,4vw,46px)",fontWeight:200,letterSpacing:"-.055em",marginBottom:4}}>Forum</h1>
-            <p style={{fontSize:12,color:TX3}}>
-              {loading?"Lädt…":`${posts.length} Beiträge · ${stats.today} heute`}
-            </p>
+            <div style={{fontSize:10,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:G,marginBottom:16}}>Community</div>
+            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(36px,5vw,56px)",fontWeight:300,letterSpacing:"-.07em",color:TX1,marginBottom:8}}>Forum</h1>
+            <p style={{fontSize:14,color:TX3}}>{loading?"Lädt…":`${posts.length} Beiträge`}</p>
           </div>
-          <Link href="/forum/new" style={{
-            padding:"10px 22px",borderRadius:12,background:G,color:"#0a0808",
-            fontSize:13,fontWeight:400,textDecoration:"none",
-            boxShadow:`0 2px 16px rgba(212,168,67,0.2)`,flexShrink:0,
-          }}>+ Beitrag</Link>
+          <Link href="/forum/new" className="gold-glow" style={{
+            padding:"clamp(10px,2vw,14px) clamp(20px,3vw,28px)",
+            borderRadius:20,background:G,color:"#0a0808",
+            fontSize:"clamp(13px,1.5vw,15px)",fontWeight:600,textDecoration:"none",
+          }}>+ Beitrag erstellen</Link>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"1fr 240px",gap:16,alignItems:"start"}}>
-          {/* Main column */}
-          <div>
-            {/* Toolbar: search + sort */}
-            <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-              <div style={{position:"relative",flex:1,minWidth:200}}>
-                <svg style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",opacity:.3}} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Suchen…"
-                  style={{width:"100%",padding:"8px 8px 8px 30px",borderRadius:10,background:BG1,border:`1px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}/>
-              </div>
-              {/* Sort buttons */}
-              <div style={{display:"flex",gap:2,background:BG1,borderRadius:11,padding:3,border:`1px solid ${BR1}`}}>
-                {([["hot","🔥 Hot"],["neu","✦ Neu"],["top","▲ Top"]] as const).map(([s,l])=>(
-                  <button key={s} onClick={()=>setSort(s)} style={{
-                    padding:"5px 14px",borderRadius:8,fontSize:12,fontWeight:400,border:"none",cursor:"pointer",
-                    background:sort===s?BG2:"transparent",color:sort===s?TX1:TX3,transition:"all .15s",
-                  }}>{l}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Category filter pills */}
-            <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              <button onClick={()=>setCat("alle")} style={{
-                padding:"5px 14px",borderRadius:8,fontSize:11,fontWeight:400,border:"none",cursor:"pointer",
-                background:cat==="alle"?BG3:"transparent",color:cat==="alle"?TX1:TX3,
-                outline:`1px solid ${cat==="alle"?BR2:BR1}`,transition:"all .15s",
-              }}>Alle</button>
-              {cats.map(c=>{
-                const cfg = CAT_CONFIG[c]??{color:G,icon:"●"};
-                const on = cat===c;
-                return (
-                  <button key={c} onClick={()=>setCat(c)} style={{
-                    padding:"5px 14px",borderRadius:8,fontSize:11,fontWeight:400,border:"none",cursor:"pointer",
-                    background:on?`${cfg.color}12`:"transparent",color:on?cfg.color:TX3,
-                    outline:`1px solid ${on?cfg.color+"30":BR1}`,transition:"all .15s",
-                  }}>{cfg.icon} {c}</button>
-                );
-              })}
-            </div>
-
-            {/* Posts list */}
-            <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:18,overflow:"hidden"}}>
-              {loading ? (
-                Array.from({length:8}).map((_,i)=>(
-                  <div key={i} style={{height:76,borderBottom:`1px solid ${BR1}`,opacity:.3,background:`linear-gradient(90deg,${BG2},${BG1})`,animation:"pulse 1.5s ease-in-out infinite"}}/>
-                ))
-              ) : sorted.length===0 ? (
-                <div style={{padding:"48px",textAlign:"center"}}>
-                  <div style={{fontSize:14,color:TX3,marginBottom:12}}>Keine Beiträge gefunden.</div>
-                  <Link href="/forum/new" style={{fontSize:13,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
-                </div>
-              ) : sorted.map(post=>(
-                <PostRow key={post.id} post={post} onUpvote={upvote}/>
-              ))}
-            </div>
+        {/* Category filter */}
+        {!loading && cats.length > 0 && (
+          <div style={{display:"flex",gap:8,marginBottom:36,flexWrap:"wrap"}}>
+            {["alle",...cats].map(cat=>{
+              const on = active===cat;
+              const c = cat!=="alle" ? (CAT_COLORS[cat]??G) : G;
+              return (
+                <button key={cat} onClick={()=>setActive(cat)} style={{
+                  padding:"9px 18px",borderRadius:14,fontSize:13,fontWeight:500,
+                  cursor:"pointer",border:"none",transition:"all .15s",
+                  background:on?`${c}14`:"transparent",
+                  color:on?c:TX3,
+                  outline:on?`1px solid ${c}30`:"1px solid rgba(255,255,255,0.06)",
+                }}>{cat==="alle"?"Alle":cat}</button>
+              );
+            })}
           </div>
+        )}
 
-          {/* Sidebar */}
-          <div style={{display:"flex",flexDirection:"column",gap:12,position:"sticky",top:76}}>
-
-            {/* Stats */}
-            <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:16,overflow:"hidden"}}>
-              <div style={{padding:"12px 16px",borderBottom:`1px solid ${BR1}`,fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Community</div>
-              <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
-                {[
-                  {l:"Beiträge gesamt",v:posts.length},
-                  {l:"Heute",v:stats.today},
-                  {l:"Kategorien",v:cats.length},
-                ].map(s=>(
-                  <div key={s.l} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:12,color:TX3}}>{s.l}</span>
-                    <span style={{fontSize:13,fontWeight:400,color:TX1,fontFamily:"var(--font-mono)"}}>{s.v}</span>
+        {/* Content */}
+        {loading ? (
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14}}>
+            {Array.from({length:6}).map((_,i)=>(
+              <div key={i} style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:24,padding:28,minHeight:140,opacity:.4,animation:"pulse 1.5s ease-in-out infinite"}}/>
+            ))}
+          </div>
+        ) : error ? (
+          <div style={{textAlign:"center",padding:80,background:BG1,border:`1px solid ${BR2}`,borderRadius:28}}>
+            <div style={{fontSize:16,color:RED,marginBottom:12}}>{error}</div>
+            <button onClick={()=>window.location.reload()} style={{fontSize:14,color:G,background:"transparent",border:"none",cursor:"pointer",textDecoration:"underline"}}>Erneut versuchen</button>
+          </div>
+        ) : filtered.length===0 ? (
+          <div style={{textAlign:"center",padding:80,background:BG1,border:`1px solid ${BR2}`,borderRadius:28}}>
+            <div style={{fontSize:16,color:TX3,marginBottom:16}}>Noch keine Beiträge</div>
+            <Link href="/forum/new" style={{fontSize:15,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
+          </div>
+        ) : (
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(clamp(260px,30vw,340px),1fr))",gap:14}}>
+            {filtered.map(post=>{
+              const cat = post.forum_categories?.name??"Forum";
+              const c   = CAT_COLORS[cat]??G;
+              const author = post.profiles?.username??"Anonym";
+              return (
+                <Link key={post.id} href={`/forum/post/${post.id}`} className="card-hover" style={{
+                  background:BG1,border:`1px solid ${BR1}`,
+                  borderRadius:24,padding:"clamp(20px,3vw,28px)",
+                  textDecoration:"none",display:"block",
+                }}>
+                  <div style={{fontSize:10,fontWeight:600,letterSpacing:".08em",textTransform:"uppercase",color:c,marginBottom:14}}>{cat}</div>
+                  <div style={{fontSize:"clamp(14px,1.4vw,17px)",fontWeight:500,color:TX1,lineHeight:1.45,marginBottom:20,
+                    display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{post.title}</div>
+                  <div style={{fontSize:12,color:TX3,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span>{author}</span>
+                    <span style={{width:3,height:3,borderRadius:"50%",background:TX3,display:"inline-block",flexShrink:0}}/>
+                    <span>{ago(post.created_at)}</span>
+                    <span style={{marginLeft:"auto",fontSize:13,color:TX2}}>↑ {post.upvotes??0}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Categories */}
-            <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:16,overflow:"hidden"}}>
-              <div style={{padding:"12px 16px",borderBottom:`1px solid ${BR1}`,fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Kategorien</div>
-              <div style={{padding:"8px 0"}}>
-                {cats.map(c=>{
-                  const cfg = CAT_CONFIG[c]??{color:G,icon:"●"};
-                  const count = posts.filter(p=>p.forum_categories?.name===c).length;
-                  return (
-                    <button key={c} onClick={()=>setCat(c==="alle"||cat===c?"alle":c)} style={{
-                      width:"100%",display:"flex",alignItems:"center",gap:10,
-                      padding:"8px 16px",background:"transparent",border:"none",cursor:"pointer",
-                      transition:"background .1s",
-                    }}
-                    onMouseEnter={e=>(e.currentTarget.style.background=BG2)}
-                    onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
-                      <span style={{width:6,height:6,borderRadius:"50%",background:cfg.color,flexShrink:0}}/>
-                      <span style={{flex:1,textAlign:"left",fontSize:12,color:cat===c?cfg.color:TX2}}>{c}</span>
-                      <span style={{fontSize:10,color:TX3,fontFamily:"var(--font-mono)"}}>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Quick links */}
-            <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:16,padding:"14px 16px"}}>
-              <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3,marginBottom:10}}>Quick Links</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {[
-                  {href:"/forum/new",label:"+ Beitrag erstellen",c:G},
-                  {href:"/marketplace",label:"◈ Marktplatz",c:TX3},
-                  {href:"/scanner",label:"◎ KI-Scanner",c:TX3},
-                  {href:"/leaderboard",label:"▲ Leaderboard",c:TX3},
-                ].map(l=>(
-                  <Link key={l.href} href={l.href} style={{fontSize:12,color:l.c,textDecoration:"none",padding:"3px 0",transition:"color .15s"}}>{l.label}</Link>
-                ))}
-              </div>
-            </div>
+                </Link>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
-      <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.5}}`}</style>
+      <style>{`@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.6}}`}</style>
     </div>
   );
 }

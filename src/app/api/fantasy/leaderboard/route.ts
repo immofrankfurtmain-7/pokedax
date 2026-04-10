@@ -1,8 +1,8 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { createRouteClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
-  const supabase = await createRouteClient(request);
+  const supabase = await createClient();
   const season = getCurrentSeason();
 
   const selectTeams = "id, name, season, user_id, profiles!fantasy_teams_user_id_fkey(username, avatar_url), fantasy_picks(bought_at_price, quantity, cards!fantasy_picks_card_id_fkey(price_market))";

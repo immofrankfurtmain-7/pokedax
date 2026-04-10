@@ -1,31 +1,19 @@
-﻿export const dynamic = "force-dynamic";
-import Link from "next/link";
-export const metadata = { title:"Datenschutz" };
-const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a";
-const BG1="#111113",BR2="rgba(255,255,255,0.085)";
+﻿"use client";
+const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f";
 export default function DatenschutzPage() {
-  const sections=[
-    {h:"Verantwortlicher",t:"PokéDax, Musterstraße 12, 80331 München. hello@pokedax.de"},
-    {h:"Erhobene Daten",t:"E-Mail, Benutzername, Scan-Verlauf, Wunschliste, Sammlung."},
-    {h:"Zweck",t:"Bereitstellung des PokéDax-Services."},
-    {h:"Speicherung",t:"EU-Server (Supabase). Passwörter als bcrypt-Hash."},
-    {h:"Weitergabe",t:"Keine Weitergabe an Dritte."},
-    {h:"Ihre Rechte",t:"Auskunft, Berichtigung, Löschung (Art. 15-18 DSGVO). Anfragen: hello@pokedax.de"},
-    {h:"Cookies",t:"Nur technisch notwendige Session-Cookies. Kein Tracking."},
-  ] as const;
-  return(
-    <div style={{minHeight:"80vh",color:TX1}}>
-      <div style={{maxWidth:680,margin:"0 auto",padding:"52px 28px"}}>
-        <h1 style={{fontSize:24,fontWeight:300,letterSpacing:"-.04em",marginBottom:6,fontFamily:"var(--font-display)"}}>Datenschutz</h1>
-        <p style={{fontSize:12.5,color:TX3,marginBottom:32}}>Gemäß DSGVO · Stand 2026</p>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {sections.map(s=>(
-            <div key={s.h} style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:14,padding:"18px 22px"}}>
-              <div style={{fontSize:10.5,fontWeight:600,letterSpacing:".08em",textTransform:"uppercase",color:TX3,marginBottom:8}}>{s.h}</div>
-              <div style={{fontSize:13.5,color:TX2,lineHeight:1.78}}>{s.t}</div>
-            </div>
-          ))}
-        </div>
+  return (
+    <div style={{color:TX1,minHeight:"80vh",maxWidth:720,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+      <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(26px,4vw,40px)",fontWeight:200,letterSpacing:"-.04em",marginBottom:24}}>Datenschutz</h1>
+      <div style={{fontSize:13,color:TX2,lineHeight:1.8}}>
+        <p style={{marginBottom:16}}>Der Schutz Ihrer persönlichen Daten ist uns wichtig. Diese Datenschutzerklärung informiert Sie über die Verarbeitung personenbezogener Daten auf pokédax.</p>
+        <h2 style={{fontSize:16,fontWeight:400,color:TX1,marginBottom:8,marginTop:20}}>Verantwortlicher</h2>
+        <p style={{marginBottom:16}}>Verantwortlich für die Datenverarbeitung ist der Betreiber von pokédax.</p>
+        <h2 style={{fontSize:16,fontWeight:400,color:TX1,marginBottom:8,marginTop:20}}>Datenerhebung</h2>
+        <p style={{marginBottom:16}}>Wir erheben nur Daten die für den Betrieb der Plattform notwendig sind: E-Mail-Adresse, Nutzername, Sammlungsdaten und Transaktionsdaten.</p>
+        <h2 style={{fontSize:16,fontWeight:400,color:TX1,marginBottom:8,marginTop:20}}>Cookies</h2>
+        <p style={{marginBottom:16}}>Wir verwenden technisch notwendige Cookies für die Authentifizierung.</p>
+        <h2 style={{fontSize:16,fontWeight:400,color:TX1,marginBottom:8,marginTop:20}}>Kontakt</h2>
+        <p>Bei Fragen zum Datenschutz kontaktieren Sie uns über das Impressum.</p>
       </div>
     </div>
   );

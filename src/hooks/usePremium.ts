@@ -1,45 +1,16 @@
 ﻿"use client";
-
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-
-interface PremiumState {
-  isPremium: boolean;
-  loading:   boolean;
-  userId:    string | null;
-}
-
-export function usePremium(): PremiumState {
-  const [state, setState] = useState<PremiumState>({
-    isPremium: false,
-    loading:   true,
-    userId:    null,
-  });
-
-  useEffect(() => {
-    const sb = createClient();
-    sb.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        setState({ isPremium: false, loading: false, userId: null });
-        return;
-      }
-      sb.from("profiles")
-        .select("is_premium, premium_until")
-        .eq("id", user.id)
-        .single()
-        .then(({ data }) => {
-          // Check if premium_until is in the future
-          const until = data?.premium_until
-            ? new Date(data.premium_until)
-            : null;
-          const isPremium =
-            data?.is_premium === true &&
-            (until === null || until > new Date());
-
-          setState({ isPremium, loading: false, userId: user.id });
-        });
+export function usePremium() {
+  const [isPremium, setIsPremium] = useState(false);
+  const [loading, setLoading] = useState(true);
+  useEffect(()=>{
+    createClient().auth.getSession().then(async({data:{session}})=>{
+      if(!session?.user){setLoading(false);return;}
+      const{data}=await createClient().from("profiles").select("is_premium").eq("id",session.user.id).single();
+      setIsPremium(data?.is_premium??false);
+      setLoading(false);
     });
-  }, []);
-
-  return state;
+  },[]);
+  return {isPremium, loading};
 }

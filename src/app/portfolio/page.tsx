@@ -11,7 +11,6 @@ export default function PortfolioPage() {
   const [col,     setCol]     = useState<any[]>([]);
   const [wish,    setWish]    = useState<any[]>([]);
   const [tab,     setTab]     = useState<"sammlung"|"wunschliste">("sammlung");
-  const [chartPeriod, setChartPeriod] = useState<"7T"|"30T"|"90T">("30T");
   const [loading, setLoading] = useState(true);
 
   useEffect(()=>{
@@ -57,7 +56,7 @@ export default function PortfolioPage() {
         </div>
 
         {/* Stats row */}
-        <div className="portfolio-stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:32}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:32}}>
           {[
             {l:"Sammlungswert",v:`${totalVal.toLocaleString("de-DE",{minimumFractionDigits:2})} €`,big:true},
             {l:"Karten gesamt",v:col.reduce((a,c)=>a+(c.quantity??1),0).toString()},
@@ -80,21 +79,15 @@ export default function PortfolioPage() {
               <div style={{fontFamily:"var(--font-display)",fontSize:"clamp(32px,4.5vw,52px)",fontWeight:300,letterSpacing:"-.055em",color:TX1,lineHeight:1}}>{totalVal.toFixed(0)} €</div>
             </div>
             <div style={{display:"flex",gap:4}}>
-              {(["7T","30T","90T"] as const).map((t)=>(
-                <button key={t} onClick={()=>setChartPeriod(t)} style={{
-                  padding:"5px 12px",borderRadius:10,fontSize:12,fontWeight:500,border:"none",cursor:"pointer",
-                  color:chartPeriod===t?TX1:TX3,
-                  background:chartPeriod===t?BG2:"transparent",
-                  transition:"all .2s",
-                }}>{t}</button>
+              {["7T","30T","90T"].map((t,i)=>(
+                <div key={t} style={{padding:"5px 12px",borderRadius:10,fontSize:12,fontWeight:500,color:i===1?TX1:TX3,background:i===1?BG2:"transparent",cursor:"pointer"}}>{t}</div>
               ))}
             </div>
           </div>
           <svg width="100%" height="60" viewBox="0 0 600 60" preserveAspectRatio="none" style={{display:"block",marginTop:16}}>
-            <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#E9A84B" stopOpacity=".18"/><stop offset="100%" stopColor="#E9A84B" stopOpacity="0"/></linearGradient></defs>
-            {chartPeriod==="7T"&&<><path d="M0 42 C60 40,90 35,130 28 S185 20,225 16 S280 13,320 11 S375 8,415 5 S468 2,510 1 S565 0,600 0 L600 60 L0 60Z" fill="url(#pg)"/><path d="M0 42 C60 40,90 35,130 28 S185 20,225 16 S280 13,320 11 S375 8,415 5 S468 2,510 1 S565 0,600 0" fill="none" stroke="#E9A84B" strokeWidth="1.5" opacity=".7"/></>}
-            {chartPeriod==="30T"&&<><path d="M0 52 C55 50,85 45,125 38 S180 28,220 22 S278 16,318 12 S372 8,412 5 S465 2,505 1 S562 0,600 0 L600 60 L0 60Z" fill="url(#pg)"/><path d="M0 52 C55 50,85 45,125 38 S180 28,220 22 S278 16,318 12 S372 8,412 5 S465 2,505 1 S562 0,600 0" fill="none" stroke="#E9A84B" strokeWidth="1.5" opacity=".7"/></>}
-            {chartPeriod==="90T"&&<><path d="M0 58 C70 55,110 50,150 44 S210 36,250 30 S300 22,340 16 S390 10,430 6 S480 2,520 1 S570 0,600 0 L600 60 L0 60Z" fill="url(#pg)"/><path d="M0 58 C70 55,110 50,150 44 S210 36,250 30 S300 22,340 16 S390 10,430 6 S480 2,520 1 S570 0,600 0" fill="none" stroke="#E9A84B" strokeWidth="1.5" opacity=".7"/></>}
+            <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#E9A84B" stopOpacity=".2"/><stop offset="100%" stopColor="#E9A84B" stopOpacity="0"/></linearGradient></defs>
+            <path d="M0 46 C80 44,140 38,200 30 S290 20,360 15 S450 8,520 5 S575 2,600 1 L600 60 L0 60Z" fill="url(#pg)"/>
+            <path d="M0 46 C80 44,140 38,200 30 S290 20,360 15 S450 8,520 5 S575 2,600 1" fill="none" stroke="#E9A84B" strokeWidth="1.5" opacity=".7"/>
           </svg>
         </div>
 

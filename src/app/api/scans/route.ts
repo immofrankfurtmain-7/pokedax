@@ -1,22 +1,21 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createRouteClient } from "@/lib/supabase/server";
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+export const dynamic = "force-dynamic";
 
-    const body = await request.json().catch(() => ({}));
-    const { card_id, scan_type = "manual" } = body;
+export async function GET(request: NextRequest) {
+  const supabase = await createRouteClient(request);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ count: 0, max: 5 });
 
-    await supabase.from("scan_logs").insert({
-      user_id:   user?.id || null,
-      card_id:   card_id  || null,
-      scan_type,
-    });
+  const today = new Date().toISOString().split("T")[0];
+  const { count } = await supabase.from("scan_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", today + "T00:00:00Z");
 
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    return NextResponse.json({ ok: false });
-  }
+  const { data: profile } = await supabase.from("profiles")
+    .select("is_premium").eq("id", user.id).single();
+
+  return NextResponse.json({ count: count ?? 0, max: profile?.is_premium ? 9999 : 5 });
 }

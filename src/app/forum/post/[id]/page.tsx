@@ -1,510 +1,108 @@
 ﻿"use client";
-
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-// icons replaced with inline
 
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  category_id: string;
-  author_id: string;
-  reply_count: number;
-  upvotes: number;
-  view_count: number;
-  is_pinned: boolean;
-  is_locked: boolean;
-  is_hot: boolean;
-  tags: string[];
-  created_at: string;
-  profiles: {
-    username: string;
-    avatar_url: string | null;
-    forum_role: string;
-    post_count: number;
-    badge_trainer: boolean;
-    badge_gym_leader: boolean;
-    badge_elite4: boolean;
-    badge_champion: boolean;
-    is_premium: boolean;
-  };
-}
+const G="#D4A843",G18="rgba(212,168,67,0.18)";
+const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
+const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
 
-interface Reply {
-  id: string;
-  content: string;
-  author_id: string;
-  upvotes: number;
-  created_at: string;
-  profiles: {
-    username: string;
-    avatar_url: string | null;
-    forum_role: string;
-    post_count: number;
-    badge_trainer: boolean;
-    badge_gym_leader: boolean;
-    badge_elite4: boolean;
-    badge_champion: boolean;
-    is_premium: boolean;
-  };
-}
-
-const CATEGORY_STYLES: Record<string, { color: string; glow: string; label: string }> = {
-  marktplatz:  { color: "#c864ff", glow: "rgba(200,100,255,0.3)", label: "Marktplatz" },
-  preise:      { color: "#00c8ff", glow: "rgba(0,200,255,0.3)",   label: "Preise" },
-  "fake-check":{ color: "#ff9600", glow: "rgba(255,150,0,0.3)",   label: "Fake-Check" },
-  news:        { color: "#00ff96", glow: "rgba(0,255,150,0.3)",   label: "News" },
-  einsteiger:  { color: "#ffdc00", glow: "rgba(255,220,0,0.3)",   label: "Einsteiger" },
-  turniere:    { color: "#ff3c3c", glow: "rgba(255,60,60,0.3)",   label: "Turniere" },
-  premium:     { color: "#ffd700", glow: "rgba(255,215,0,0.4)",   label: "Premium" },
+const CAT_CONFIG:Record<string,{color:string;icon:string}>={
+  Preisdiskussion:{color:"#E9A84B",icon:"◈"},Neuigkeiten:{color:"#60A5FA",icon:"◉"},
+  Einsteiger:{color:"#34D399",icon:"◎"},Sammlung:{color:"#A78BFA",icon:"◇"},
+  Strategie:{color:"#F472B6",icon:"◆"},Tausch:{color:"#38BDF8",icon:"◈"},
+  "Fake-Check":{color:"#FB923C",icon:"⚠"},Marktplatz:{color:"#C084FC",icon:"◉"},
 };
 
-function getBadgeIcon(profile: Post["profiles"] | Reply["profiles"]) {
-  if (profile.badge_champion)   return { icon: "🏆", label: "Champion",     color: "#ffd700" };
-  if (profile.badge_elite4)     return { icon: "⭐",   label: "Top Vier",      color: "#c864ff" };
-  if (profile.badge_gym_leader) return { icon: "🛡", label: "Arenaleiter",  color: "#00c8ff" };
-  if (profile.badge_trainer)    return { icon: "⚡",    label: "Trainer",       color: "#00ff96" };
-  return null;
-}
+function timeAgo(d:string){const h=Math.floor((Date.now()-new Date(d).getTime())/3600000);if(h<1)return"Gerade";if(h<24)return`vor ${h} Std.`;return`vor ${Math.floor(h/24)} T.`;}
 
-function getRoleStyle(role: string) {
-  if (role === "admin")     return { color: "#ff4444", label: "ADMIN" };
-  if (role === "moderator") return { color: "#00ccff", label: "MOD" };
-  return null;
-}
-
-function Avatar({ profile, size = 40 }: { profile: Post["profiles"] | Reply["profiles"]; size?: number }) {
-  const role = getRoleStyle(profile.forum_role);
-  const badge = getBadgeIcon(profile);
-  const ringColor = role?.color || badge?.color || "rgba(255,255,255,0.2)";
-
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      {profile.avatar_url ? (
-        <img
-          src={profile.avatar_url}
-          alt={profile.username}
-          className="rounded-full object-cover"
-          style={{
-            width: size, height: size,
-            border: `2px solid ${ringColor}`,
-            boxShadow: `0 0 8px ${ringColor}60`,
-          }}
-        />
-      ) : (
-        <div
-          className="rounded-full flex items-center justify-center font-bold"
-          style={{
-            width: size, height: size,
-            background: `linear-gradient(135deg, ${ringColor}40, ${ringColor}20)`,
-            border: `2px solid ${ringColor}`,
-            boxShadow: `0 0 8px ${ringColor}60`,
-            color: ringColor,
-            fontSize: size * 0.35,
-          }}
-        >
-          {profile.username?.[0]?.toUpperCase() || "?"}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UserInfo({ profile }: { profile: Post["profiles"] | Reply["profiles"] }) {
-  const role = getRoleStyle(profile.forum_role);
-  const badge = getBadgeIcon(profile);
-
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="font-bold text-white" style={{ fontSize: "13px" }}>
-          <a href={`/profil/${profile.username}`} style={{ color:"inherit", textDecoration:"none" }}>
-            {profile.username}
-          </a>
-        </span>
-        {role && (
-          <span
-            className="px-1.5 rounded text-white"
-            style={{
-              background: `${role.color}30`,
-              border: `1px solid ${role.color}60`,
-              color: role.color,
-              fontSize: "9px",
-              fontWeight: 700,
-              letterSpacing: "0.05em",
-            }}
-          >
-            {role.label}
-          </span>
-        )}
-        {badge && (
-          <span
-            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full"
-            style={{
-              background: `${badge.color}20`,
-              border: `1px solid ${badge.color}40`,
-              color: badge.color,
-              fontSize: "9px",
-            }}
-          >
-            {badge.icon}
-            {badge.label}
-          </span>
-        )}
-        {profile.is_premium && (
-          <span
-            className="px-1.5 rounded"
-            style={{
-              background: "rgba(255,215,0,0.15)",
-              border: "1px solid rgba(255,215,0,0.4)",
-              color: "#ffd700",
-              fontSize: "9px",
-              fontWeight: 600,
-            }}
-          >
-            PREMIUM
-          </span>
-        )}
-      </div>
-      <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px", marginTop: "1px" }}>
-        {profile.post_count} Beiträge
-      </p>
-    </div>
-  );
-}
-
-export default function PostDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const postId = params.id as string;
-
-  const [post, setPost] = useState<Post | null>(null);
-  const [replies, setReplies] = useState<Reply[]>([]);
+export default function ForumPostPage() {
+  const {id} = useParams() as {id:string};
+  const [post, setPost] = useState<any>(null);
+  const [replies, setReplies] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [replyContent, setReplyContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [liked, setLiked] = useState(false);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadPost();
-    loadUser();
-  }, [postId]);
-
-  async function loadUser() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
-  }
-
-  async function loadPost() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/forum/post/${postId}`);
-      const data = await res.json();
-      setPost(data.post);
-      setReplies(data.replies || []);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleLike() {
-    if (!currentUser) return;
-    setLiked(!liked);
-    await fetch("/api/forum/like", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: postId }),
-    });
-  }
-
-  async function handleReply() {
-    if (!replyContent.trim() || !currentUser) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/forum/reply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ post_id: postId, content: replyContent }),
-      });
-      if (res.ok) {
-        setReplyContent("");
-        loadPost();
+  useEffect(()=>{
+    const sb=createClient();
+    sb.auth.getSession().then(({data:{session}})=>setUser(session?.user??null));
+    // Load post
+    sb.from("forum_posts").select("*,profiles(username,is_premium),forum_categories(name)").eq("id",id).single().then(({data})=>{
+      if(data){
+        setPost({...data,
+          profiles:Array.isArray(data.profiles)?data.profiles[0]:data.profiles,
+          forum_categories:Array.isArray(data.forum_categories)?data.forum_categories[0]:data.forum_categories,
+        });
       }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handleReport() {
-    if (!currentUser) return;
-    const reason = prompt("Grund der Meldung:");
-    if (!reason) return;
-    await fetch("/api/forum/report", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: postId, reason }),
+      setLoading(false);
     });
-    alert("Beitrag wurde gemeldet. Danke!");
+    // Load replies
+    fetch(`/api/forum/replies?post_id=${id}`).then(r=>r.json()).then(d=>setReplies(d.replies??[]));
+  },[id]);
+
+  async function submitReply(){
+    if(!replyContent.trim()) return;
+    setSubmitting(true);setError("");
+    const sb=createClient();
+    const{data:{session}}=await sb.auth.getSession();
+    const h:Record<string,string>={"Content-Type":"application/json"};
+    if(session?.access_token) h["Authorization"]=`Bearer ${session.access_token}`;
+    const res=await fetch("/api/forum/replies",{method:"POST",headers:h,body:JSON.stringify({post_id:id,content:replyContent.trim()})});
+    const data=await res.json();
+    if(!res.ok){setError(data.error??"Fehler.");setSubmitting(false);return;}
+    setReplies(prev=>[...prev,data.reply]);
+    setReplyContent("");
+    setSubmitting(false);
   }
 
-  const catStyle = post ? (CATEGORY_STYLES[post.category_id] || CATEGORY_STYLES["news"]) : CATEGORY_STYLES["news"];
+  if(loading) return <div style={{color:TX1,minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:14,color:TX3}}>Lädt…</div></div>;
+  if(!post) return <div style={{color:TX1,minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div><div style={{fontSize:14,color:TX3,marginBottom:12}}>Beitrag nicht gefunden.</div><Link href="/forum" style={{color:G,textDecoration:"none",fontSize:13}}>← Forum</Link></div></div>;
 
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "linear-gradient(180deg, #080010 0%, #0d0020 100%)" }}
-      >
-        <div
-          className="w-8 h-8 rounded-full animate-spin"
-          style={{ border: "2px solid rgba(255,255,255,0.1)", borderTopColor: "#00ffff" }}
-        />
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center"
-        style={{ background: "linear-gradient(180deg, #080010 0%, #0d0020 100%)" }}
-      >
-        <p className="text-white mb-4">Beitrag nicht gefunden.</p>
-        <Link href="/forum" className="text-cyan-400 hover:underline">← Zurück zum Forum</Link>
-      </div>
-    );
-  }
+  const catName=post.forum_categories?.name??"Forum";
+  const cfg=CAT_CONFIG[catName]??{color:G,icon:"●"};
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: "linear-gradient(180deg, #080010 0%, #0d0020 50%, #050010 100%)", color: "white" }}
-    >
-      {/* Top accent line */}
-      <div style={{ height: "2px", background: `linear-gradient(90deg, transparent, ${catStyle.color}, transparent)` }} />
+    <div style={{color:TX1,minHeight:"80vh"}}>
+      <div style={{maxWidth:760,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+        <Link href="/forum" style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,color:TX3,textDecoration:"none",marginBottom:24}}>← Forum</Link>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Back link */}
-        <Link
-          href="/forum"
-          className="inline-flex items-center gap-2 mb-6 transition-colors hover:text-white"
-          style={{ color: "rgba(255,255,255,0.4)", fontSize: "13px" }}
-        >
-          ←
-          Zurück zum Forum
-        </Link>
-
-        {/* Category pill */}
-        <div className="mb-4">
-          <span
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold"
-            style={{
-              background: `${catStyle.glow}`,
-              border: `1px solid ${catStyle.color}60`,
-              color: catStyle.color,
-              letterSpacing: "0.05em",
-            }}
-          >
-            {catStyle.label}
-          </span>
-          {post.is_pinned && (
-            <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs" style={{ color: "#00ffff", background: "rgba(0,255,255,0.1)" }}>
-              📌 Angeheftet
-            </span>
-          )}
-          {post.is_locked && (
-            <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs" style={{ color: "#ff8800", background: "rgba(255,136,0,0.1)" }}>
-              🔒 Gesperrt
-            </span>
-          )}
-          {post.is_hot && (
-            <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs" style={{ color: "#ff4444", background: "rgba(255,68,68,0.1)" }}>
-              🔥 Hot
-            </span>
-          )}
-        </div>
-
-        {/* Post card */}
-        <div
-          className="rounded-2xl overflow-hidden mb-6"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-            border: `1px solid ${catStyle.color}30`,
-            boxShadow: `0 0 40px ${catStyle.glow}20`,
-          }}
-        >
-          {/* Post header */}
-          <div className="p-6" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <h1
-              className="text-2xl font-black mb-5 leading-tight"
-              style={{ color: "white", letterSpacing: "-0.01em" }}
-            >
-              {post.title}
-            </h1>
-
-            {/* Author row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Avatar profile={post.profiles} size={44} />
-                <UserInfo profile={post.profiles} />
-              </div>
-              <div className="flex items-center gap-4" style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>
-                <div className="flex items-center gap-1">
-                  👁
-                  {post.view_count}
-                </div>
-                <span>{new Date(post.created_at).toLocaleDateString("de-DE")}</span>
-              </div>
+        {/* Post */}
+        <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:18,overflow:"hidden",marginBottom:14}}>
+          <div style={{padding:"20px 22px",borderBottom:`0.5px solid ${BR1}`}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:`${cfg.color}12`,border:`0.5px solid ${cfg.color}25`,marginBottom:12}}>
+              <span style={{fontSize:10,color:cfg.color}}>{cfg.icon}</span>
+              <span style={{fontSize:10,fontWeight:600,color:cfg.color,letterSpacing:".04em"}}>{catName.toUpperCase()}</span>
+            </div>
+            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(18px,3vw,28px)",fontWeight:300,letterSpacing:"-.03em",marginBottom:14,lineHeight:1.3}}>{post.title}</h1>
+            <div style={{display:"flex",alignItems:"center",gap:10,fontSize:11,color:TX3}}>
+              <span>@{post.profiles?.username??"Anonym"}</span>
+              {post.profiles?.is_premium&&<span style={{color:G,fontSize:9}}>✦</span>}
+              <span>·</span><span>{timeAgo(post.created_at)}</span>
+              <span>·</span><span>↑ {post.upvotes??0}</span>
+              {post.reply_count>0&&<><span>·</span><span>💬 {post.reply_count}</span></>}
             </div>
           </div>
-
-          {/* Post content */}
-          <div className="p-6">
-            <div
-              className="leading-relaxed whitespace-pre-wrap"
-              style={{ color: "rgba(255,255,255,0.8)", fontSize: "15px", lineHeight: 1.7 }}
-            >
-              {post.content}
-            </div>
-
-            {/* Tags */}
-            {post.tags && post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-5">
-                {post.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 rounded-full"
-                    style={{
-                      background: `${catStyle.color}15`,
-                      border: `1px solid ${catStyle.color}30`,
-                      color: catStyle.color,
-                      fontSize: "11px",
-                    }}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Post actions */}
-          <div
-            className="flex items-center justify-between px-6 py-3"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-          >
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleLike}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all"
-                style={{
-                  background: liked ? "rgba(255,100,100,0.15)" : "rgba(255,255,255,0.05)",
-                  border: liked ? "1px solid rgba(255,100,100,0.4)" : "1px solid rgba(255,255,255,0.1)",
-                  color: liked ? "#ff6464" : "rgba(255,255,255,0.4)",
-                  fontSize: "12px",
-                  cursor: currentUser ? "pointer" : "not-allowed",
-                }}
-              >
-                ♥
-                {post.upvotes + (liked ? 1 : 0)}
-              </button>
-
-              <div className="flex items-center gap-1.5" style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>
-                💬
-                {post.reply_count} Antworten
-              </div>
-            </div>
-
-            {currentUser && (
-              <button
-                onClick={handleReport}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
-                style={{
-                  color: "rgba(255,255,255,0.25)",
-                  fontSize: "11px",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-              >
-                ⚑
-                Melden
-              </button>
-            )}
-          </div>
+          <div style={{padding:"20px 22px",fontSize:14,color:TX2,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{post.content}</div>
         </div>
 
         {/* Replies */}
-        {replies.length > 0 && (
-          <div className="mb-6">
-            <h2
-              className="text-sm font-bold uppercase tracking-widest mb-4"
-              style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.2em" }}
-            >
-              {replies.length} Antwort{replies.length !== 1 ? "en" : ""}
-            </h2>
-            <div className="space-y-3">
-              {replies.map((reply, idx) => (
-                <div
-                  key={reply.id}
-                  className="rounded-xl p-4"
-                  style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                  }}
-                >
-                  <div className="flex gap-3">
-                    {/* Number */}
-                    <div
-                      className="shrink-0 flex items-start justify-center mt-0.5"
-                      style={{ width: "20px", color: "rgba(255,255,255,0.15)", fontSize: "11px", fontWeight: 600 }}
-                    >
-                      #{idx + 1}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      {/* Author */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <Avatar profile={reply.profiles} size={32} />
-                        <UserInfo profile={reply.profiles} />
-                        <span className="ml-auto" style={{ color: "rgba(255,255,255,0.25)", fontSize: "11px" }}>
-                          {new Date(reply.created_at).toLocaleDateString("de-DE")}
-                        </span>
-                      </div>
-
-                      {/* Content */}
-                      <p
-                        className="whitespace-pre-wrap"
-                        style={{ color: "rgba(255,255,255,0.75)", fontSize: "14px", lineHeight: 1.6 }}
-                      >
-                        {reply.content}
-                      </p>
-
-                      {/* Like */}
-                      <div className="flex items-center gap-2 mt-3">
-                        <button
-                          className="flex items-center gap-1 text-xs transition-colors"
-                          style={{ color: "rgba(255,255,255,0.25)", background: "none", border: "none", cursor: "pointer" }}
-                          onClick={async () => {
-                            if (!currentUser) return;
-                            await fetch("/api/forum/like", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ reply_id: reply.id }),
-                            });
-                          }}
-                        >
-                          ▲
-                          {reply.upvotes || 0}
-                        </button>
-                      </div>
-                    </div>
+        {replies.length>0&&(
+          <div style={{marginBottom:14}}>
+            <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3,marginBottom:10}}>{replies.length} {replies.length===1?"Antwort":"Antworten"}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {replies.map((r:any)=>(
+                <div key={r.id} style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:14,padding:"14px 18px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,fontSize:11,color:TX3}}>
+                    <span style={{color:TX2}}>@{r.profiles?.username??"Anonym"}</span>
+                    {r.profiles?.is_premium&&<span style={{color:G,fontSize:9}}>✦</span>}
+                    <span>·</span><span>{timeAgo(r.created_at)}</span>
+                    <span style={{marginLeft:"auto"}}>↑ {r.upvotes??0}</span>
                   </div>
+                  <div style={{fontSize:13,color:TX2,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{r.content}</div>
                 </div>
               ))}
             </div>
@@ -512,97 +110,26 @@ export default function PostDetailPage() {
         )}
 
         {/* Reply form */}
-        {!post.is_locked && (
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: "rgba(255,255,255,0.03)",
-              border: `1px solid ${catStyle.color}20`,
-            }}
-          >
-            <div className="p-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              <h2
-                className="text-sm font-bold uppercase tracking-widest"
-                style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.2em" }}
-              >
-                Antworten
-              </h2>
+        <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,padding:"18px"}}>
+          <div style={{fontSize:11,fontWeight:500,color:TX1,marginBottom:12}}>Antworten</div>
+          {user?(
+            <>
+              <textarea value={replyContent} onChange={e=>setReplyContent(e.target.value)} rows={4}
+                placeholder="Deine Antwort…"
+                style={{width:"100%",padding:"11px 14px",borderRadius:10,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:13,outline:"none",fontFamily:"inherit",resize:"vertical",lineHeight:1.7,marginBottom:10}}/>
+              {error&&<div style={{fontSize:12,color:RED,marginBottom:8}}>{error}</div>}
+              <button onClick={submitReply} disabled={submitting||!replyContent.trim()} style={{padding:"10px 22px",borderRadius:10,background:replyContent.trim()?G:"rgba(255,255,255,0.04)",color:replyContent.trim()?"#0a0808":TX3,border:"none",cursor:replyContent.trim()?"pointer":"default",fontSize:13,float:"right"}}>
+                {submitting?"Sende…":"Antwort senden →"}
+              </button>
+              <div style={{clear:"both"}}/>
+            </>
+          ):(
+            <div style={{textAlign:"center",padding:"16px"}}>
+              <div style={{fontSize:12,color:TX3,marginBottom:8}}>Bitte anmelden um zu antworten.</div>
+              <Link href="/auth/login" style={{fontSize:13,color:G,textDecoration:"none"}}>Anmelden →</Link>
             </div>
-            <div className="p-4">
-              {currentUser ? (
-                <>
-                  <textarea
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Schreibe deine Antwort..."
-                    rows={4}
-                    className="w-full rounded-xl px-4 py-3 resize-none focus:outline-none transition-all"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      color: "white",
-                      fontSize: "14px",
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.border = `1px solid ${catStyle.color}50`;
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.border = "1px solid rgba(255,255,255,0.1)";
-                    }}
-                  />
-                  <div className="flex justify-end mt-3">
-                    <button
-                      onClick={handleReply}
-                      disabled={submitting || !replyContent.trim()}
-                      className="flex items-center gap-2 px-5 py-2 rounded-xl font-bold transition-all"
-                      style={{
-                        background: replyContent.trim()
-                          ? `linear-gradient(135deg, ${catStyle.color}40, ${catStyle.color}20)`
-                          : "rgba(255,255,255,0.05)",
-                        border: `1px solid ${replyContent.trim() ? catStyle.color + "60" : "rgba(255,255,255,0.1)"}`,
-                        color: replyContent.trim() ? catStyle.color : "rgba(255,255,255,0.3)",
-                        fontSize: "13px",
-                        cursor: replyContent.trim() ? "pointer" : "not-allowed",
-                      }}
-                    >
-                      →
-                      {submitting ? "Senden..." : "Antworten"}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-4">
-                  <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "14px", marginBottom: "12px" }}>
-                    Du musst eingeloggt sein, um zu antworten.
-                  </p>
-                  <Link
-                    href="/auth/login"
-                    className="px-4 py-2 rounded-xl font-bold text-sm"
-                    style={{
-                      background: `${catStyle.color}20`,
-                      border: `1px solid ${catStyle.color}50`,
-                      color: catStyle.color,
-                    }}
-                  >
-                    Einloggen
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {post.is_locked && (
-          <div
-            className="rounded-xl p-4 flex items-center gap-3"
-            style={{ background: "rgba(255,136,0,0.08)", border: "1px solid rgba(255,136,0,0.2)" }}
-          >
-            🔒
-            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "13px" }}>
-              Dieser Beitrag wurde gesperrt. Neue Antworten sind nicht möglich.
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

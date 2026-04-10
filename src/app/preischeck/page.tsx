@@ -1,6 +1,5 @@
 ﻿"use client";
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
@@ -26,22 +25,16 @@ interface Card {
 }
 
 export default function PreischeckPage() {
-  const searchParams = useSearchParams();
-  const [query,     setQuery]     = useState(searchParams.get("q")??"");
-  const [setFilter, setSetFilter] = useState(searchParams.get("set")??"");
-  const [sort,      setSort]      = useState("price_desc");
-  const [cards,     setCards]     = useState<Card[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [total,     setTotal]     = useState(0);
-  const [selectedCard, setSelectedCard] = useState<Card|null>(null);
-  const [sets,      setSets]      = useState<{id:string;name:string;series:string|null}[]>([]);
-  const [showSetDrop, setShowSetDrop] = useState(false);
+  const [query,  setQuery]  = useState("");
+  const [sort,   setSort]   = useState("price_desc");
+  const [cards,  setCards]  = useState<Card[]>([]);
+  const [loading,setLoading]= useState(true);
+  const [total,  setTotal]  = useState(0);
 
-  const load = useCallback(async (q:string, s:string, setId?:string) => {
+  const load = useCallback(async (q:string, s:string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ q, sort:s, limit:"24" });
-      if (setId) params.set("set", setId);
       const r = await fetch(`/api/cards/search?${params}`);
       const d = await r.json();
       setCards(d.cards ?? []);
@@ -50,19 +43,11 @@ export default function PreischeckPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    const q = searchParams.get("q")??"";
-    const set = searchParams.get("set")??"";
-    setQuery(q);
-    setSetFilter(set);
-    load(q, "price_desc", set);
-    // Load sets for filter dropdown
-    fetch("/api/cards/sets").then(r=>r.json()).then(d=>setSets(d.sets??[]));
-  }, []);
+  useEffect(() => { load("", "price_desc"); }, [load]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    load(query, sort, setFilter);
+    load(query, sort);
   };
 
   function fmt(n:number) {
@@ -115,42 +100,9 @@ export default function PreischeckPage() {
                 }}
               />
             </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-              {/* Set filter */}
-              <div style={{position:"relative"}}>
-                <button type="button" onClick={()=>setShowSetDrop(v=>!v)} style={{
-                  padding:"10px 18px",borderRadius:14,fontSize:13,fontWeight:500,cursor:"pointer",
-                  background:setFilter?"rgba(212,168,67,0.08)":"transparent",
-                  color:setFilter?"#D4A843":TX3,border:"none",
-                  outline:`1px solid ${setFilter?"rgba(212,168,67,0.25)":"rgba(255,255,255,0.08)"}`,
-                  transition:"all .15s",display:"flex",alignItems:"center",gap:6,
-                }}>
-                  {setFilter ? sets.find(s=>s.id===setFilter)?.name??setFilter.toUpperCase() : "Alle Sets"}
-                  <span style={{fontSize:9,opacity:.6}}>▾</span>
-                </button>
-                {showSetDrop&&(
-                  <div style={{
-                    position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:50,
-                    background:"#18181c",border:"1px solid rgba(255,255,255,0.085)",
-                    borderRadius:14,overflow:"hidden",minWidth:220,maxHeight:320,overflowY:"auto",
-                    boxShadow:"0 16px 48px rgba(0,0,0,0.5)",
-                  }}>
-                    <button onClick={()=>{setSetFilter("");setShowSetDrop(false);load(query,sort,"");}} style={{
-                      width:"100%",padding:"10px 16px",background:"transparent",border:"none",
-                      color:TX2,fontSize:13,textAlign:"left",cursor:"pointer",borderBottom:"1px solid rgba(255,255,255,0.045)",
-                    }}>Alle Sets</button>
-                    {sets.map(s=>(
-                      <button key={s.id} onClick={()=>{setSetFilter(s.id);setShowSetDrop(false);load(query,sort,s.id);}} style={{
-                        width:"100%",padding:"10px 16px",background:setFilter===s.id?"rgba(212,168,67,0.06)":"transparent",
-                        border:"none",color:setFilter===s.id?"#D4A843":TX2,fontSize:12,textAlign:"left",cursor:"pointer",
-                        borderBottom:"1px solid rgba(255,255,255,0.03)",
-                      }}>{s.name}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               {SORTS.map(s=>(
-                <button key={s.v} type="button" onClick={()=>{setSort(s.v);load(query,s.v,setFilter);}} style={{
+                <button key={s.v} type="button" onClick={()=>{setSort(s.v);load(query,s.v);}} style={{
                   padding:"10px 18px",borderRadius:14,fontSize:13,fontWeight:500,
                   cursor:"pointer",border:"none",transition:"all .15s",
                   background:sort===s.v?G08:"transparent",
@@ -196,7 +148,7 @@ export default function PreischeckPage() {
                 ? ((card.price_market??0)-card.price_avg30)/card.price_avg30*100 : null;
               const pctCapped = pct!==null ? Math.min(Math.abs(pct),99)*Math.sign(pct) : null;
               return (
-                <Link key={card.id} href={`/preischeck/${card.id}`}
+                <Link key={card.id} href={`/preischeck?q=${encodeURIComponent(card.name)}`}
                   className="card-hover"
                   style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:24,overflow:"hidden",textDecoration:"none",display:"block",position:"relative"}}>
                   {/* Image */}
