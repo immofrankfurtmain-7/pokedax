@@ -15,6 +15,7 @@ const NAV_LINKS = [
 ];
 
 const DROPDOWN_LINKS = [
+  { href: "/dashboard",          label: "Dashboard",     icon: "✦" },
   { href: "/portfolio",          label: "Portfolio",     icon: "◈" },
   { href: "/scanner",            label: "Scanner",       icon: "⊙" },
   { href: "/sets",               label: "Sets",          icon: "◫" },
