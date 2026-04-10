@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("marketplace_listings")
-    .insert({ user_id: user.id, card_id, type, price, condition, note })
+    .insert({ user_id: user.id, seller_id: user.id, card_id, type, price, condition, note, is_active: true, status: 'active' })
     .select()
     .single();
 

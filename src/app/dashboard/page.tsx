@@ -80,6 +80,15 @@ export default function DashboardPage() {
   const hour=new Date().getHours();
   const greeting=hour<12?"Guten Morgen":hour<17?"Guten Tag":"Guten Abend";
 
+  async function deleteListing(id:string) {
+    const sb = createClient();
+    const {data:{session}} = await sb.auth.getSession();
+    const h:Record<string,string> = {};
+    if (session?.access_token) h["Authorization"] = `Bearer ${session.access_token}`;
+    await fetch(`/api/marketplace?id=${id}`, { method:"DELETE", headers:h });
+    setListings(prev => prev.filter(l => l.id !== id));
+  }
+
   async function loadEscrows(sb:any, uid:string) {
     const {data} = await sb.from("escrow_transactions")
       .select("id,status,gross_amount,created_at,seller_id,buyer_id,tracking_number,auto_release_at")
@@ -157,7 +166,10 @@ export default function DashboardPage() {
                 <div key={l.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 16px",borderBottom:i<listings.length-1?`0.5px solid ${BR1}`:undefined}}>
                   <div style={{width:28,height:38,borderRadius:4,background:BG2,overflow:"hidden",flexShrink:0}}>{card?.image_url&&<img src={card.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>}</div>
                   <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:TX1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card?.name_de||card?.name}</div><div style={{fontSize:10,color:TX3}}>{l.condition}</div></div>
-                  <div style={{fontSize:13,fontFamily:"var(--font-mono)",fontWeight:300,color:G,flexShrink:0}}>{l.price?.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                    <div style={{fontSize:13,fontFamily:"var(--font-mono)",fontWeight:300,color:G}}>{l.price?.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>
+                    <button onClick={()=>deleteListing(l.id)} style={{width:20,height:20,borderRadius:5,background:"transparent",border:"0.5px solid rgba(220,74,90,0.2)",color:"#dc4a5a",cursor:"pointer",fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>×</button>
+                  </div>
                 </div>
               );})}
             </div>

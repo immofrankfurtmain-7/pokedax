@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
 
   if (q) query = query.or(`name.ilike.%${q}%,name_de.ilike.%${q}%`);
   if (set) query = query.eq("set_id", set);
+  const holo = searchParams.get("holo");
+  if (holo === "1") query = query.eq("is_holo", true);
   query = query.not("price_market", "is", null);
 
   switch (sort) {

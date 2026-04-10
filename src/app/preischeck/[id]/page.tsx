@@ -56,12 +56,14 @@ export default function CardDetailPage() {
   const [inWish, setInWish] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [adding, setAdding] = useState(false);
-  const [priceHistory, setPriceHistory] = useState<any[]>([]);
+  const [priceHistory,  setPriceHistory]  = useState<any[]>([]);
+  const [forumPosts,    setForumPosts]    = useState<any[]>([]);
 
   useEffect(()=>{
     const sb=createClient();
     sb.from("cards").select("id,name,name_de,set_id,number,types,rarity,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo").eq("id",id).single().then(({data})=>{setCard(data);setLoading(false);});
     sb.from("price_history").select("price_market,recorded_at").eq("card_id",id).order("recorded_at",{ascending:false}).limit(30).then(({data})=>setPriceHistory(data??[]));
+    sb.from("forum_posts").select("id,title,upvotes,created_at,profiles(username)").eq("card_id",id).eq("is_deleted",false).order("created_at",{ascending:false}).limit(5).then(({data})=>setForumPosts((data??[]).map((p:any)=>({...p,profiles:Array.isArray(p.profiles)?p.profiles[0]:p.profiles}))));
     sb.auth.getSession().then(async({data:{session}})=>{
       if(!session?.user) return;
       setUser(session.user);
@@ -153,9 +155,35 @@ export default function CardDetailPage() {
                 ))}
               </div>
             </div>
-            <Link href="/marketplace" style={{display:"block",padding:"11px 14px",borderRadius:12,background:G08,border:`0.5px solid ${G18}`,color:TX1,textDecoration:"none",fontSize:13,transition:"all .2s"}}>
+            <Link href="/marketplace" style={{display:"block",padding:"11px 14px",borderRadius:12,background:G08,border:`0.5px solid ${G18}`,color:TX1,textDecoration:"none",fontSize:13,transition:"all .2s",marginBottom:10}}>
               <span style={{color:G}}>◈</span> Angebote auf dem Marktplatz →
             </Link>
+
+            {/* Forum discussions */}
+            {forumPosts.length > 0 && (
+              <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:14,overflow:"hidden"}}>
+                <div style={{padding:"10px 14px",borderBottom:`0.5px solid ${BR1}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>
+                    💬 {forumPosts.length} Diskussion{forumPosts.length!==1?"en":""}
+                  </div>
+                  <Link href="/forum" style={{fontSize:11,color:TX3,textDecoration:"none"}}>Forum →</Link>
+                </div>
+                {forumPosts.map((post:any,i:number)=>(
+                  <Link key={post.id} href={`/forum/post/${post.id}`} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderBottom:i<forumPosts.length-1?`0.5px solid ${BR1}`:undefined,textDecoration:"none"}}>
+                    <div style={{flex:1,fontSize:12,color:TX2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.title}</div>
+                    <div style={{fontSize:10,color:TX3,flexShrink:0}}>↑{post.upvotes}</div>
+                  </Link>
+                ))}
+                <Link href="/forum/new" style={{display:"block",padding:"9px 14px",fontSize:11,color:G,textDecoration:"none",borderTop:`0.5px solid ${BR1}`}}>
+                  + Diskussion starten
+                </Link>
+              </div>
+            )}
+            {forumPosts.length === 0 && (
+              <Link href="/forum/new" style={{display:"block",padding:"10px 14px",borderRadius:12,background:"transparent",border:`0.5px solid ${BR1}`,color:TX3,textDecoration:"none",fontSize:12,textAlign:"center"}}>
+                💬 Erste Diskussion starten →
+              </Link>
+            )}
           </div>
         </div>
       </div>

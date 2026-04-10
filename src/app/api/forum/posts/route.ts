@@ -24,12 +24,12 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
-  const { category_id, title, content, tags } = await request.json();
+  const { category_id, title, content, tags, card_id } = await request.json();
   if (!category_id || !title?.trim() || !content?.trim())
     return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
 
   const { data, error } = await supabase.from("forum_posts")
-    .insert({ category_id, author_id: user.id, title: title.trim(), content: content.trim(),
+    .insert({ category_id, author_id: user.id, title: title.trim(), content: content.trim(), card_id: card_id ?? null,
       tags: tags || [], upvotes: 0, reply_count: 0, view_count: 0,
       is_pinned: false, is_locked: false, is_deleted: false, is_hot: false })
     .select("id").single();

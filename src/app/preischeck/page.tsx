@@ -27,6 +27,10 @@ interface Card {
 export default function PreischeckPage() {
   const [query,  setQuery]  = useState("");
   const [sort,   setSort]   = useState("price_desc");
+  const [setId,  setSetId]  = useState("");
+  const [setSearch, setSetSearch] = useState("");
+  const [sets,   setSets]   = useState<{id:string;name:string}[]>([]);
+  const [holoOnly, setHoloOnly] = useState(false);
   const [cards,  setCards]  = useState<Card[]>([]);
   const [loading,setLoading]= useState(true);
   const [total,  setTotal]  = useState(0);
@@ -35,13 +39,15 @@ export default function PreischeckPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ q, sort:s, limit:"24" });
+      if (setId) params.set("set", setId);
+      if (holoOnly) params.set("holo", "1");
       const r = await fetch(`/api/cards/search?${params}`);
       const d = await r.json();
       setCards(d.cards ?? []);
       setTotal(d.total ?? d.cards?.length ?? 0);
     } catch { setCards([]); }
     setLoading(false);
-  }, []);
+  }, [setId, holoOnly]);
 
   useEffect(() => { load("", "price_desc"); }, [load]);
 

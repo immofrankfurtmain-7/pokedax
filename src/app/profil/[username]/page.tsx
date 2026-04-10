@@ -142,6 +142,53 @@ export default async function ProfilePage({ params }: Props) {
           </div>
         )}
 
+
+        {/* Badges */}
+        {badges.length > 0 && (
+          <div style={{ marginBottom:24 }}>
+            <div style={{ fontSize:10, fontWeight:600, letterSpacing:".1em", textTransform:"uppercase", color:"#62626f", marginBottom:12 }}>Badges</div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+              {badges.map((b:any)=>(
+                <div key={b.badge_key} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:8, background:"rgba(212,168,67,0.08)", border:"0.5px solid rgba(212,168,67,0.18)" }}>
+                  <span style={{ fontSize:13 }}>{b.icon}</span>
+                  <span style={{ fontSize:11, color:"#D4A843" }}>{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Seller Stats */}
+        {seller && (seller.total_sales > 0 || seller.is_verified) && (
+          <div style={{ marginBottom:24, background:"#111114", border:"0.5px solid rgba(255,255,255,0.085)", borderRadius:16, padding:"14px 16px" }}>
+            <div style={{ fontSize:10, fontWeight:600, letterSpacing:".1em", textTransform:"uppercase", color:"#62626f", marginBottom:12 }}>Verkäufer-Statistik</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
+              {seller.avg_rating > 0 && <div><div style={{ fontSize:9, color:"#62626f", marginBottom:3 }}>Bewertung</div><div style={{ fontSize:18, fontFamily:"var(--font-mono)", fontWeight:300, color:"#D4A843" }}>⭐ {seller.avg_rating?.toFixed(1)}</div><div style={{ fontSize:9, color:"#62626f" }}>{seller.rating_count} Bewertungen</div></div>}
+              {seller.total_sales > 0 && <div><div style={{ fontSize:9, color:"#62626f", marginBottom:3 }}>Verkäufe</div><div style={{ fontSize:18, fontFamily:"var(--font-mono)", fontWeight:300, color:"#ededf2" }}>{seller.total_sales}</div></div>}
+              {seller.is_verified && <div style={{ display:"flex", alignItems:"center", gap:6 }}><span style={{ fontSize:16, color:"#3db87a" }}>✓</span><span style={{ fontSize:12, color:"#3db87a" }}>Verifiziert</span></div>}
+            </div>
+          </div>
+        )}
+
+        {/* Reviews */}
+        {reviews.length > 0 && (
+          <div style={{ marginBottom:24 }}>
+            <div style={{ fontSize:10, fontWeight:600, letterSpacing:".1em", textTransform:"uppercase", color:"#62626f", marginBottom:12 }}>Bewertungen</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {reviews.map((r:any, i:number)=>(
+                <div key={i} style={{ background:"#111114", border:"0.5px solid rgba(255,255,255,0.085)", borderRadius:12, padding:"12px 14px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                    <div style={{ fontSize:13, color:"#D4A843" }}>{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</div>
+                    <div style={{ fontSize:11, color:"#62626f" }}>von @{r.profiles?.username??"-"}</div>
+                    <div style={{ fontSize:10, color:"#62626f", marginLeft:"auto" }}>{r.role==="buyer"?"Käufer":"Verkäufer"}</div>
+                  </div>
+                  {r.comment && <div style={{ fontSize:12, color:"#a4a4b4", lineHeight:1.6 }}>{r.comment}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

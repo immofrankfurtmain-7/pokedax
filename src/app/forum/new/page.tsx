@@ -23,6 +23,9 @@ export default function ForumNewPage() {
   const [catId,      setCatId]      = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error,      setError]      = useState("");
+  const [cardSearch, setCardSearch] = useState("");
+  const [cardResults,setCardResults]= useState<any[]>([]);
+  const [taggedCard, setTaggedCard] = useState<any>(null);
 
   useEffect(()=>{
     const sb=createClient();
@@ -33,6 +36,14 @@ export default function ForumNewPage() {
     createClient().from("forum_categories").select("id,name,color").order("name").then(({data})=>setCats(data??[]));
   },[]);
 
+  async function searchCards(q:string){
+    setCardSearch(q);
+    if(q.length<2){setCardResults([]);return;}
+    const r=await fetch(`/api/cards/search?q=${encodeURIComponent(q)}&limit=4`);
+    const d=await r.json();
+    setCardResults(d.cards??[]);
+  }
+
   async function submit(){
     if(!title.trim()){setError("Titel darf nicht leer sein.");return;}
     if(!catId){setError("Bitte eine Kategorie wählen.");return;}
@@ -42,7 +53,7 @@ export default function ForumNewPage() {
     const{data:{session}}=await sb.auth.getSession();
     const fh:Record<string,string>={"Content-Type":"application/json"};
     if(session?.access_token) fh["Authorization"]=`Bearer ${session.access_token}`;
-    const res=await fetch("/api/forum/posts",{method:"POST",headers:fh,body:JSON.stringify({category_id:catId,title:title.trim(),content:content.trim(),tags:[]})});
+    const res=await fetch("/api/forum/posts",{method:"POST",headers:fh,body:JSON.stringify({category_id:catId,title:title.trim(),content:content.trim(),tags:[],card_id:taggedCard?.id??null})});
     const data=await res.json();
     if(!res.ok){setError(data.error??"Fehler.");setSubmitting(false);return;}
     router.push(data.post?.id?`/forum/post/${data.post.id}`:"/forum");
@@ -77,6 +88,35 @@ export default function ForumNewPage() {
             <textarea value={content} onChange={e=>setContent(e.target.value)} rows={7} placeholder="Schreibe deinen Beitrag…"
               style={{width:"100%",padding:"11px 14px",borderRadius:11,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:13,outline:"none",fontFamily:"inherit",resize:"vertical",lineHeight:1.7}}/>
           </div>
+          {/* Optional card tag */}
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:7}}>Karte taggen (optional)</div>
+            {taggedCard ? (
+              <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:BG2,borderRadius:9,border:`0.5px solid ${G18}`}}>
+                {taggedCard.image_url&&<img src={taggedCard.image_url} alt="" style={{width:22,height:30,objectFit:"contain"}}/>}
+                <div style={{flex:1,fontSize:12,color:TX1}}>{taggedCard.name_de||taggedCard.name}</div>
+                <div style={{fontSize:11,fontFamily:"var(--font-mono)",color:G}}>{taggedCard.price_market?.toFixed(2)} €</div>
+                <button onClick={()=>setTaggedCard(null)} style={{background:"transparent",border:"none",color:TX3,cursor:"pointer",fontSize:16}}>×</button>
+              </div>
+            ) : (
+              <div>
+                <input value={cardSearch} onChange={e=>searchCards(e.target.value)} placeholder="Karte suchen und taggen…"
+                  style={{width:"100%",padding:"9px 12px",borderRadius:9,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}/>
+                {cardResults.length>0&&(
+                  <div style={{marginTop:4,display:"flex",flexDirection:"column",gap:2}}>
+                    {cardResults.map(c=>(
+                      <div key={c.id} onClick={()=>{setTaggedCard(c);setCardResults([]);setCardSearch("");}} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 12px",background:BG2,borderRadius:7,border:`0.5px solid ${BR1}`,cursor:"pointer"}}>
+                        {c.image_url&&<img src={c.image_url} alt="" style={{width:18,height:24,objectFit:"contain"}}/>}
+                        <div style={{flex:1,fontSize:12,color:TX1}}>{c.name_de||c.name}</div>
+                        <div style={{fontSize:11,fontFamily:"var(--font-mono)",color:G}}>{c.price_market?.toFixed(2)} €</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           {error&&<div style={{fontSize:12,color:RED,marginBottom:12,padding:"9px 12px",borderRadius:8,background:"rgba(220,74,90,0.08)",border:"0.5px solid rgba(220,74,90,0.2)"}}>{error}</div>}
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <Link href="/forum" style={{padding:"10px 20px",borderRadius:11,background:"transparent",color:TX2,fontSize:13,textDecoration:"none",border:`0.5px solid ${BR1}`}}>Abbrechen</Link>
