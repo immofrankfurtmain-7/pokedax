@@ -1,4 +1,8 @@
-﻿"use client";
+﻿# Hotfix forum page - Set iteration
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
@@ -152,3 +156,8 @@ export default function ForumPage() {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\forum\page.tsx", $r, $enc)
+Write-Host "OK forum/page.tsx" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit -> Push" -ForegroundColor Yellow
