@@ -1,4 +1,9 @@
-﻿"use client";
+﻿# Hotfix: Navbar mit Hamburger-Menü (Mobile)
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+
+$nav = @'
+"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -331,3 +336,9 @@ export default function Navbar() {
     </>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\components\layout\Navbar.tsx", $nav, $enc)
+Write-Host "  OK  Navbar.tsx (Hamburger fuer Mobile)" -ForegroundColor Green
+Write-Host ""
+Write-Host "GitHub Desktop -> Commit 'feat: mobile hamburger menu' -> Push" -ForegroundColor Yellow
