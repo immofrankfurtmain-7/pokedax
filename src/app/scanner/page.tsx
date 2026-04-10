@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)",G04="rgba(212,168,67,0.04)";
@@ -148,6 +149,8 @@ export default function ScannerPage() {
   const [result,   setResult]       = useState<ScanResult|null>(null);
   const [preview,  setPreview]      = useState<string|null>(null);
   const [error,    setError]        = useState<string|null>(null);
+  const [redirecting, setRedirecting] = useState(false);
+  const router = useRouter();
   const [scansToday, setScansToday] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -195,6 +198,10 @@ export default function ScannerPage() {
       }
 
       setResult(data);
+      if (data.card?.id) {
+        setRedirecting(true);
+        setTimeout(() => router.push(`/preischeck/${data.card.id}`), 1500);
+      }
       if (data.scansUsed !== null) setScansToday(data.scansUsed);
     } catch {
       setError("Verbindungsfehler. Bitte erneut versuchen.");
@@ -337,7 +344,7 @@ export default function ScannerPage() {
                 )}
 
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:24}}>
-                  <Link href={`/preischeck?q=${encodeURIComponent(card.name_de||card.name)}`} style={{
+                  <Link href={`/preischeck/${card.id}`} style={{
                     padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",
                     fontSize:13,fontWeight:400,textDecoration:"none",
                     boxShadow:`0 2px 16px ${G25}`,
