@@ -1,4 +1,8 @@
-﻿"use client";
+﻿# Hotfix card detail - now declaration order
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+"use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -162,3 +166,8 @@ export default function CardDetailPage() {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\preischeck\[id]\page.tsx", $r, $enc)
+Write-Host "OK preischeck/[id]/page.tsx" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit -> Push" -ForegroundColor Yellow
