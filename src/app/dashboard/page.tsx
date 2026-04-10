@@ -30,6 +30,8 @@ export default function DashboardPage() {
   const [scansToday,setScansToday]= useState(0);
   const [scansMax,  setScansMax]  = useState(5);
   const [fantasy,   setFantasy]   = useState<any>(null);
+  const [escrows,   setEscrows]   = useState<any[]>([]);
+  const [trades,    setTrades]    = useState<any[]>([]);
 
   useEffect(()=>{
     async function init(){
@@ -77,6 +79,15 @@ export default function DashboardPage() {
   const initial=username[0]?.toUpperCase()??"?";
   const hour=new Date().getHours();
   const greeting=hour<12?"Guten Morgen":hour<17?"Guten Tag":"Guten Abend";
+
+  async function loadEscrows(sb:any, uid:string) {
+    const {data} = await sb.from("escrow_transactions")
+      .select("id,status,gross_amount,created_at,seller_id,buyer_id,tracking_number,auto_release_at")
+      .or(`buyer_id.eq.${uid},seller_id.eq.${uid}`)
+      .not("status","in","(released,refunded)")
+      .order("created_at",{ascending:false}).limit(5);
+    setEscrows(data??[]);
+  }
 
   if(loading) return <div style={{color:TX1,minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:13,color:TX3}}>Lädt Dashboard…</div></div>;
 
@@ -150,6 +161,76 @@ export default function DashboardPage() {
                 </div>
               );})}
             </div>
+            {/* Open Trades */}
+            {trades.length > 0 && (
+              <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,overflow:"hidden"}}>
+                <div style={{padding:"12px 16px",borderBottom:`0.5px solid ${BR1}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Offene Trades</span>
+                  <span style={{fontSize:11,color:TX3}}>{trades.length}</span>
+                </div>
+                {trades.map((t:any,i:number)=>{
+                  const card = t.marketplace_listings?.cards;
+                  const isBuyer = t.buyer_id === user?.id;
+                  const statusColor = t.status==="paid"?GREEN:t.status==="shipped"?"#60A5FA":TX3;
+                  const statusLabel = t.status==="pending"?"Zahlung ausstehend":t.status==="paid"?isBuyer?"Warte auf Versand":"Versand ausstehend":isBuyer?"Bestätigung ausstehend":"Versendet";
+                  return (
+                    <Link key={t.id} href={`/marketplace/escrow/${t.id}`} style={{
+                      display:"flex",alignItems:"center",gap:10,padding:"10px 16px",
+                      borderBottom:i<trades.length-1?`0.5px solid ${BR1}`:undefined,
+                      textDecoration:"none",
+                    }}>
+                      <div style={{width:28,height:38,borderRadius:4,background:BG2,overflow:"hidden",flexShrink:0}}>
+                        {card?.image_url&&<img src={card.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,color:TX1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{card?.name_de||card?.name}</div>
+                        <div style={{fontSize:10,color:statusColor}}>{isBuyer?"Kauf":"Verkauf"} · {statusLabel}</div>
+                      </div>
+                      <div style={{fontSize:13,fontFamily:"var(--font-mono)",fontWeight:300,color:G,flexShrink:0}}>
+                        {(isBuyer?t.gross_amount:t.seller_payout)?.toLocaleString("de-DE",{minimumFractionDigits:2})} €
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Open Escrow Transactions */}
+            {escrows.length > 0 && (
+              <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,overflow:"hidden",marginBottom:0}}>
+                <div style={{padding:"12px 16px",borderBottom:`0.5px solid ${BR1}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Offene Trades</span>
+                  <span style={{fontSize:11,color:TX3}}>{escrows.length}</span>
+                </div>
+                {escrows.map((e:any,i:number)=>{
+                  const isBuyer = e.buyer_id === user?.id;
+                  const statusColor: Record<string,string> = {
+                    pending:"#62626f", paid:GREEN, shipped:"#60A5FA",
+                    received:GREEN, disputed:"#dc4a5a"
+                  };
+                  const statusLabel: Record<string,string> = {
+                    pending:"Zahlung ausstehend", paid:"Bezahlt · Versand erwartet",
+                    shipped:"Versendet · Bestätigung ausstehend",
+                    received:"Erhalten", disputed:"Streitfall"
+                  };
+                  return (
+                    <Link key={e.id} href={`/marketplace/escrow/${e.id}`} style={{
+                      display:"flex",alignItems:"center",gap:10,padding:"10px 16px",
+                      borderBottom:i<escrows.length-1?`0.5px solid ${BR1}`:undefined,
+                      textDecoration:"none",
+                    }}>
+                      <div style={{width:6,height:6,borderRadius:"50%",background:statusColor[e.status]??TX3,flexShrink:0}}/>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,color:TX1,marginBottom:2}}>{isBuyer?"Kauf":"Verkauf"} · {e.gross_amount?.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>
+                        <div style={{fontSize:10,color:TX3}}>{statusLabel[e.status]??e.status}</div>
+                      </div>
+                      <div style={{fontSize:11,color:TX3}}>→</div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Quick Actions */}
             <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,padding:"16px"}}>
               <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3,marginBottom:12}}>Schnellzugriff</div>

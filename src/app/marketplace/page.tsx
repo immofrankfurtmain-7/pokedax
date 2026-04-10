@@ -53,8 +53,15 @@ function ListingCard({l,onOffer}:{l:any;onOffer:(l:any)=>void}){
       <div style={{padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
         <Avatar username={seller} size={24}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:11,color:TX2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>@{seller}</div>
-          <div style={{fontSize:9,color:TX3}}>{ago(l.created_at)}</div>
+          <div style={{fontSize:11,color:TX2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
+            @{seller}
+            {l.seller_stats?.is_verified && <span style={{fontSize:8,color:GREEN}}>✓</span>}
+          </div>
+          <div style={{fontSize:9,color:TX3,display:"flex",alignItems:"center",gap:5}}>
+            {l.seller_stats?.rating_count > 0 ? (
+              <span>⭐ {l.seller_stats.avg_rating?.toFixed(1)} ({l.seller_stats.rating_count})</span>
+            ) : <span>{ago(l.created_at)}</span>}
+          </div>
         </div>
         <div style={{textAlign:"right",flexShrink:0}}>
           {l.price?<div style={{fontSize:17,fontFamily:"var(--font-mono)",fontWeight:300,color:isDeal?G:TX1,letterSpacing:"-.04em",lineHeight:1}}>{l.price.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>:<div style={{fontSize:13,color:TX3,fontStyle:"italic"}}>VB</div>}
@@ -72,9 +79,46 @@ function ListingCard({l,onOffer}:{l:any;onOffer:(l:any)=>void}){
 }
 
 function OfferModal({listing,onClose}:{listing:any;onClose:()=>void}){
-  const [price,setPrice]=useState(listing.price?.toString()??"");
-  const [done,setDone]=useState(false);
-  const card=listing.cards;
+  const [price,   setPrice]   = useState(listing.price?.toString()??"");
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
+  const [step,    setStep]    = useState<"form"|"processing"|"done">("form");
+  const card = listing.cards;
+
+  const escrowFee = price ? Math.round(parseFloat(price)*0.01*100)/100 : 0;
+  const total     = price ? Math.round((parseFloat(price)+escrowFee)*100)/100 : 0;
+
+  async function checkout() {
+    if (!price || parseFloat(price) <= 0) return;
+    setLoading(true); setError("");
+    const sb = createClient();
+    const {data:{session}} = await sb.auth.getSession();
+    if (!session) { setError("Bitte zuerst anmelden."); setLoading(false); return; }
+    const h: Record<string,string> = {"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`};
+    const res = await fetch("/api/marketplace/escrow/create", {
+      method:"POST", headers:h,
+      body: JSON.stringify({ listing_id: listing.id, offered_price: parseFloat(price) }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      // Seller not verified → redirect to settings
+      if (data.error?.includes("nicht verifiziert")) {
+        setError("Verkäufer noch nicht für Zahlungen verifiziert. Bitte later versuchen.");
+      } else {
+        setError(data.error ?? "Fehler beim Erstellen des Kaufs.");
+      }
+      setLoading(false); return;
+    }
+    setStep("processing");
+    // Stripe Payment — open checkout in new tab or redirect
+    if (data.client_secret) {
+      // Redirect to escrow page to complete payment
+      window.location.href = `/marketplace/escrow/${data.escrow_id}?pay=1`;
+    } else {
+      setStep("done");
+    }
+  }
+
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20,backdropFilter:"blur(8px)"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
       <div style={{background:BG1,border:`0.5px solid ${BR3}`,borderRadius:22,padding:26,width:"100%",maxWidth:440,position:"relative"}}>
@@ -82,40 +126,75 @@ function OfferModal({listing,onClose}:{listing:any;onClose:()=>void}){
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
           {card?.image_url&&<img src={card.image_url} alt="" style={{width:44,height:60,objectFit:"contain",borderRadius:6}}/>}
           <div style={{flex:1}}>
-            <div style={{fontSize:9,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Angebot machen</div>
+            <div style={{fontSize:9,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Jetzt kaufen</div>
             <div style={{fontSize:15,fontWeight:400,color:TX1,lineHeight:1.2}}>{card?.name_de||card?.name}</div>
             <div style={{fontSize:11,color:TX3,marginTop:2}}>{card?.set_id?.toUpperCase()} · {listing.condition}</div>
           </div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:TX3,fontSize:18,cursor:"pointer"}}>×</button>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:TX3,fontSize:18,cursor:"pointer",padding:4}}>×</button>
         </div>
-        {done?(
+
+        {step==="done" ? (
           <div style={{textAlign:"center",padding:"20px 0"}}>
             <div style={{fontSize:28,marginBottom:12}}>✦</div>
-            <div style={{fontSize:15,fontWeight:400,color:TX1,marginBottom:8}}>Angebot gesendet</div>
-            <div style={{fontSize:12,color:TX3,marginBottom:20}}>@{listing.profiles?.username} wird benachrichtigt.</div>
+            <div style={{fontSize:15,color:TX1,marginBottom:8}}>Kauf eingeleitet</div>
+            <div style={{fontSize:12,color:TX3,marginBottom:20}}>Du wirst zur sicheren Zahlung weitergeleitet.</div>
             <button onClick={onClose} style={{padding:"10px 24px",borderRadius:10,background:G,color:"#0a0808",border:"none",cursor:"pointer",fontSize:13}}>Schließen</button>
           </div>
-        ):(
+        ) : step==="processing" ? (
+          <div style={{textAlign:"center",padding:"24px 0"}}>
+            <div style={{width:32,height:32,border:`2px solid rgba(212,168,67,0.2)`,borderTop:`2px solid ${G}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 12px"}}/>
+            <div style={{fontSize:13,color:TX2}}>Wird verarbeitet…</div>
+          </div>
+        ) : (
           <>
+            {/* Price */}
             <div style={{marginBottom:12}}>
-              <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:6}}>Dein Angebot</div>
+              <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:6}}>Kaufpreis</div>
               <div style={{position:"relative"}}>
-                <input type="number" value={price} onChange={e=>setPrice(e.target.value)} placeholder={listing.price?.toString()??"0.00"} min="0" step="0.50"
+                <input type="number" value={price} onChange={e=>setPrice(e.target.value)}
+                  placeholder={listing.price?.toString()??"0.00"} min="0" step="0.50"
                   style={{width:"100%",padding:"11px 40px 11px 14px",borderRadius:11,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:16,fontFamily:"var(--font-mono)",outline:"none"}}/>
                 <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",fontSize:13,color:TX3}}>€</span>
               </div>
-              {card?.price_market&&<div style={{fontSize:10,color:TX3,marginTop:5}}>Marktwert: {card.price_market.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>}
+              {card?.price_market&&<div style={{fontSize:10,color:TX3,marginTop:4}}>Marktwert: {card.price_market.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>}
             </div>
-            <div style={{padding:"10px 12px",borderRadius:10,marginBottom:14,background:"rgba(61,184,122,0.06)",border:"0.5px solid rgba(61,184,122,0.15)",fontSize:11,color:"#7dd3b0",lineHeight:1.6}}>
-              ✦ Sicheres Escrow-System aktiv — Geld wird erst nach Bestätigung des Erhalts freigegeben.
+
+            {/* Fee breakdown */}
+            {price && parseFloat(price) > 0 && (
+              <div style={{background:BG2,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:TX3,marginBottom:6}}>
+                  <span>Kaufpreis</span><span style={{fontFamily:"var(--font-mono)"}}>{parseFloat(price).toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:TX3,marginBottom:6}}>
+                  <span>Escrow-Gebühr (1%)</span><span style={{fontFamily:"var(--font-mono)"}}>+{escrowFee.toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:TX1,fontWeight:500,borderTop:`0.5px solid ${BR1}`,paddingTop:8,marginTop:4}}>
+                  <span>Gesamt</span><span style={{fontFamily:"var(--font-mono)",color:G}}>{total.toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
+                </div>
+              </div>
+            )}
+
+            {/* Escrow notice */}
+            <div style={{padding:"9px 12px",borderRadius:10,marginBottom:12,background:"rgba(61,184,122,0.06)",border:"0.5px solid rgba(61,184,122,0.15)",fontSize:11,color:"#7dd3b0",lineHeight:1.6}}>
+              ✦ Sicher via pokédax Escrow — Geld wird erst freigegeben wenn du den Erhalt bestätigst.
             </div>
+
+            {error&&<div style={{fontSize:12,color:RED,marginBottom:10,padding:"8px 12px",borderRadius:8,background:"rgba(220,74,90,0.08)"}}>{error}</div>}
+
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setDone(true)} disabled={!price} style={{flex:1,padding:"11px",borderRadius:11,background:price?G:"rgba(255,255,255,0.04)",color:price?"#0a0808":TX3,border:"none",cursor:price?"pointer":"not-allowed",fontSize:13}}>Angebot senden</button>
-              <Link href={`/profil/${listing.profiles?.username??""}`} style={{padding:"11px 14px",borderRadius:11,background:"transparent",color:TX2,border:`0.5px solid ${BR2}`,fontSize:13,textDecoration:"none",display:"flex",alignItems:"center"}}>Profil</Link>
+              <button onClick={checkout} disabled={loading||!price||parseFloat(price)<=0} style={{
+                flex:1,padding:"12px",borderRadius:11,
+                background:price&&parseFloat(price)>0?G:"rgba(255,255,255,0.04)",
+                color:price&&parseFloat(price)>0?"#0a0808":TX3,
+                border:"none",cursor:price&&parseFloat(price)>0?"pointer":"not-allowed",
+                fontSize:13,fontWeight:400,
+              }}>{loading?"Weiterleitung…":"Sicher kaufen ✦"}</button>
+              <Link href={`/profil/${listing.profiles?.username??""}`} style={{padding:"12px 14px",borderRadius:11,background:"transparent",color:TX2,border:`0.5px solid ${BR2}`,fontSize:13,textDecoration:"none",display:"flex",alignItems:"center"}}>Profil</Link>
             </div>
           </>
         )}
       </div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
@@ -224,11 +303,13 @@ export default function MarketplacePage(){
     const{data}=await sb.from("marketplace_listings")
       .select(`id,type,price,condition,note,created_at,user_id,is_active,
         profiles!marketplace_listings_user_id_fkey(username,avatar_url),
-        cards!marketplace_listings_card_id_fkey(id,name,name_de,set_id,number,price_market,price_avg7,image_url,rarity,types)`)
+        cards!marketplace_listings_card_id_fkey(id,name,name_de,set_id,number,price_market,price_avg7,image_url,rarity,types),
+        seller_stats!marketplace_listings_seller_id_fkey(avg_rating,rating_count,is_verified)`)
       .eq("is_active",true).order("created_at",{ascending:false}).limit(60);
     const normalized=(data??[]).map((l:any)=>({...l,
       profiles:Array.isArray(l.profiles)?l.profiles[0]:l.profiles,
       cards:Array.isArray(l.cards)?l.cards[0]:l.cards,
+      seller_stats:Array.isArray(l.seller_stats)?l.seller_stats[0]:l.seller_stats,
     }));
     setListings(normalized);
     setLoading(false);
