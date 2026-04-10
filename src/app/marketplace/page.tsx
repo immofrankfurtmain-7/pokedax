@@ -1,282 +1,660 @@
 ﻿"use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
-const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
+const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G10="rgba(212,168,67,0.10)",G05="rgba(212,168,67,0.05)";
+const BG1="#111114",BG2="#18181c",BG3="#1e1e22";
+const BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)",BR3="rgba(255,255,255,0.13)";
+const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f";
+const GREEN="#3db87a",RED="#dc4a5a",AMBER="#f59e0b";
 
-const CONDITION_LABEL: Record<string,string> = {NM:"Near Mint",LP:"Light Played",MP:"Moderately Played",HP:"Heavily Played",D:"Damaged"};
-const CONDITION_COLOR: Record<string,string> = {NM:GREEN,LP:"#a4d87a",MP:G,HP:RED,D:RED};
+const CONDITION_META: Record<string,{label:string;color:string;short:string}> = {
+  NM: {label:"Near Mint",    color:GREEN,  short:"NM"},
+  LP: {label:"Light Played", color:"#7dd3b0",short:"LP"},
+  MP: {label:"Mod. Played",  color:AMBER,  short:"MP"},
+  HP: {label:"Heavy Played", color:"#fb923c",short:"HP"},
+  D:  {label:"Damaged",      color:RED,    short:"D"},
+};
 
 interface Listing {
-  id:string; type:"offer"|"want"; price:number|null; condition:string; note:string; created_at:string;
-  user_id:string;
+  id:string; type:"offer"|"want"; price:number|null; condition:string;
+  note:string; created_at:string; user_id:string; is_active:boolean;
   profiles:{username:string;avatar_url:string|null}|null;
-  cards:{id:string;name:string;name_de:string;set_id:string;number:string;price_market:number|null;image_url:string|null}|null;
+  cards:{id:string;name:string;name_de:string;set_id:string;number:string;
+         price_market:number|null;price_avg7:number|null;image_url:string|null;
+         rarity:string|null;types:string[]|null}|null;
 }
 
-export default function MarketplacePage() {
-  const [tab,       setTab]       = useState<"offer"|"want">("offer");
-  const [listings,  setListings]  = useState<Listing[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [search,    setSearch]    = useState("");
-  const [showForm,  setShowForm]  = useState(false);
-  const [user,      setUser]      = useState<any>(null);
+function ago(d:string) {
+  const h = Math.floor((Date.now()-new Date(d).getTime())/3600000);
+  if (h<1) return "Gerade";
+  if (h<24) return `${h}h`;
+  if (h<168) return `${Math.floor(h/24)}T`;
+  return `${Math.floor(h/168)}W`;
+}
 
-  // Form state
-  const [fSearch,  setFSearch]  = useState("");
-  const [fResults, setFResults] = useState<any[]>([]);
-  const [fCard,    setFCard]    = useState<any>(null);
-  const [fType,    setFType]    = useState<"offer"|"want">("offer");
-  const [fPrice,   setFPrice]   = useState("");
-  const [fCond,    setFCond]    = useState("NM");
-  const [fNote,    setFNote]    = useState("");
-  const [fLoading, setFLoading] = useState(false);
-  const [fMsg,     setFMsg]     = useState("");
+function SellerAvatar({username,size=28}:{username:string;size?:number}) {
+  const colors=["#D4A843","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
+  const c=colors[username.charCodeAt(0)%colors.length];
+  return (
+    <div style={{width:size,height:size,borderRadius:"50%",background:`${c}15`,
+      border:`0.5px solid ${c}30`,display:"flex",alignItems:"center",
+      justifyContent:"center",fontSize:size*.42,color:c,fontWeight:500,flexShrink:0}}>
+      {username[0].toUpperCase()}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const sb = createClient();
-    sb.auth.getUser().then(({data:{user}}) => setUser(user));
-    loadListings(tab);
-  }, []);
-
-  async function loadListings(t: "offer"|"want") {
-    setLoading(true);
-    const sb = createClient();
-    const { data } = await sb
-      .from("marketplace_listings")
-      .select("id,type,price,condition,note,created_at,user_id,profiles!marketplace_listings_user_id_fkey(username,avatar_url),cards!marketplace_listings_card_id_fkey(id,name,name_de,set_id,number,price_market,image_url)")
-      .eq("type", t)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false })
-      .limit(40);
-    setListings((data as any[]) ?? []);
-    setLoading(false);
-  }
-
-  async function searchCards(q: string) {
-    setFSearch(q);
-    if (q.length < 2) { setFResults([]); return; }
-    const res = await fetch(`/api/cards/search?q=${encodeURIComponent(q)}&limit=5`);
-    const data = await res.json();
-    setFResults(data.cards ?? []);
-  }
-
-  async function submitListing() {
-    if (!fCard) { setFMsg("Bitte eine Karte auswählen."); return; }
-    setFLoading(true);
-    const sb = createClient();
-    const { data: { session } } = await sb.auth.getSession();
-    const headers: Record<string,string> = {"Content-Type":"application/json"};
-    if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
-    const res = await fetch("/api/marketplace", {
-      method:"POST",
-      headers,
-      body:JSON.stringify({card_id:fCard.id,type:fType,price:parseFloat(fPrice)||null,condition:fCond,note:fNote}),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setFMsg(data.error === "Nicht angemeldet" ? "Bitte zuerst anmelden." : data.error ?? "Fehler.");
-    } else {
-      setFMsg("✓ Inserat erstellt!");
-      setFCard(null); setFSearch(""); setFResults([]); setFPrice(""); setFNote("");
-      setTimeout(()=>{ setShowForm(false); setFMsg(""); loadListings(tab); }, 1200);
-    }
-    setFLoading(false);
-  }
-
-  const filtered = listings.filter(l => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (l.cards?.name_de??l.cards?.name??"").toLowerCase().includes(q) ||
-           (l.profiles?.username??"").toLowerCase().includes(q);
-  });
+function ListingCard({l,onOffer}:{l:Listing;onOffer:(l:Listing)=>void}) {
+  const card = l.cards;
+  const cond = CONDITION_META[l.condition] ?? CONDITION_META.NM;
+  const refPrice = card?.price_market;
+  const isDeal = l.type==="offer" && l.price && refPrice && l.price < refPrice*0.95;
+  const trend7 = card?.price_avg7 && refPrice ? ((refPrice-card.price_avg7)/card.price_avg7*100) : null;
+  const seller = l.profiles?.username ?? "Anonym";
+  const [hov, setHov] = useState(false);
 
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+    <div
+      onMouseEnter={()=>setHov(true)}
+      onMouseLeave={()=>setHov(false)}
+      style={{
+        background:hov?BG2:BG1,
+        border:`0.5px solid ${hov?(isDeal?G18:BR3):BR2}`,
+        borderRadius:18,overflow:"hidden",
+        transition:"all .2s ease",
+        transform:hov?"translateY(-2px)":"translateY(0)",
+        boxShadow:hov?`0 8px 32px rgba(0,0,0,0.4)${isDeal?`,0 0 0 0.5px ${G}30`:""}`:undefined,
+        cursor:"default",position:"relative",
+      }}>
 
-        {/* Header */}
-        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:16,marginBottom:"clamp(32px,5vw,52px)"}}>
-          <div>
-            <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-              <span style={{width:16,height:0.5,background:TX3}}/>Marktplatz
-            </div>
-            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(28px,5vw,52px)",fontWeight:200,letterSpacing:"-.055em",marginBottom:8}}>
-              Karten kaufen<br/><span style={{color:G}}>& verkaufen.</span>
-            </h1>
-            <p style={{fontSize:13,color:TX3,fontWeight:300}}>Direkt mit anderen Sammlern handeln. Kein Mittelmann.</p>
+      {/* Deal / Badge strip */}
+      {isDeal && (
+        <div style={{position:"absolute",top:0,left:0,right:0,height:1.5,
+          background:`linear-gradient(90deg,transparent,${G},transparent)`}}/>
+      )}
+
+      {/* Top: card image + info */}
+      <div style={{display:"flex",gap:12,padding:"14px 14px 10px"}}>
+        {/* Card image */}
+        <Link href={`/preischeck/${card?.id}`} style={{flexShrink:0,textDecoration:"none"}}>
+          <div style={{
+            width:56,height:78,borderRadius:8,background:BG3,overflow:"hidden",
+            border:`0.5px solid ${BR2}`,transition:"all .2s",
+            transform:hov?"scale(1.04)":"scale(1)",
+          }}>
+            {card?.image_url
+              ? <img src={card.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>
+              : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:TX3,opacity:.2}}>◈</div>
+            }
           </div>
-          <button onClick={()=>setShowForm(!showForm)} style={{
-            padding:"12px 24px",borderRadius:14,background:G,color:"#0a0808",
-            fontSize:13,fontWeight:400,border:"none",cursor:"pointer",
-            boxShadow:`0 2px 20px rgba(212,168,67,0.25)`,
-          }}>+ Inserat erstellen</button>
+        </Link>
+
+        {/* Card info */}
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:4,flexWrap:"wrap"}}>
+            {isDeal && (
+              <span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,
+                background:G10,color:G,border:`0.5px solid ${G18}`,letterSpacing:".04em",flexShrink:0}}>
+                DEAL
+              </span>
+            )}
+            {l.type==="want" && (
+              <span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,
+                background:"rgba(96,165,250,0.10)",color:"#60A5FA",border:"0.5px solid rgba(96,165,250,0.2)",flexShrink:0}}>
+                SUCHE
+              </span>
+            )}
+          </div>
+
+          <Link href={`/preischeck/${card?.id}`} style={{textDecoration:"none"}}>
+            <div style={{fontSize:13.5,fontWeight:400,color:TX1,lineHeight:1.3,marginBottom:3,
+              overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
+              {card?.name_de||card?.name||"Unbekannte Karte"}
+            </div>
+          </Link>
+
+          <div style={{fontSize:10,color:TX3,marginBottom:6}}>
+            {card?.set_id?.toUpperCase()} · #{card?.number}
+            {card?.rarity && <span style={{marginLeft:6,opacity:.7}}>{card.rarity}</span>}
+          </div>
+
+          {/* Condition pill */}
+          <span style={{
+            fontSize:9,fontWeight:600,padding:"2px 7px",borderRadius:4,
+            background:`${cond.color}12`,color:cond.color,
+            border:`0.5px solid ${cond.color}25`,letterSpacing:".03em",
+          }}>{cond.short} · {cond.label}</span>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{height:0.5,background:BR1,margin:"0 14px"}}/>
+
+      {/* Bottom: price + seller + action */}
+      <div style={{padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+        {/* Seller */}
+        <SellerAvatar username={seller} size={24}/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:11,color:TX2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            @{seller}
+          </div>
+          <div style={{fontSize:9,color:TX3}}>{ago(l.created_at)}</div>
         </div>
 
-        {/* Create listing form */}
-        {showForm&&(
-          <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:22,padding:24,marginBottom:20,position:"relative"}}>
-            <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(212,168,67,0.3),transparent)`,borderRadius:"22px 22px 0 0"}}/>
-            <div style={{fontSize:13,fontWeight:500,color:TX1,marginBottom:18}}>Neues Inserat</div>
-
-            {/* Type toggle */}
-            <div style={{display:"flex",gap:8,marginBottom:16}}>
-              {([["offer","Ich biete an"],["want","Ich suche"]] as const).map(([t,l])=>(
-                <button key={t} onClick={()=>setFType(t)} style={{
-                  padding:"8px 18px",borderRadius:10,fontSize:12,fontWeight:400,border:"none",cursor:"pointer",
-                  background:fType===t?(t==="offer"?G:G08):"transparent",
-                  color:fType===t?(t==="offer"?"#0a0808":G):TX3,
-                  outline:fType===t?"none":`1px solid ${BR2}`,transition:"all .2s",
-                }}>{l}</button>
-              ))}
-            </div>
-
-            {/* Card search */}
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:10,color:TX3,marginBottom:6,textTransform:"uppercase",letterSpacing:".08em"}}>Karte</div>
-              {fCard ? (
-                <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:BG2,borderRadius:10,border:`1px solid ${G18}`}}>
-                  {fCard.image_url&&<img src={fCard.image_url} alt="" style={{width:24,height:34,objectFit:"contain"}}/>}
-                  <span style={{fontSize:13,color:TX1}}>{fCard.name_de||fCard.name}</span>
-                  <span style={{fontSize:11,color:TX3,marginLeft:4}}>{fCard.set_id?.toUpperCase()} · #{fCard.number}</span>
-                  <button onClick={()=>setFCard(null)} style={{marginLeft:"auto",background:"transparent",border:"none",color:TX3,cursor:"pointer",fontSize:14}}>×</button>
+        {/* Price block */}
+        <div style={{textAlign:"right",flexShrink:0}}>
+          {l.price ? (
+            <>
+              <div style={{
+                fontSize:17,fontFamily:"var(--font-mono)",fontWeight:300,
+                color:isDeal?G:TX1,letterSpacing:"-.04em",lineHeight:1,
+              }}>
+                {l.price.toLocaleString("de-DE",{minimumFractionDigits:2})} €
+              </div>
+              {refPrice && trend7 !== null && (
+                <div style={{fontSize:9,color:trend7>0?GREEN:RED,marginTop:1}}>
+                  {trend7>0?"▲":"▼"} {Math.abs(trend7).toFixed(1)}% (7T)
                 </div>
-              ) : (
-                <div>
-                  <div style={{position:"relative"}}>
-                    <svg style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",opacity:.35}} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input value={fSearch} onChange={e=>searchCards(e.target.value)} placeholder="Karte suchen…"
-                      style={{width:"100%",padding:"9px 9px 9px 30px",borderRadius:10,background:"rgba(0,0,0,0.3)",border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none"}}/>
-                  </div>
-                  {fResults.length>0&&(
-                    <div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
-                      {fResults.map((c:any)=>(
-                        <div key={c.id} onClick={()=>{setFCard(c);setFResults([]);}} style={{
-                          display:"flex",alignItems:"center",gap:10,padding:"8px 12px",
-                          background:BG2,borderRadius:8,border:`1px solid ${BR1}`,cursor:"pointer",
-                        }}>
-                          {c.image_url&&<img src={c.image_url} alt="" style={{width:20,height:28,objectFit:"contain"}}/>}
-                          <span style={{fontSize:12,color:TX1}}>{c.name_de||c.name}</span>
-                          <span style={{fontSize:10,color:TX3,marginLeft:4}}>{c.set_id?.toUpperCase()}</span>
-                          <span style={{marginLeft:"auto",fontSize:12,fontFamily:"var(--font-mono)",color:G}}>{c.price_market?.toFixed(2)} €</span>
-                        </div>
-                      ))}
-                    </div>
+              )}
+            </>
+          ) : (
+            <div style={{fontSize:13,color:TX3,fontStyle:"italic"}}>VB</div>
+          )}
+        </div>
+      </div>
+
+      {/* Note */}
+      {l.note && (
+        <div style={{padding:"0 14px 10px",fontSize:11,color:TX3,
+          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+          borderTop:`0.5px solid ${BR1}`,paddingTop:8,marginTop:-2}}>
+          "{l.note}"
+        </div>
+      )}
+
+      {/* Action button */}
+      <div style={{padding:"0 12px 12px"}}>
+        {l.type==="offer" ? (
+          <button
+            onClick={()=>onOffer(l)}
+            style={{
+              width:"100%",padding:"9px",borderRadius:10,
+              background:hov?G:G10,color:hov?"#0a0808":G,
+              border:`0.5px solid ${hov?G:G18}`,
+              fontSize:12,fontWeight:400,cursor:"pointer",
+              transition:"all .2s",
+            }}>
+            {hov?"Jetzt kaufen →":"Angebot machen"}
+          </button>
+        ) : (
+          <Link href={`/preischeck/${card?.id}`} style={{
+            display:"block",textAlign:"center",padding:"9px",borderRadius:10,
+            background:"rgba(96,165,250,0.06)",color:"#60A5FA",
+            border:"0.5px solid rgba(96,165,250,0.15)",
+            fontSize:12,textDecoration:"none",
+          }}>
+            Ich habe diese Karte →
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function OfferModal({listing, onClose}:{listing:Listing;onClose:()=>void}) {
+  const [price, setPrice] = useState(listing.price?.toString() ?? "");
+  const [msg,   setMsg]   = useState("");
+  const [sending, setSending] = useState(false);
+  const [done,    setDone]    = useState(false);
+
+  async function sendOffer() {
+    setSending(true);
+    const sb = createClient();
+    const { data:{session} } = await sb.auth.getSession();
+    if (!session) { setMsg("Bitte zuerst anmelden."); setSending(false); return; }
+    // For now: just contact via profile link (Escrow coming in Sprint 2)
+    setDone(true);
+    setSending(false);
+  }
+
+  const card = listing.cards;
+  const refPrice = card?.price_market;
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      zIndex:1000,padding:20,backdropFilter:"blur(8px)",
+    }} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{
+        background:BG1,border:`0.5px solid ${BR3}`,borderRadius:24,
+        padding:28,width:"100%",maxWidth:460,
+        position:"relative",
+      }}>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:0.5,
+          background:`linear-gradient(90deg,transparent,${G},transparent)`,borderRadius:"24px 24px 0 0"}}/>
+
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
+          {card?.image_url && (
+            <img src={card.image_url} alt="" style={{width:44,height:60,objectFit:"contain",borderRadius:6}}/>
+          )}
+          <div style={{flex:1}}>
+            <div style={{fontSize:9,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Angebot machen</div>
+            <div style={{fontSize:16,fontWeight:400,color:TX1,lineHeight:1.2}}>{card?.name_de||card?.name}</div>
+            <div style={{fontSize:11,color:TX3,marginTop:2}}>{card?.set_id?.toUpperCase()} · {listing.condition}</div>
+          </div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:TX3,fontSize:18,cursor:"pointer",padding:4}}>×</button>
+        </div>
+
+        {done ? (
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:28,marginBottom:12}}>✦</div>
+            <div style={{fontSize:15,fontWeight:400,color:TX1,marginBottom:8}}>Angebot gesendet</div>
+            <div style={{fontSize:12,color:TX3,marginBottom:20}}>
+              @{listing.profiles?.username} wird benachrichtigt und kann dein Angebot annehmen oder ablehnen.
+            </div>
+            <button onClick={onClose} style={{padding:"10px 24px",borderRadius:10,background:G,color:"#0a0808",border:"none",cursor:"pointer",fontSize:13}}>Schließen</button>
+          </div>
+        ) : (
+          <>
+            {/* Price input */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:7}}>Dein Angebot</div>
+              <div style={{position:"relative"}}>
+                <input
+                  type="number" value={price} onChange={e=>setPrice(e.target.value)}
+                  placeholder={listing.price?.toString() ?? "0.00"}
+                  min="0" step="0.50"
+                  style={{width:"100%",padding:"11px 40px 11px 14px",borderRadius:11,
+                    background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,
+                    color:TX1,fontSize:16,fontFamily:"var(--font-mono)",outline:"none"}}
+                />
+                <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",
+                  fontSize:13,color:TX3}}>€</span>
+              </div>
+              {refPrice && (
+                <div style={{fontSize:10,color:TX3,marginTop:5}}>
+                  Marktwert: {refPrice.toLocaleString("de-DE",{minimumFractionDigits:2})} €
+                  {listing.price && refPrice && (
+                    <span style={{marginLeft:8,color:listing.price<refPrice?GREEN:TX3}}>
+                      · Inseriert: {listing.price.toLocaleString("de-DE",{minimumFractionDigits:2})} €
+                    </span>
                   )}
                 </div>
               )}
             </div>
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-              <div>
-                <div style={{fontSize:10,color:TX3,marginBottom:6,textTransform:"uppercase",letterSpacing:".08em"}}>Preis (€)</div>
-                <input value={fPrice} onChange={e=>setFPrice(e.target.value)} type="number" placeholder="z.B. 45.00" min="0" step="0.01"
-                  style={{width:"100%",padding:"9px 12px",borderRadius:9,background:"rgba(0,0,0,0.3)",border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none"}}/>
-              </div>
-              <div>
-                <div style={{fontSize:10,color:TX3,marginBottom:6,textTransform:"uppercase",letterSpacing:".08em"}}>Zustand</div>
-                <select value={fCond} onChange={e=>setFCond(e.target.value)}
-                  style={{width:"100%",padding:"9px 12px",borderRadius:9,background:BG1,border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none"}}>
-                  {["NM","LP","MP","HP","D"].map(c=><option key={c} value={c}>{c} — {CONDITION_LABEL[c]}</option>)}
-                </select>
-              </div>
+            {/* Escrow notice */}
+            <div style={{
+              padding:"10px 12px",borderRadius:10,marginBottom:16,
+              background:"rgba(61,184,122,0.06)",border:"0.5px solid rgba(61,184,122,0.15)",
+              fontSize:11,color:"#7dd3b0",lineHeight:1.6,
+            }}>
+              ✦ Sichere Abwicklung via pokédax Escrow kommt in Sprint 2 — bis dahin direkt @{listing.profiles?.username} kontaktieren.
             </div>
-            <input value={fNote} onChange={e=>setFNote(e.target.value)} placeholder="Notiz: Versand, Tausch, Grading…"
-              style={{width:"100%",padding:"9px 12px",borderRadius:9,background:"rgba(0,0,0,0.3)",border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none",marginBottom:12}}/>
-            {fMsg&&<div style={{fontSize:12,color:fMsg.startsWith("✓")?GREEN:RED,marginBottom:10}}>{fMsg}</div>}
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={submitListing} disabled={fLoading||!fCard} style={{
-                flex:1,padding:"11px",borderRadius:11,background:fCard?G:"rgba(255,255,255,0.05)",
-                color:fCard?"#0a0808":TX3,fontSize:13,fontWeight:400,border:"none",
-                cursor:fCard?"pointer":"not-allowed",
-              }}>{fLoading?"Speichert…":"Inserat veröffentlichen"}</button>
-              <button onClick={()=>setShowForm(false)} style={{padding:"11px 16px",borderRadius:11,background:"transparent",color:TX2,fontSize:13,border:`1px solid ${BR1}`,cursor:"pointer"}}>Abbrechen</button>
-            </div>
-          </div>
-        )}
 
-        {/* Tabs + Search */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:16}}>
-          <div style={{display:"flex",gap:2,background:BG1,borderRadius:13,padding:3,border:`1px solid ${BR1}`}}>
-            {([["offer","Kaufangebote"],["want","Suchangebote"]] as const).map(([t,l])=>(
-              <button key={t} onClick={()=>{setTab(t);loadListings(t);}} style={{
-                padding:"7px 18px",borderRadius:9,fontSize:13,fontWeight:400,border:"none",cursor:"pointer",
-                background:tab===t?BG2:"transparent",color:tab===t?TX1:TX3,transition:"all .2s",
-              }}>{l}</button>
-            ))}
+            {msg && <div style={{fontSize:12,color:RED,marginBottom:10}}>{msg}</div>}
+
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={sendOffer} disabled={sending||!price} style={{
+                flex:1,padding:"11px",borderRadius:11,
+                background:price?G:"rgba(255,255,255,0.04)",
+                color:price?"#0a0808":TX3,
+                border:"none",cursor:price?"pointer":"not-allowed",
+                fontSize:13,fontWeight:400,transition:"all .2s",
+              }}>{sending?"Sende…":"Angebot senden"}</button>
+              <Link href={`/profil/${listing.profiles?.username}`}
+                style={{padding:"11px 16px",borderRadius:11,background:"transparent",
+                  color:TX2,border:`0.5px solid ${BR2}`,fontSize:13,textDecoration:"none",
+                  display:"flex",alignItems:"center"}}>
+                Profil
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CreateListingPanel({onCreated}:{onCreated:()=>void}) {
+  const [open,    setOpen]    = useState(false);
+  const [fSearch, setFSearch] = useState("");
+  const [fResults,setFResults]= useState<any[]>([]);
+  const [fCard,   setFCard]   = useState<any>(null);
+  const [fType,   setFType]   = useState<"offer"|"want">("offer");
+  const [fPrice,  setFPrice]  = useState("");
+  const [fCond,   setFCond]   = useState("NM");
+  const [fNote,   setFNote]   = useState("");
+  const [fLoading,setFLoading]= useState(false);
+  const [fMsg,    setFMsg]    = useState("");
+
+  async function searchCards(q:string) {
+    setFSearch(q);
+    if (q.length<2) { setFResults([]); return; }
+    const r = await fetch(`/api/cards/search?q=${encodeURIComponent(q)}&limit=5`);
+    const d = await r.json();
+    setFResults(d.cards??[]);
+  }
+
+  async function submit() {
+    if (!fCard) { setFMsg("Bitte eine Karte wählen."); return; }
+    setFLoading(true);
+    const sb = createClient();
+    const {data:{session}} = await sb.auth.getSession();
+    const h:Record<string,string>={"Content-Type":"application/json"};
+    if (session?.access_token) h["Authorization"]=`Bearer ${session.access_token}`;
+    const res = await fetch("/api/marketplace",{method:"POST",headers:h,
+      body:JSON.stringify({card_id:fCard.id,type:fType,price:parseFloat(fPrice)||null,condition:fCond,note:fNote})});
+    const data = await res.json();
+    if (!res.ok) { setFMsg(data.error??"Fehler."); }
+    else {
+      setFMsg("✓ Inserat erstellt!");
+      setFCard(null);setFSearch("");setFResults([]);setFPrice("");setFNote("");
+      setTimeout(()=>{setOpen(false);setFMsg("");onCreated();},1000);
+    }
+    setFLoading(false);
+  }
+
+  if (!open) return (
+    <button onClick={()=>setOpen(true)} style={{
+      padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",
+      fontSize:13,fontWeight:400,border:"none",cursor:"pointer",
+      boxShadow:`0 2px 16px ${G25}`,flexShrink:0,
+    }}>+ Inserat</button>
+  );
+
+  return (
+    <div style={{
+      position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      zIndex:1000,padding:20,backdropFilter:"blur(8px)",
+    }} onClick={e=>{if(e.target===e.currentTarget)setOpen(false);}}>
+      <div style={{background:BG1,border:`0.5px solid ${BR3}`,borderRadius:24,
+        padding:26,width:"100%",maxWidth:480,position:"relative"}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:0.5,
+          background:`linear-gradient(90deg,transparent,${G},transparent)`,borderRadius:"24px 24px 0 0"}}/>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <div style={{fontSize:14,fontWeight:400,color:TX1}}>Neue Karte inserieren</div>
+          <button onClick={()=>setOpen(false)} style={{background:"transparent",border:"none",color:TX3,fontSize:18,cursor:"pointer"}}>×</button>
+        </div>
+
+        {/* Type */}
+        <div style={{display:"flex",gap:6,marginBottom:16}}>
+          {([["offer","Ich biete an"],["want","Ich suche"]] as const).map(([t,l])=>(
+            <button key={t} onClick={()=>setFType(t)} style={{
+              flex:1,padding:"8px",borderRadius:9,fontSize:12,border:"none",cursor:"pointer",
+              background:fType===t?(t==="offer"?G:G10):"transparent",
+              color:fType===t?(t==="offer"?"#0a0808":G):TX3,
+              outline:`0.5px solid ${fType===t?G:BR2}`,transition:"all .15s",
+            }}>{l}</button>
+          ))}
+        </div>
+
+        {/* Card search */}
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".06em",marginBottom:6}}>Karte</div>
+          {fCard ? (
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",
+              background:BG2,borderRadius:9,border:`0.5px solid ${G18}`}}>
+              {fCard.image_url&&<img src={fCard.image_url} alt="" style={{width:22,height:30,objectFit:"contain"}}/>}
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,color:TX1}}>{fCard.name_de||fCard.name}</div>
+                <div style={{fontSize:10,color:TX3}}>{fCard.set_id?.toUpperCase()} · #{fCard.number}</div>
+              </div>
+              <div style={{fontSize:13,fontFamily:"var(--font-mono)",color:G}}>{fCard.price_market?.toFixed(2)} €</div>
+              <button onClick={()=>setFCard(null)} style={{background:"transparent",border:"none",color:TX3,cursor:"pointer",fontSize:16}}>×</button>
+            </div>
+          ) : (
+            <div>
+              <div style={{position:"relative"}}>
+                <input value={fSearch} onChange={e=>searchCards(e.target.value)}
+                  placeholder="Kartenname suchen…"
+                  style={{width:"100%",padding:"9px 12px",borderRadius:9,
+                    background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,
+                    color:TX1,fontSize:13,outline:"none"}}/>
+              </div>
+              {fResults.length>0&&(
+                <div style={{marginTop:6,display:"flex",flexDirection:"column",gap:3}}>
+                  {fResults.map((c:any)=>(
+                    <div key={c.id} onClick={()=>{setFCard(c);setFResults([]);}} style={{
+                      display:"flex",alignItems:"center",gap:10,padding:"8px 12px",
+                      background:BG2,borderRadius:7,border:`0.5px solid ${BR1}`,cursor:"pointer",
+                    }}>
+                      {c.image_url&&<img src={c.image_url} alt="" style={{width:18,height:25,objectFit:"contain"}}/>}
+                      <div style={{flex:1,fontSize:12,color:TX1}}>{c.name_de||c.name}</div>
+                      <div style={{fontSize:11,fontFamily:"var(--font-mono)",color:G}}>{c.price_market?.toFixed(2)} €</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div>
+            <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".06em",marginBottom:5}}>Preis (€)</div>
+            <input value={fPrice} onChange={e=>setFPrice(e.target.value)} type="number"
+              placeholder={fCard?.price_market?.toFixed(2)??"0.00"} min="0" step="0.50"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,
+                background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,
+                color:TX1,fontSize:13,outline:"none"}}/>
           </div>
-          <div style={{position:"relative"}}>
-            <svg style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",opacity:.3}} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Karte oder Nutzer suchen"
-              style={{padding:"8px 8px 8px 32px",borderRadius:11,background:BG1,border:`1px solid ${BR2}`,color:TX1,fontSize:12,outline:"none",width:220}}/>
+          <div>
+            <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".06em",marginBottom:5}}>Zustand</div>
+            <select value={fCond} onChange={e=>setFCond(e.target.value)}
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,
+                background:BG1,border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}>
+              {["NM","LP","MP","HP","D"].map(c=><option key={c} value={c}>{c} — {CONDITION_META[c].label}</option>)}
+            </select>
           </div>
         </div>
 
-        {/* Listings */}
+        <input value={fNote} onChange={e=>setFNote(e.target.value)}
+          placeholder="Notiz: Versand, Tausch möglich, Grading…"
+          style={{width:"100%",padding:"9px 12px",borderRadius:8,
+            background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,
+            color:TX1,fontSize:12,outline:"none",marginBottom:12}}/>
+
+        {fCard&&fType==="offer"&&fPrice&&(
+          <div style={{padding:"9px 12px",borderRadius:9,marginBottom:12,
+            background:G05,border:`0.5px solid ${G18}`,fontSize:11,color:TX2}}>
+            <span style={{color:G}}>✦ Du erhältst:</span>{" "}
+            <span style={{fontFamily:"var(--font-mono)",color:TX1}}>
+              {parseFloat(fPrice).toLocaleString("de-DE",{minimumFractionDigits:2})} €
+            </span>
+            <span style={{color:TX3}}>{" "}(Launch-Promo: 0% Provision)</span>
+          </div>
+        )}
+
+        {fMsg&&<div style={{fontSize:12,color:fMsg.startsWith("✓")?GREEN:RED,marginBottom:10}}>{fMsg}</div>}
+
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={submit} disabled={fLoading||!fCard} style={{
+            flex:1,padding:"11px",borderRadius:10,
+            background:fCard?G:"rgba(255,255,255,0.04)",
+            color:fCard?"#0a0808":TX3,
+            border:"none",cursor:fCard?"pointer":"not-allowed",fontSize:13,
+          }}>{fLoading?"Speichert…":"Veröffentlichen"}</button>
+          <button onClick={()=>setOpen(false)} style={{
+            padding:"11px 16px",borderRadius:10,background:"transparent",
+            color:TX2,fontSize:13,border:`0.5px solid ${BR2}`,cursor:"pointer",
+          }}>Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function MarketplacePage() {
+  const [listings,  setListings]  = useState<Listing[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [tab,       setTab]       = useState<"offer"|"want"|"all">("offer");
+  const [sort,      setSort]      = useState<"newest"|"price_asc"|"price_desc"|"deal">("newest");
+  const [search,    setSearch]    = useState("");
+  const [setFilter, setSetFilter] = useState("");
+  const [condFilter,setCondFilter]= useState("");
+  const [offerModal,setOfferModal]= useState<Listing|null>(null);
+  const [user,      setUser]      = useState<any>(null);
+
+  useEffect(()=>{
+    createClient().auth.getUser().then(({data:{user}})=>setUser(user));
+    loadListings();
+  },[]);
+
+  async function loadListings() {
+    setLoading(true);
+    const sb = createClient();
+    const { data } = await sb
+      .from("marketplace_listings")
+      .select(`id,type,price,condition,note,created_at,user_id,is_active,
+        profiles!marketplace_listings_user_id_fkey(username,avatar_url),
+        cards!marketplace_listings_card_id_fkey(id,name,name_de,set_id,number,price_market,price_avg7,image_url,rarity,types)`)
+      .eq("is_active",true)
+      .order("created_at",{ascending:false})
+      .limit(60);
+    const normalized = (data??[]).map((l:any)=>({
+      ...l,
+      profiles:Array.isArray(l.profiles)?l.profiles[0]:l.profiles,
+      cards:Array.isArray(l.cards)?l.cards[0]:l.cards,
+    }));
+    setListings(normalized as Listing[]);
+    setLoading(false);
+  }
+
+  // Filter + sort
+  let filtered = listings.filter(l=>{
+    if (tab!=="all" && l.type!==tab) return false;
+    if (search) {
+      const q=search.toLowerCase();
+      if (!(l.cards?.name_de??l.cards?.name??"").toLowerCase().includes(q) &&
+          !(l.profiles?.username??"").toLowerCase().includes(q)) return false;
+    }
+    if (setFilter && l.cards?.set_id!==setFilter) return false;
+    if (condFilter && l.condition!==condFilter) return false;
+    return true;
+  });
+
+  if (sort==="price_asc")  filtered=[...filtered].sort((a,b)=>(a.price??999)-(b.price??999));
+  if (sort==="price_desc") filtered=[...filtered].sort((a,b)=>(b.price??0)-(a.price??0));
+  if (sort==="deal") filtered=[...filtered].sort((a,b)=>{
+    const da = a.price&&a.cards?.price_market ? a.price/a.cards.price_market : 1;
+    const db = b.price&&b.cards?.price_market ? b.price/b.cards.price_market : 1;
+    return da-db;
+  });
+
+  const dealCount   = listings.filter(l=>l.type==="offer"&&l.price&&l.cards?.price_market&&l.price<l.cards.price_market*0.95).length;
+  const offerCount  = listings.filter(l=>l.type==="offer").length;
+  const wantCount   = listings.filter(l=>l.type==="want").length;
+
+  return (
+    <div style={{color:TX1,minHeight:"80vh"}}>
+      <div style={{maxWidth:1200,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",
+          flexWrap:"wrap",gap:16,marginBottom:"clamp(28px,4vw,44px)"}}>
+          <div>
+            <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",
+              color:TX3,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+              <span style={{width:16,height:0.5,background:TX3,display:"inline-block"}}/>Marktplatz
+            </div>
+            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(26px,4.5vw,48px)",
+              fontWeight:200,letterSpacing:"-.055em",marginBottom:6,lineHeight:1.05}}>
+              Kaufen &<br/><span style={{color:G}}>verkaufen.</span>
+            </h1>
+            <div style={{display:"flex",gap:14,marginTop:10,flexWrap:"wrap"}}>
+              <span style={{fontSize:12,color:TX3}}>{offerCount} Angebote</span>
+              <span style={{fontSize:12,color:TX3}}>{wantCount} Gesuche</span>
+              {dealCount>0&&<span style={{fontSize:12,color:G}}>✦ {dealCount} Deals unter Marktwert</span>}
+            </div>
+          </div>
+          <CreateListingPanel onCreated={loadListings}/>
+        </div>
+
+        {/* Toolbar */}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16,alignItems:"center"}}>
+          {/* Tab */}
+          <div style={{display:"flex",gap:2,background:BG1,borderRadius:11,padding:3,border:`0.5px solid ${BR2}`}}>
+            {([["offer","Kaufangebote"],["want","Gesuche"],["all","Alle"]] as const).map(([t,l])=>(
+              <button key={t} onClick={()=>setTab(t)} style={{
+                padding:"6px 16px",borderRadius:8,fontSize:12,border:"none",cursor:"pointer",
+                background:tab===t?BG2:"transparent",color:tab===t?TX1:TX3,transition:"all .15s",
+              }}>{l}</button>
+            ))}
+          </div>
+
+          {/* Sort */}
+          <select value={sort} onChange={e=>setSort(e.target.value as any)}
+            style={{padding:"7px 12px",borderRadius:9,background:BG1,
+              border:`0.5px solid ${BR2}`,color:TX2,fontSize:12,outline:"none"}}>
+            <option value="newest">Neueste zuerst</option>
+            <option value="price_asc">Preis aufsteigend</option>
+            <option value="price_desc">Preis absteigend</option>
+            <option value="deal">Beste Deals zuerst</option>
+          </select>
+
+          {/* Condition filter */}
+          <select value={condFilter} onChange={e=>setCondFilter(e.target.value)}
+            style={{padding:"7px 12px",borderRadius:9,background:BG1,
+              border:`0.5px solid ${BR2}`,color:TX2,fontSize:12,outline:"none"}}>
+            <option value="">Alle Zustände</option>
+            {["NM","LP","MP","HP","D"].map(c=><option key={c} value={c}>{c} · {CONDITION_META[c].label}</option>)}
+          </select>
+
+          {/* Search */}
+          <div style={{position:"relative",flex:1,minWidth:160,maxWidth:280}}>
+            <svg style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",opacity:.3}}
+              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input value={search} onChange={e=>setSearch(e.target.value)}
+              placeholder="Karte oder Verkäufer…"
+              style={{width:"100%",padding:"7px 8px 7px 30px",borderRadius:9,
+                background:BG1,border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}/>
+          </div>
+
+          {/* Reset filters */}
+          {(search||condFilter||setFilter) && (
+            <button onClick={()=>{setSearch("");setCondFilter("");setSetFilter("");}} style={{
+              padding:"7px 12px",borderRadius:9,background:"transparent",
+              color:TX3,fontSize:11,border:`0.5px solid ${BR1}`,cursor:"pointer",
+            }}>Filter zurücksetzen ×</button>
+          )}
+        </div>
+
+        {/* Listings grid */}
         {loading ? (
-          <div style={{padding:"48px",textAlign:"center",fontSize:14,color:TX3}}>Lädt…</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+            {Array.from({length:8}).map((_,i)=>(
+              <div key={i} style={{height:240,background:BG1,border:`0.5px solid ${BR1}`,
+                borderRadius:18,opacity:.3,animation:"pulse 1.5s ease-in-out infinite"}}/>
+            ))}
+          </div>
         ) : filtered.length===0 ? (
-          <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:20,padding:"48px",textAlign:"center"}}>
-            <div style={{fontSize:14,color:TX3,marginBottom:16}}>Noch keine {tab==="offer"?"Angebote":"Suchanfragen"}.</div>
-            <button onClick={()=>setShowForm(true)} style={{fontSize:13,color:G,background:"transparent",border:"none",cursor:"pointer"}}>Ersten Eintrag erstellen →</button>
+          <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:20,
+            padding:"60px",textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:16,opacity:.2}}>◈</div>
+            <div style={{fontSize:14,color:TX3,marginBottom:20}}>Keine Einträge gefunden.</div>
+            <button onClick={()=>setTab("all")} style={{
+              fontSize:13,color:G,background:"transparent",border:"none",cursor:"pointer",
+            }}>Alle anzeigen →</button>
           </div>
         ) : (
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {filtered.map(l=>{
-              const card = l.cards;
-              const refPrice = card?.price_market;
-              const showDeal = l.type==="offer"&&l.price&&refPrice&&l.price<refPrice;
-              return (
-                <div key={l.id} style={{
-                  display:"flex",alignItems:"center",gap:14,
-                  background:BG1,border:`1px solid ${BR1}`,borderRadius:16,
-                  padding:"14px 18px",transition:"border-color .2s",
-                }}>
-                  {/* Card image */}
-                  <div style={{width:40,height:56,borderRadius:6,background:BG2,overflow:"hidden",flexShrink:0}}>
-                    {card?.image_url&&<img src={card.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>}
-                  </div>
-                  {/* Card info */}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
-                      <div style={{fontSize:14,fontWeight:400,color:TX1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {card?.name_de||card?.name||"Unbekannte Karte"}
-                      </div>
-                      {showDeal&&<span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:4,background:"rgba(61,184,122,0.1)",color:GREEN,border:"0.5px solid rgba(61,184,122,0.2)"}}>DEAL</span>}
-                    </div>
-                    <div style={{fontSize:11,color:TX3}}>{card?.set_id?.toUpperCase()} · #{card?.number}</div>
-                    {l.note&&<div style={{fontSize:11,color:TX2,marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.note}</div>}
-                  </div>
-                  {/* Condition */}
-                  <div style={{flexShrink:0}}>
-                    <span style={{fontSize:9,fontWeight:600,padding:"2px 7px",borderRadius:4,background:"rgba(255,255,255,0.04)",color:CONDITION_COLOR[l.condition]||TX3,border:"0.5px solid rgba(255,255,255,0.08)"}}>{l.condition}</span>
-                  </div>
-                  {/* Seller */}
-                  <div style={{flexShrink:0,textAlign:"right"}}>
-                    <div style={{fontSize:12,color:TX2,marginBottom:2}}>@{l.profiles?.username||"Anonym"}</div>
-                    {l.price ? (
-                      <div style={{fontSize:16,fontFamily:"var(--font-mono)",fontWeight:300,color:G,letterSpacing:"-.03em"}}>
-                        {l.price.toLocaleString("de-DE",{minimumFractionDigits:2})} €
-                      </div>
-                    ) : <div style={{fontSize:11,color:TX3}}>VB</div>}
-                  </div>
-                  {/* Action */}
-                  <a href={`/profil/${l.profiles?.username||""}`} style={{
-                    flexShrink:0,padding:"8px 16px",borderRadius:10,fontSize:12,fontWeight:400,
-                    background:l.type==="offer"?G:"transparent",
-                    color:l.type==="offer"?"#0a0808":G,
-                    border:l.type==="offer"?"none":`1px solid ${G18}`,
-                    textDecoration:"none",
-                  }}>Kontakt</a>
-                </div>
-              );
-            })}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+            {filtered.map(l=>(
+              <ListingCard key={l.id} l={l} onOffer={setOfferModal}/>
+            ))}
           </div>
         )}
       </div>
+
+      {offerModal&&<OfferModal listing={offerModal} onClose={()=>setOfferModal(null)}/>}
+      <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.5}}`}</style>
     </div>
   );
 }
