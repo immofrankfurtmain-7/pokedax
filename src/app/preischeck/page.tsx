@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
@@ -25,10 +26,11 @@ interface Card {
 }
 
 export default function PreischeckPage() {
-  const [query,  setQuery]  = useState("");
+  const searchParamsHook = useSearchParams();
+  const [query,  setQuery]  = useState(() => searchParamsHook.get("q") ?? "");
   const [sort,   setSort]   = useState("price_desc");
-  const [setId,  setSetId]  = useState("");
-  const [setSearch, setSetSearch] = useState("");
+  const [setId,  setSetId]  = useState(() => searchParamsHook.get("set") ?? "");
+  const [setSearch, setSetSearch] = useState(() => { const s = searchParamsHook.get("set"); return s ?? ""; });
   const [sets,   setSets]   = useState<{id:string;name:string}[]>([]);
   const [holoOnly, setHoloOnly] = useState(false);
   const [cards,  setCards]  = useState<Card[]>([]);
@@ -49,7 +51,9 @@ export default function PreischeckPage() {
     setLoading(false);
   }, [setId, holoOnly]);
 
-  useEffect(() => { load("", "price_desc"); }, [load]);
+  useEffect(() => { load(query, sort); }, [load]);
+  // Re-run when set filter or holo changes
+  useEffect(() => { load(query, sort); }, [setId, holoOnly]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
