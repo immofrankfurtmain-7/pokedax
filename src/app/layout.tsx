@@ -28,6 +28,7 @@ export const metadata: Metadata = {
     statusBarStyle:"black-translucent",
     title:"pokédax",
   },
+  icons: { icon: "/favicon.svg", apple: "/icon-192.svg" },
   themeColor:"#D4A843",
   viewport:{width:"device-width",initialScale:1,maximumScale:1},
 };

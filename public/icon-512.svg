@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#09090b"/>
+  <rect width="512" height="4" rx="2" fill="#D4A843" opacity="0.5"/>
+  <!-- Diamond shape -->
+  <polygon points="256,80 400,224 256,368 112,224" fill="none" stroke="#D4A843" stroke-width="8"/>
+  <polygon points="256,140 340,224 256,308 172,224" fill="#D4A843" opacity="0.15"/>
+  <!-- Inner lines -->
+  <line x1="256" y1="80" x2="256" y2="140" stroke="#D4A843" stroke-width="6" stroke-linecap="round"/>
+  <line x1="400" y1="224" x2="340" y2="224" stroke="#D4A843" stroke-width="6" stroke-linecap="round"/>
+  <line x1="256" y1="368" x2="256" y2="308" stroke="#D4A843" stroke-width="6" stroke-linecap="round"/>
+  <line x1="112" y1="224" x2="172" y2="224" stroke="#D4A843" stroke-width="6" stroke-linecap="round"/>
+  <!-- pd text -->
+  <text x="256" y="460" text-anchor="middle" font-family="Georgia,serif" font-size="56" font-weight="300" letter-spacing="4" fill="#D4A843">pd</text>
+</svg>
