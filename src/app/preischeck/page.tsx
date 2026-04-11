@@ -1,6 +1,5 @@
-﻿"use client";
+"use client";
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
@@ -26,11 +25,10 @@ interface Card {
 }
 
 export default function PreischeckPage() {
-  const searchParamsHook = useSearchParams();
-  const [query,  setQuery]  = useState(() => searchParamsHook.get("q") ?? "");
+  const [query,  setQuery]  = useState("");
   const [sort,   setSort]   = useState("price_desc");
-  const [setId,  setSetId]  = useState(() => searchParamsHook.get("set") ?? "");
-  const [setSearch, setSetSearch] = useState(() => { const s = searchParamsHook.get("set"); return s ?? ""; });
+  const [setId,  setSetId]  = useState("");
+  const [setSearch, setSetSearch] = useState("");
   const [sets,   setSets]   = useState<{id:string;name:string}[]>([]);
   const [holoOnly, setHoloOnly] = useState(false);
   const [cards,  setCards]  = useState<Card[]>([]);
@@ -40,7 +38,7 @@ export default function PreischeckPage() {
   const load = useCallback(async (q:string, s:string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ q, sort:s, limit:"24" });
+      const params = new URLSearchParams({ q, sort:s, limit:"200" });
       if (setId) params.set("set", setId);
       if (holoOnly) params.set("holo", "1");
       const r = await fetch(`/api/cards/search?${params}`);
@@ -51,8 +49,15 @@ export default function PreischeckPage() {
     setLoading(false);
   }, [setId, holoOnly]);
 
+  // Read URL params on mount (no Suspense needed with this approach)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlSet = params.get("set") ?? "";
+    const urlQ   = params.get("q")   ?? "";
+    if (urlSet) { setSetId(urlSet); setSetSearch(urlSet); }
+    if (urlQ)   { setQuery(urlQ); }
+  }, []);
   useEffect(() => { load(query, sort); }, [load]);
-  // Re-run when set filter or holo changes
   useEffect(() => { load(query, sort); }, [setId, holoOnly]);
 
   const handleSearch = (e: React.FormEvent) => {

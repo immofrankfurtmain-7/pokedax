@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const revalidate = 0;
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const q      = searchParams.get("q")     || "";
   const set    = searchParams.get("set")   || "";
   const sort   = searchParams.get("sort")  || "price_desc";
-  const limit  = Math.min(parseInt(searchParams.get("limit") || "48"), 100);
+  const limit  = Math.min(parseInt(searchParams.get("limit") || "48"), 500);
 
   const SELECT = "id,name,name_de,set_id,number,rarity,types,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo";
   let query = supabase.from("cards").select(SELECT);
