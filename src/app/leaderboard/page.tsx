@@ -1,79 +1,180 @@
 ﻿"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
-const BG1="#111113",BR1="rgba(255,255,255,0.06)",BR2="rgba(255,255,255,0.10)";
-const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a";
 
-const LB=[
-  {r:1, name:"MaxTrainer",    badge:"✦",   val:"12.480",change:"+8,2%"},
-  {r:2, name:"SaraCollects",  badge:"✦",   val:"9.340", change:"+3,1%"},
-  {r:3, name:"TCGInvestor",   badge:"✦✦✦", val:"8.120", change:"+12,4%"},
-  {r:4, name:"KarteCheck",    badge:"",    val:"4.890", change:"−1,8%"},
-  {r:5, name:"PokeHunter99",  badge:"",    val:"3.240", change:"+5,7%"},
-  {r:6, name:"DragonMaster",  badge:"",    val:"2.847", change:"+2,3%"},
-  {r:7, name:"NachtaraFan",   badge:"",    val:"1.990", change:"−0,9%"},
-];
+const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
+const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
+const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a";
+
+const BADGE_COLORS = ["#D4A843","#9CA3AF","#CD7F32"];
+const BADGE_ICONS  = ["✦✦✦","✦✦","✦"];
+
+function MedalIcon({rank}:{rank:number}) {
+  const color = rank===1?"#D4A843":rank===2?"#9CA3AF":"#CD7F32";
+  return (
+    <div style={{width:32,height:32,borderRadius:"50%",background:`${color}15`,
+      border:`0.5px solid ${color}30`,display:"flex",alignItems:"center",
+      justifyContent:"center",fontSize:13,color,fontWeight:600,flexShrink:0}}>
+      {rank}
+    </div>
+  );
+}
+
+function Avatar({username,size=32}:{username:string;size?:number}) {
+  const colors=["#D4A843","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
+  const c=colors[username.charCodeAt(0)%colors.length];
+  return (
+    <div style={{width:size,height:size,borderRadius:"50%",background:`${c}15`,
+      border:`0.5px solid ${c}30`,display:"flex",alignItems:"center",
+      justifyContent:"center",fontSize:size*.38,color:c,fontWeight:500,flexShrink:0}}>
+      {username[0].toUpperCase()}
+    </div>
+  );
+}
+
+interface PortfolioEntry { rank:number; username:string; is_premium:boolean; total_value:number; member_since:string|null; }
+interface FantasyEntry   { rank:number; username:string; is_premium:boolean; total_value:number; team_name:string; }
 
 export default function LeaderboardPage() {
+  const [tab,     setTab]     = useState<"portfolio"|"fantasy">("portfolio");
+  const [portfolio, setPortfolio] = useState<PortfolioEntry[]>([]);
+  const [fantasy,   setFantasy]   = useState<FantasyEntry[]>([]);
+  const [loading,   setLoading]   = useState(true);
+
+  useEffect(() => { loadAll(); }, []);
+
+  async function loadAll() {
+    setLoading(true);
+    try {
+      const [pRes, fRes] = await Promise.all([
+        fetch("/api/leaderboard/portfolio"),
+        fetch("/api/fantasy/leaderboard"),
+      ]);
+      const [pData, fData] = await Promise.all([pRes.json(), fRes.json()]);
+      setPortfolio(pData.leaderboard ?? []);
+      setFantasy(fData.leaderboard ?? []);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  }
+
+  const podium = (tab==="portfolio" ? portfolio : fantasy).slice(0,3);
+  const rest   = (tab==="portfolio" ? portfolio : fantasy).slice(3);
+
   return (
     <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:900,margin:"0 auto",padding:"80px 24px"}}>
-        <div style={{marginBottom:64}}>
-          <div style={{fontSize:10,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:G,marginBottom:16}}>Community</div>
-          <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(40px,6vw,68px)",fontWeight:300,letterSpacing:"-.07em",lineHeight:1.0,color:TX1,marginBottom:10}}>Leaderboard</h1>
-          <p style={{fontSize:15,color:TX3}}>Rangliste nach Portfolio-Wert · April 2026</p>
+      <div style={{maxWidth:800,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+
+        {/* Header */}
+        <div style={{marginBottom:"clamp(28px,4vw,44px)"}}>
+          <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+            <span style={{width:16,height:0.5,background:TX3,display:"inline-block"}}/>Leaderboard
+          </div>
+          <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(26px,4.5vw,48px)",fontWeight:200,letterSpacing:"-.055em",marginBottom:6,lineHeight:1.05}}>
+            Die besten<br/><span style={{color:G}}>Sammler.</span>
+          </h1>
         </div>
 
-        {/* Podium — top 3 */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1.15fr 1fr",gap:10,marginBottom:16,alignItems:"flex-end"}}>
-          {[LB[1],LB[0],LB[2]].map((r,i)=>{
-            const isCenter = i===1;
-            return (
-              <div key={r.name} className={isCenter?"gold-glow":""} style={{
-                background:isCenter?`radial-gradient(ellipse 80% 55% at 50% 0%,rgba(233,168,75,0.09),transparent 55%),${BG1}`:BG1,
-                border:isCenter?"1px solid rgba(233,168,75,0.25)":`1px solid ${BR1}`,
-                borderRadius:24,padding:isCenter?"clamp(24px,3vw,36px)":"clamp(18px,2.5vw,28px)",
-                textAlign:"center",position:"relative",
-              }}>
-                {isCenter&&<div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,rgba(233,168,75,0.5),transparent)`,borderRadius:"24px 24px 0 0"}}/>}
-                <div style={{fontFamily:"'DM Mono',monospace",fontSize:isCenter?14:12,fontWeight:600,color:isCenter?G:TX3,marginBottom:10}}>
-                  {["02","01","03"][i]}
-                </div>
-                <div style={{width:isCenter?52:44,height:isCenter?52:44,borderRadius:"50%",background:isCenter?"rgba(233,168,75,0.1)":"rgba(255,255,255,0.05)",border:isCenter?`2px solid rgba(233,168,75,0.3)`:`1px solid ${BR2}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:isCenter?20:17,fontWeight:600,color:isCenter?G:TX2,margin:"0 auto 14px"}}>
-                  {r.name[0]}
-                </div>
-                <div style={{fontSize:isCenter?15:13,fontWeight:500,color:TX1,marginBottom:3}}>{r.name}</div>
-                {r.badge&&<div style={{fontSize:10,color:G,marginBottom:8}}>{r.badge}</div>}
-                <div style={{fontFamily:"'DM Mono',monospace",fontSize:isCenter?20:16,color:isCenter?G:TX2,fontWeight:400}}>{r.val} €</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Rank 4–7 */}
-        <div style={{background:BG1,border:`1px solid ${BR2}`,borderRadius:24,overflow:"hidden",marginBottom:20}}>
-          {LB.slice(3).map((r,i)=>(
-            <div key={r.name} style={{
-              display:"grid",gridTemplateColumns:"52px 52px 1fr auto auto",
-              gap:12,padding:"18px 24px",
-              borderBottom:i<3?`1px solid rgba(255,255,255,0.04)`:"none",
-              alignItems:"center",
-            }}>
-              <div style={{fontFamily:"'DM Mono',monospace",fontSize:13,fontWeight:600,color:TX3,textAlign:"center"}}>{String(r.r).padStart(2,"0")}</div>
-              <div style={{width:36,height:36,borderRadius:11,background:"rgba(255,255,255,0.04)",border:`1px solid ${BR1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:600,color:TX2}}>{r.name[0]}</div>
-              <div style={{fontSize:14,fontWeight:500,color:TX1}}>{r.name}</div>
-              <div style={{fontSize:12,color:r.change.startsWith("+")?G:"rgba(224,69,88,0.8)",fontFamily:"'DM Mono',monospace"}}>{r.change}</div>
-              <div style={{fontFamily:"'DM Mono',monospace",fontSize:15,color:TX2,fontWeight:400,textAlign:"right"}}>{r.val} €</div>
-            </div>
+        {/* Tab */}
+        <div style={{display:"flex",gap:2,background:BG1,borderRadius:12,padding:3,border:`0.5px solid ${BR2}`,marginBottom:20,width:"fit-content"}}>
+          {([["portfolio","◈ Portfolio-Wert"],["fantasy","◇ Fantasy League"]] as const).map(([t,l])=>(
+            <button key={t} onClick={()=>setTab(t)} style={{
+              padding:"7px 20px",borderRadius:9,fontSize:13,fontWeight:400,border:"none",cursor:"pointer",
+              background:tab===t?BG2:"transparent",color:tab===t?TX1:TX3,transition:"all .15s",
+            }}>{l}</button>
           ))}
         </div>
 
-        {/* Your rank */}
-        <div style={{background:G08,border:`1px solid ${G18}`,borderRadius:20,padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
-          <div style={{fontSize:14,color:TX2}}>Dein Rang: <strong style={{color:TX1,fontWeight:500}}>#247</strong> · 847 € Portfolio-Wert</div>
-          <Link href="/dashboard/premium" className="gold-glow" style={{padding:"10px 22px",borderRadius:14,background:G,color:"#0a0808",fontSize:13,fontWeight:600,textDecoration:"none"}}>Portfolio aufbauen ✦</Link>
+        {loading ? (
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {Array.from({length:10}).map((_,i)=>(
+              <div key={i} style={{height:60,background:BG1,border:`0.5px solid ${BR1}`,borderRadius:14,opacity:.3,animation:"pulse 1.5s ease-in-out infinite"}}/>
+            ))}
+          </div>
+        ) : (portfolio.length===0 && tab==="portfolio") || (fantasy.length===0 && tab==="fantasy") ? (
+          <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:20,padding:"60px",textAlign:"center"}}>
+            <div style={{fontSize:32,opacity:.2,marginBottom:16}}>◈</div>
+            <div style={{fontSize:14,color:TX3,marginBottom:8}}>Noch keine Daten.</div>
+            <div style={{fontSize:12,color:TX3}}>
+              {tab==="portfolio"?"Füge Karten zu deiner Sammlung hinzu um hier zu erscheinen.":"Erstelle ein Fantasy-Team um hier zu erscheinen."}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Podium — top 3 */}
+            {podium.length>=3 && (
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1.15fr 1fr",gap:10,marginBottom:14,alignItems:"end"}}>
+                {[podium[1],podium[0],podium[2]].map((entry,visualIdx)=>{
+                  const realRank = visualIdx===0?2:visualIdx===1?1:3;
+                  const color = BADGE_COLORS[realRank-1];
+                  const isFirst = realRank===1;
+                  return (
+                    <div key={entry.username} style={{
+                      background:`linear-gradient(180deg,${color}08,${BG1})`,
+                      border:`0.5px solid ${color}25`,
+                      borderRadius:16,padding:"20px 14px",textAlign:"center",
+                      position:"relative",overflow:"hidden",
+                    }}>
+                      {isFirst&&<div style={{position:"absolute",top:0,left:0,right:0,height:0.5,background:`linear-gradient(90deg,transparent,${color},transparent)`}}/>}
+                      <div style={{fontSize:10,fontWeight:600,letterSpacing:".08em",color,marginBottom:12}}>{BADGE_ICONS[realRank-1]}</div>
+                      <Avatar username={entry.username} size={40}/>
+                      <div style={{fontSize:13,fontWeight:400,color:TX1,marginTop:10,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        @{entry.username}
+                        {entry.is_premium&&<span style={{marginLeft:5,fontSize:8,color:G}}>✦</span>}
+                      </div>
+                      <div style={{fontFamily:"var(--font-mono)",fontSize:isFirst?20:16,fontWeight:300,color,letterSpacing:"-.03em"}}>
+                        {tab==="portfolio"
+                          ? `${Math.round((entry as PortfolioEntry).total_value).toLocaleString("de-DE")} €`
+                          : `${Math.round((entry as FantasyEntry).total_value).toLocaleString("de-DE")} €`
+                        }
+                      </div>
+                      {tab==="fantasy" && (entry as FantasyEntry).team_name && (
+                        <div style={{fontSize:9,color:TX3,marginTop:3}}>{(entry as FantasyEntry).team_name}</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Ranks 4+ */}
+            {rest.length > 0 && (
+              <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:18,overflow:"hidden"}}>
+                {rest.map((entry,i)=>(
+                  <div key={entry.username} style={{
+                    display:"flex",alignItems:"center",gap:12,
+                    padding:"12px 16px",
+                    borderBottom:i<rest.length-1?`0.5px solid ${BR1}`:undefined,
+                    transition:"background .12s",
+                  }}
+                  onMouseEnter={e=>(e.currentTarget.style.background=BG2)}
+                  onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                    <div style={{width:24,textAlign:"right",fontSize:13,color:TX3,fontFamily:"var(--font-mono)",flexShrink:0}}>{entry.rank}</div>
+                    <Avatar username={entry.username} size={28}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,color:TX1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        @{entry.username}
+                        {entry.is_premium&&<span style={{marginLeft:5,fontSize:8,color:G}}>✦</span>}
+                      </div>
+                      {tab==="fantasy"&&(entry as FantasyEntry).team_name&&(
+                        <div style={{fontSize:10,color:TX3}}>{(entry as FantasyEntry).team_name}</div>
+                      )}
+                    </div>
+                    <div style={{fontFamily:"var(--font-mono)",fontSize:15,fontWeight:300,color:TX1,flexShrink:0}}>
+                      {Math.round(entry.total_value).toLocaleString("de-DE")} €
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        <div style={{marginTop:20,textAlign:"center",fontSize:12,color:TX3}}>
+          Aktualisiert täglich ·{" "}
+          <Link href="/portfolio" style={{color:G,textDecoration:"none"}}>Mein Portfolio →</Link>
         </div>
       </div>
+      <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.5}}`}</style>
     </div>
   );
 }

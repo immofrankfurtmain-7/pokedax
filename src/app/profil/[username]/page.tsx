@@ -8,9 +8,10 @@ export const dynamic = "force-dynamic";
 interface Props { params: { username: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username } = await params;
   return {
-    title: `${params.username} – pokédax`,
-    description: `Pokémon TCG Profil von ${params.username} auf pokédax`,
+    title: `${username} – pokédax`,
+    description: `Pokémon TCG Profil von ${username} auf pokédax`,
   };
 }
 
@@ -18,6 +19,7 @@ const G="#E9A84B",BG1="#111113",BG2="#1a1a1f",BR2="rgba(255,255,255,0.085)";
 const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a",GREEN="#4BBF82";
 
 export default async function ProfilePage({ params }: Props) {
+  const { username } = await params;
   const sb = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -26,7 +28,7 @@ export default async function ProfilePage({ params }: Props) {
   const { data: profile } = await sb
     .from("profiles")
     .select("id, username, avatar_url, is_premium, created_at")
-    .eq("username", params.username)
+    .eq("username", username)
     .single();
 
   if (!profile) notFound();

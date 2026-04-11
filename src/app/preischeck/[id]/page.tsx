@@ -21,7 +21,6 @@ function PriceChart({avg7,avg30,market,history}:{avg7:number|null;avg30:number|n
     const p30=avg30??market*0.88, p7=avg7??market*0.96;
     pts=[p30,p30*1.02,p30*0.98,p30*1.04,p30*1.01,p7*0.97,p7,p7*1.02,p7*0.99,p7*1.01,now*0.98,now*1.01,now*0.99,now];
   }
-  const now=market;
   const min=Math.min(...pts)*0.97, max=Math.max(...pts)*1.03, range=max-min;
   const W=600, H=80;
   const xStep=W/(pts.length-1);

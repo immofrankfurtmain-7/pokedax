@@ -30,17 +30,21 @@ export async function GET(request: NextRequest) {
 
     return {
       id:            t.id,
-      name:          t.name,
+      team_name:     t.name,
       username:      t.profiles?.username ?? "Anonym",
+      is_premium:    t.profiles?.is_premium ?? false,
       avatar_url:    t.profiles?.avatar_url,
       picks_count:   picks.length,
-      current_value: Math.round(currentValue * 100) / 100,
+      total_value:   Math.round(currentValue * 100) / 100,
       bought_value:  Math.round(boughtValue * 100) / 100,
       score:         Math.round(score * 10) / 10,
     };
   }).sort((a: any, b: any) => b.score - a.score);
 
-  return NextResponse.json({ leaderboard: scored, season });
+  const ranked = scored
+    .sort((a: any, b: any) => b.total_value - a.total_value)
+    .map((e: any, i: number) => ({ ...e, rank: i + 1 }));
+  return NextResponse.json({ leaderboard: ranked, season });
 }
 
 function getCurrentSeason(): string {
