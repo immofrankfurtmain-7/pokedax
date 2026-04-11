@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
@@ -19,6 +19,7 @@ const DROPDOWN_LINKS = [
   { href: "/portfolio",   label: "Portfolio",      icon: "◈" },
   { href: "/scanner",     label: "Scanner",        icon: "⊙" },
   { href: "/sets",        label: "Sets",           icon: "◫" },
+  { href: "/compare",     label: "Vergleich",      icon: "⇄" },
   { href: "/fantasy",     label: "Fantasy",        icon: "◇" },
   { href: "/leaderboard", label: "Leaderboard",    icon: "▲" },
   { href: "/matches",     label: "Meine Matches",  icon: "◉" },

@@ -1,4 +1,4 @@
-﻿@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600&family=DM+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600&family=DM+Mono:wght@400;500&display=swap");
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500&display=swap");
 @tailwind base;
 @tailwind components;
@@ -274,4 +274,83 @@ canvas[aria-hidden="true"] { display: none !important; pointer-events: none !imp
   .footer-grid-4col {
     grid-template-columns: 1fr 1fr !important;
   }
+}
+
+/* ===================================
+   MICRO-INTERACTIONS
+   =================================== */
+
+/* Card 3D hover tilt */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+.card-hover:hover {
+  transform: translateY(-4px) rotateX(2deg);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(212,168,67,0.2);
+}
+
+/* Upvote pulse animation */
+@keyframes upvote-pulse {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.4); color: #D4A843; }
+  60%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.upvote-btn:active {
+  animation: upvote-pulse 0.35s ease;
+}
+
+/* Gold shimmer for premium elements */
+@keyframes gold-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.gold-shimmer {
+  background: linear-gradient(90deg, #D4A843 0%, #f0c060 50%, #D4A843 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gold-shimmer 3s linear infinite;
+}
+
+/* Fade-in for page content */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fade-in-up 0.4s ease-out forwards;
+}
+
+/* Skeleton loading pulse */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.6; }
+}
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+}
+
+/* Scanner result reveal */
+@keyframes scan-reveal {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.scan-reveal {
+  animation: scan-reveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Button press feel */
+.btn-press:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+/* Smooth number transitions */
+.number-change {
+  transition: color 0.3s ease;
 }
