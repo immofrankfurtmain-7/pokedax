@@ -118,6 +118,49 @@ export default function PortfolioPage() {
           </svg>
         </div>
 
+        {/* Export + Duplikate */}
+        {col.length > 0 && (
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            <button onClick={exportCSV} style={{
+              padding:"8px 16px",borderRadius:10,fontSize:12,cursor:"pointer",
+              background:"rgba(255,255,255,0.04)",color:"#a4a4b4",
+              border:"0.5px solid rgba(255,255,255,0.085)",
+            }}>↓ CSV Export</button>
+            {dupes.length > 0 && (
+              <button onClick={()=>setShowDupes(v=>!v)} style={{
+                padding:"8px 16px",borderRadius:10,fontSize:12,cursor:"pointer",
+                background:showDupes?"rgba(212,168,67,0.1)":"rgba(255,255,255,0.04)",
+                color:showDupes?"#D4A843":"#a4a4b4",
+                border:`0.5px solid ${showDupes?"rgba(212,168,67,0.2)":"rgba(255,255,255,0.085)"}`,
+              }}>◈ {dupes.length} Duplikate · {dupeValue.toFixed(0)} €</button>
+            )}
+          </div>
+        )}
+
+        {/* Duplikate-Ansicht */}
+        {showDupes && dupes.length > 0 && (
+          <div style={{background:"#111114",border:"0.5px solid rgba(212,168,67,0.18)",borderRadius:16,overflow:"hidden",marginBottom:16}}>
+            <div style={{padding:"11px 16px",borderBottom:"0.5px solid rgba(255,255,255,0.045)",fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:"#62626f",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span>Duplikate</span>
+              <span style={{color:"#D4A843"}}>{dupeValue.toFixed(2)} € Potenzial</span>
+            </div>
+            {dupes.map((c:any)=>(
+              <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 16px",borderBottom:"0.5px solid rgba(255,255,255,0.03)"}}>
+                <div style={{width:24,height:33,borderRadius:3,background:"#18181c",overflow:"hidden",flexShrink:0}}>
+                  {c.cards?.image_url&&<img src={c.cards.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,color:"#ededf2",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.cards?.name_de||c.cards?.name}</div>
+                  <div style={{fontSize:10,color:"#62626f"}}>{c.quantity}× · {c.condition}</div>
+                </div>
+                <div style={{fontSize:12,fontFamily:"var(--font-mono)",color:"#D4A843",flexShrink:0}}>
+                  {((c.cards?.price_market??0)*((c.quantity??1)-1)).toFixed(2)} €
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Tabs */}
         <div style={{display:"flex",gap:6,marginBottom:28}}>
           {(["sammlung","wunschliste"] as const).map(t=>(
