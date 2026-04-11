@@ -159,8 +159,8 @@ export default function CardDetailPage() {
             <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(22px,4vw,38px)",fontWeight:200,letterSpacing:"-.04em",marginBottom:6,lineHeight:1.1}}>{card.name_de||card.name}</h1>
             {card.name_de&&card.name_de!==card.name&&<div style={{fontSize:13,color:TX3,marginBottom:14}}>{card.name}</div>}
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
-              <span style={{fontSize:11,color:TX3,fontFamily:"var(--font-mono)"}}>{card.set_id.toUpperCase()}</span>
-              <span style={{color:TX3}}>·</span><span style={{fontSize:11,color:TX3}}>#{card.number}</span>
+              <span style={{fontSize:11,color:TX3,fontFamily:"var(--font-mono)"}}>{card.set_id?.toUpperCase()}</span>
+              <span style={{color:TX3}}>·</span><span style={{fontSize:11,color:TX3}}>#{card.number??"-"}</span>
               {card.rarity&&<><span style={{color:TX3}}>·</span><span style={{fontSize:11,color:TX2}}>{card.rarity}</span></>}
             </div>
             <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,padding:"16px 18px",marginBottom:12}}>

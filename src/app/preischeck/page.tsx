@@ -175,7 +175,7 @@ export default function PreischeckPage() {
                 ? ((card.price_market??0)-card.price_avg30)/card.price_avg30*100 : null;
               const pctCapped = pct!==null ? Math.min(Math.abs(pct),99)*Math.sign(pct) : null;
               return (
-                <Link key={card.id} href={`/preischeck?q=${encodeURIComponent(card.name)}`}
+                <Link key={card.id} href={`/preischeck/${card.id}`}
                   className="card-hover"
                   style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:24,overflow:"hidden",textDecoration:"none",display:"block",position:"relative"}}>
                   {/* Image */}
