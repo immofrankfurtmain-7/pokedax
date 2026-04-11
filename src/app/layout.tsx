@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -6,15 +6,30 @@ import Footer from "@/components/layout/Footer";
 export const metadata: Metadata = {
   title: { default:"pokédax — Deine Karten. Ihr wahrer Wert.", template:"%s · pokédax" },
   description:"Live Cardmarket EUR-Preise, KI-Scanner und Portfolio-Tracking für Pokémon TCG Sammler.",
-  keywords:["Pokémon TCG","Preischeck","Cardmarket","Scanner","Portfolio","pokédax"],
+  keywords:["Pokémon TCG","Preischeck","Cardmarket","Scanner","Portfolio","pokédax","Karten kaufen","Karten verkaufen"],
+  authors:[{name:"pokédax"}],
+  creator:"pokédax",
   openGraph:{
     title:"pokédax — Deine Karten. Ihr wahrer Wert.",
-    description:"Live Cardmarket EUR-Preise, KI-Scanner und Portfolio-Tracking.",
+    description:"Live Cardmarket EUR-Preise, KI-Scanner, sicherer Marktplatz und Portfolio-Tracking für Pokémon TCG.",
     url:"https://pokedax2.vercel.app",
     siteName:"pokédax",
     locale:"de_DE",
     type:"website",
   },
+  twitter:{
+    card:"summary_large_image",
+    title:"pokédax",
+    description:"Live Cardmarket EUR-Preise für Pokémon TCG.",
+  },
+  manifest:"/manifest.webmanifest",
+  appleWebApp:{
+    capable:true,
+    statusBarStyle:"black-translucent",
+    title:"pokédax",
+  },
+  themeColor:"#D4A843",
+  viewport:{width:"device-width",initialScale:1,maximumScale:1},
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
