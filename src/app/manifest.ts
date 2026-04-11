@@ -16,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon-512.svg", sizes: "512x512", type: "image/svg+xml", purpose: "any" },
     ],
     screenshots: [
-      { src: "/screenshot-mobile.png", sizes: "390x844", type: "image/png", form_factor: "narrow" },
+      { src: "/screenshot-mobile.png", sizes: "390x844", type: "image/png" },
     ],
     categories: ["finance", "utilities"],
     lang: "de",
