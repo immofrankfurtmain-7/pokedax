@@ -38,7 +38,7 @@ export default function PreischeckPage() {
   const load = useCallback(async (q:string, s:string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ q, sort:s, limit:"200" });
+      const params = new URLSearchParams({ q, sort:s, limit:"350" });
       if (setId) params.set("set", setId);
       if (holoOnly) params.set("holo", "1");
       const r = await fetch(`/api/cards/search?${params}`);
@@ -54,9 +54,21 @@ export default function PreischeckPage() {
     const params = new URLSearchParams(window.location.search);
     const urlSet = params.get("set") ?? "";
     const urlQ   = params.get("q")   ?? "";
-    if (urlSet) { setSetId(urlSet); setSetSearch(urlSet); }
-    if (urlQ)   { setQuery(urlQ); }
+    if (urlSet) {
+      setSetId(urlSet);
+      // Try to find set name from loaded sets, fallback to ID
+      setSetSearch(urlSet);
+    }
+    if (urlQ) { setQuery(urlQ); }
   }, []);
+
+  // Once sets load, update setSearch to show name if we have a set filter
+  useEffect(() => {
+    if (setId && sets.length > 0) {
+      const found = sets.find((s:any) => s.id === setId);
+      if (found) setSetSearch(found.name || found.id);
+    }
+  }, [sets, setId]);
   useEffect(() => { load(query, sort); }, [load]);
   useEffect(() => { load(query, sort); }, [setId, holoOnly]);
 

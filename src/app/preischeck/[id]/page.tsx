@@ -60,9 +60,16 @@ export default function CardDetailPage() {
 
   useEffect(()=>{
     const sb=createClient();
-    sb.from("cards").select("id,name,name_de,set_id,number,types,rarity,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo").eq("id",id).single().then(({data})=>{setCard(data);setLoading(false);});
+    sb.from("cards").select("id,name,name_de,set_id,number,types,rarity,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo").eq("id",id).single().then(({data,error})=>{
+      if (error) console.error("Card load error:", error);
+      setCard(data);
+      setLoading(false);
+    }).catch((e)=>{ console.error("Card fetch error:", e); setLoading(false); });
     sb.from("price_history").select("price_market,recorded_at").eq("card_id",id).order("recorded_at",{ascending:false}).limit(30).then(({data})=>setPriceHistory(data??[]));
-    sb.from("forum_posts").select("id,title,upvotes,created_at,profiles(username)").eq("card_id",id).eq("is_deleted",false).order("created_at",{ascending:false}).limit(5).then(({data})=>setForumPosts((data??[]).map((p:any)=>({...p,profiles:Array.isArray(p.profiles)?p.profiles[0]:p.profiles}))));
+    // Forum posts for this card (requires sprint3.sql - card_id column)
+    sb.from("forum_posts").select("id,title,upvotes,created_at,profiles(username)").eq("card_id",id).eq("is_deleted",false).order("created_at",{ascending:false}).limit(5).then(({data,error})=>{
+      if (!error && data) setForumPosts(data.map((p:any)=>({...p,profiles:Array.isArray(p.profiles)?p.profiles[0]:p.profiles})));
+    }).catch(()=>{});
     sb.auth.getSession().then(async({data:{session}})=>{
       if(!session?.user) return;
       setUser(session.user);
