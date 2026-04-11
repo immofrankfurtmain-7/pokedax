@@ -59,30 +59,55 @@ export default function CardDetailPage() {
   const [forumPosts,    setForumPosts]    = useState<any[]>([]);
 
   useEffect(()=>{
-    const sb=createClient();
-    (async () => {
-      try {
-        const {data,error} = await sb.from("cards").select("id,name,name_de,set_id,number,types,rarity,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo").eq("id",id).single();
-        if (error) console.error("Card load error:", error);
-        setCard(data);
-      } catch(e) { console.error("Card fetch error:", e); }
+    let cancelled = false;
+    async function load() {
+      const sb = createClient();
+
+      // Load card
+      const { data: cardData } = await sb.from("cards")
+        .select("id,name,name_de,set_id,number,types,rarity,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo")
+        .eq("id", id).single();
+      if (cancelled) return;
+      setCard(cardData);
       setLoading(false);
-    })();
-    sb.from("price_history").select("price_market,recorded_at").eq("card_id",id).order("recorded_at",{ascending:false}).limit(30).then(({data})=>setPriceHistory(data??[]));
-    // Forum posts for this card (requires sprint3.sql - card_id column)
-    sb.from("forum_posts").select("id,title,upvotes,created_at,profiles(username)").eq("card_id",id).eq("is_deleted",false).order("created_at",{ascending:false}).limit(5).then(({data,error})=>{
-      if (!error && data) setForumPosts(data.map((p:any)=>({...p,profiles:Array.isArray(p.profiles)?p.profiles[0]:p.profiles})));
-    }).catch(()=>{});
-    sb.auth.getSession().then(async({data:{session}})=>{
-      if(!session?.user) return;
+
+      // Load price history
+      const { data: hist } = await sb.from("price_history")
+        .select("price_market,recorded_at")
+        .eq("card_id", id)
+        .order("recorded_at", {ascending:false})
+        .limit(30);
+      if (!cancelled) setPriceHistory(hist ?? []);
+
+      // Load forum posts (needs sprint3.sql card_id column)
+      try {
+        const { data: posts } = await sb.from("forum_posts")
+          .select("id,title,upvotes,created_at,profiles(username)")
+          .eq("card_id", id)
+          .eq("is_deleted", false)
+          .order("created_at", {ascending:false})
+          .limit(5);
+        if (!cancelled && posts) setForumPosts(posts.map((p:any)=>({
+          ...p,
+          profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
+        })));
+      } catch(_) {}
+
+      // Load auth + collection/wishlist state
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.user || cancelled) return;
       setUser(session.user);
-      const [col,wish]=await Promise.all([
-        sb.from("user_collection").select("id").eq("user_id",session.user.id).eq("card_id",id).maybeSingle(),
-        sb.from("user_wishlist").select("id").eq("user_id",session.user.id).eq("card_id",id).maybeSingle(),
+      const [col, wish] = await Promise.all([
+        sb.from("user_collection").select("id").eq("user_id", session.user.id).eq("card_id", id).maybeSingle(),
+        sb.from("user_wishlist").select("id").eq("user_id", session.user.id).eq("card_id", id).maybeSingle(),
       ]);
-      setInColl(!!col.data);
-      setInWish(!!wish.data);
-    });
+      if (!cancelled) {
+        setInColl(!!col.data);
+        setInWish(!!wish.data);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
   },[id]);
 
   async function toggleCollection(){
