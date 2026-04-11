@@ -1,4 +1,8 @@
-﻿import { createClient } from "@supabase/supabase-js";
+﻿# Hotfix: profil page - badges/seller/reviews fetch
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+import { createClient } from "@supabase/supabase-js";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -203,3 +207,8 @@ export default async function ProfilePage({ params }: Props) {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\profil\[username]\page.tsx", $r, $enc)
+Write-Host "OK profil/[username]/page.tsx" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit -> Push" -ForegroundColor Yellow
