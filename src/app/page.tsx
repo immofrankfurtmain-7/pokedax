@@ -95,6 +95,24 @@ export default function HomePage() {
   const [stats,     setStats]     = useState({cards:22400,sets:214,users:0});
   const [topCard,   setTopCard]   = useState<any>(null);
   const [loaded,    setLoaded]    = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installed,     setInstalled]     = useState(false);
+
+  useEffect(()=>{
+    // Catch the browser's install prompt
+    const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) setInstalled(true);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  },[]);
+
+  async function installApp() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') { setInstalled(true); setInstallPrompt(null); }
+  }
 
   useEffect(()=>{
     async function load() {
@@ -197,6 +215,15 @@ export default function HomePage() {
                 textDecoration:"none",boxShadow:`0 4px 24px ${G25}`,
                 transition:"all .2s",
               }}>⊙ Karte scannen</Link>
+              {installPrompt && !installed && (
+                <button onClick={installApp} style={{
+                  padding:"clamp(11px,1.4vw,14px) clamp(22px,2.5vw,32px)",
+                  borderRadius:14,background:"transparent",color:G,
+                  fontSize:"clamp(13px,1.3vw,15px)",fontWeight:400,
+                  border:`0.5px solid ${G18}`,cursor:"pointer",
+                  transition:"all .2s",
+                }}>↓ App installieren</button>
+              )}
               <Link href="/preischeck" style={{
                 padding:"clamp(11px,1.4vw,14px) clamp(22px,2.5vw,32px)",
                 borderRadius:14,background:"transparent",color:TX2,
