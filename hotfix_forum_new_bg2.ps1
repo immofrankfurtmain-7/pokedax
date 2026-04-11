@@ -1,4 +1,8 @@
-﻿"use client";
+﻿# Hotfix: forum/new BG2 Konstante
+$root = "C:\Users\lenovo\pokedax\pokedax\pokedax"
+$enc  = New-Object System.Text.UTF8Encoding $true
+$r = @'
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -129,3 +133,8 @@ export default function ForumNewPage() {
     </div>
   );
 }
+
+'@
+[System.IO.File]::WriteAllText("$root\src\app\forum\new\page.tsx", $r, $enc)
+Write-Host "OK forum/new/page.tsx" -ForegroundColor Green
+Write-Host "GitHub Desktop -> Commit -> Push" -ForegroundColor Yellow
