@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
@@ -9,6 +9,7 @@ const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a",GREEN="#4BBF82";
 export default function PortfolioPage() {
   const [user,    setUser]    = useState<any>(null);
   const [col,     setCol]     = useState<any[]>([]);
+  const [showDupes, setShowDupes] = useState(false);
   const [wish,    setWish]    = useState<any[]>([]);
   const [tab,     setTab]     = useState<"sammlung"|"wunschliste">("sammlung");
   const [loading, setLoading] = useState(true);
@@ -38,6 +39,33 @@ export default function PortfolioPage() {
   );
 
   const items = tab==="sammlung" ? col : wish;
+
+  function exportCSV() {
+    const rows = [
+      ["Name","Name (DE)","Set","Nummer","Zustand","Menge","Preis (€)","Gesamt (€)"],
+      ...col.map((c:any) => [
+        c.cards?.name ?? "",
+        c.cards?.name_de ?? "",
+        c.cards?.set_id?.toUpperCase() ?? "",
+        c.cards?.number ?? "",
+        c.condition ?? "NM",
+        c.quantity ?? 1,
+        (c.cards?.price_market ?? 0).toFixed(2),
+        ((c.cards?.price_market ?? 0) * (c.quantity ?? 1)).toFixed(2),
+      ])
+    ];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("
+");
+    const blob = new Blob(["﻿" + csv], {type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "pokedax-sammlung.csv"; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const dupes = col.filter((c:any) => (c.quantity ?? 1) > 1);
+  const dupeValue = dupes.reduce((s:number,c:any) =>
+    s + (c.cards?.price_market ?? 0) * ((c.quantity ?? 1) - 1), 0);
 
   return (
     <div style={{color:TX1,minHeight:"80vh",overflowX:"hidden"}}>

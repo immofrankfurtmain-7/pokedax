@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [scansMax,  setScansMax]  = useState(5);
   const [fantasy,   setFantasy]   = useState<any>(null);
   const [escrows,   setEscrows]   = useState<any[]>([]);
+  const [newMatch,  setNewMatch]  = useState(false);
   const [trades,    setTrades]    = useState<any[]>([]);
 
   useEffect(()=>{
@@ -73,6 +74,18 @@ export default function DashboardPage() {
       setLoading(false);
     }
     init();
+    // Realtime: notify when new wishlist match arrives
+    const sb2 = createClient();
+    const sub = sb2.channel('dashboard_matches')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'wishlist_matches'}, ()=>{
+        setNewMatch(true);
+        setMatches(prev => {
+          // Reload matches
+          init();
+          return prev;
+        });
+      }).subscribe();
+    return () => { sb2.removeChannel(sub); };
   },[]);
 
   const username=profile?.username??user?.email?.split("@")[0]??"—";
@@ -122,7 +135,10 @@ export default function DashboardPage() {
             {/* Matches */}
             <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,overflow:"hidden"}}>
               <div style={{padding:"12px 16px",borderBottom:`0.5px solid ${BR1}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Wishlist-Matches</span>
+                <span style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3,display:"flex",alignItems:"center",gap:6}}>
+                Wishlist-Matches
+                {newMatch&&<div style={{width:6,height:6,borderRadius:"50%",background:GREEN,animation:"pulse 2s ease-in-out infinite"}}/>}
+              </span>
                 <Link href="/matches" style={{fontSize:11,color:TX3,textDecoration:"none"}}>Alle →</Link>
               </div>
               {matches.length===0?<div style={{padding:"20px 16px",textAlign:"center"}}><div style={{fontSize:12,color:TX3,marginBottom:6}}>Keine Matches.</div><Link href="/preischeck" style={{fontSize:11,color:G,textDecoration:"none"}}>Karten zur Wishlist →</Link></div>

@@ -57,6 +57,10 @@ export default function CardDetailPage() {
   const [adding, setAdding] = useState(false);
   const [priceHistory,  setPriceHistory]  = useState<any[]>([]);
   const [forumPosts,    setForumPosts]    = useState<any[]>([]);
+  const [alert,         setAlert]         = useState<any>(null);
+  const [alertPrice,    setAlertPrice]    = useState("");
+  const [alertSaved,    setAlertSaved]    = useState(false);
+  const [showAlertForm, setShowAlertForm] = useState(false);
 
   useEffect(()=>{
     let cancelled = false;
@@ -97,6 +101,15 @@ export default function CardDetailPage() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session?.user || cancelled) return;
       setUser(session.user);
+      // Load price alert for this card
+      const alertRes = await fetch(`/api/price-alerts?card_id=${id}`, {
+        headers: { "Authorization": `Bearer ${session.access_token}` }
+      });
+      const alertData = await alertRes.json();
+      if (!cancelled && alertData.alert) {
+        setAlert(alertData.alert);
+        setAlertPrice(alertData.alert.target_price?.toString() ?? "");
+      }
       const [col, wish] = await Promise.all([
         sb.from("user_collection").select("id").eq("user_id", session.user.id).eq("card_id", id).maybeSingle(),
         sb.from("user_wishlist").select("id").eq("user_id", session.user.id).eq("card_id", id).maybeSingle(),
@@ -109,6 +122,35 @@ export default function CardDetailPage() {
     load();
     return () => { cancelled = true; };
   },[id]);
+
+  async function saveAlert() {
+    if (!alertPrice || !user) return;
+    const sb = createClient();
+    const {data:{session}} = await sb.auth.getSession();
+    const h:Record<string,string> = {"Content-Type":"application/json"};
+    if (session?.access_token) h["Authorization"] = `Bearer ${session.access_token}`;
+    const res = await fetch("/api/price-alerts", {
+      method: "POST", headers: h,
+      body: JSON.stringify({ card_id: id, target_price: parseFloat(alertPrice) }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setAlert(data.alert);
+      setAlertSaved(true);
+      setShowAlertForm(false);
+      setTimeout(() => setAlertSaved(false), 3000);
+    }
+  }
+
+  async function deleteAlert() {
+    if (!user) return;
+    const sb = createClient();
+    const {data:{session}} = await sb.auth.getSession();
+    const h:Record<string,string> = {};
+    if (session?.access_token) h["Authorization"] = `Bearer ${session.access_token}`;
+    await fetch(`/api/price-alerts?card_id=${id}`, { method: "DELETE", headers: h });
+    setAlert(null); setAlertPrice(""); setShowAlertForm(false);
+  }
 
   async function toggleCollection(){
     if(!user||!card) return;
@@ -153,6 +195,36 @@ export default function CardDetailPage() {
               </button>
             </div>
             {!user&&<div style={{fontSize:10,color:TX3,textAlign:"center",marginTop:8}}><Link href="/auth/login" style={{color:G,textDecoration:"none"}}>Anmelden</Link> zum Sammeln</div>}
+
+            {/* Preisalarm */}
+            {user&&(
+              <div style={{marginTop:10}}>
+                {alert ? (
+                  <div style={{padding:"8px 12px",borderRadius:10,background:"rgba(212,168,67,0.06)",border:"0.5px solid rgba(212,168,67,0.18)",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:11,color:G,flex:1}}>🔔 Alarm bei {parseFloat(alertPrice).toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
+                    <button onClick={deleteAlert} style={{fontSize:10,color:"#62626f",background:"transparent",border:"none",cursor:"pointer"}}>× entfernen</button>
+                  </div>
+                ) : showAlertForm ? (
+                  <div style={{display:"flex",gap:6}}>
+                    <div style={{position:"relative",flex:1}}>
+                      <input value={alertPrice} onChange={e=>setAlertPrice(e.target.value)}
+                        type="number" placeholder={card?.price_market?.toFixed(2)??"0.00"} min="0" step="0.50"
+                        style={{width:"100%",padding:"8px 32px 8px 10px",borderRadius:9,background:"rgba(0,0,0,0.3)",border:"0.5px solid rgba(255,255,255,0.085)",color:TX1,fontSize:12,outline:"none"}}/>
+                      <span style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:TX3}}>€</span>
+                    </div>
+                    <button onClick={saveAlert} disabled={!alertPrice} style={{padding:"8px 12px",borderRadius:9,background:alertPrice?G:"rgba(255,255,255,0.04)",color:alertPrice?"#0a0808":TX3,border:"none",cursor:alertPrice?"pointer":"default",fontSize:11}}>🔔</button>
+                    <button onClick={()=>setShowAlertForm(false)} style={{padding:"8px 10px",borderRadius:9,background:"transparent",color:TX3,border:"0.5px solid rgba(255,255,255,0.045)",cursor:"pointer",fontSize:11}}>×</button>
+                  </div>
+                ) : (
+                  <button onClick={()=>{setShowAlertForm(true);if(card?.price_market)setAlertPrice((card.price_market*0.9).toFixed(2));}} style={{width:"100%",padding:"8px",borderRadius:9,background:"transparent",color:TX3,border:"0.5px solid rgba(255,255,255,0.045)",cursor:"pointer",fontSize:11,transition:"all .15s"}}
+                  onMouseEnter={e=>{(e.currentTarget as any).style.color=G;(e.currentTarget as any).style.borderColor="rgba(212,168,67,0.18)"}}
+                  onMouseLeave={e=>{(e.currentTarget as any).style.color=TX3;(e.currentTarget as any).style.borderColor="rgba(255,255,255,0.045)"}}>
+                    🔔 Preisalarm setzen
+                  </button>
+                )}
+                {alertSaved&&<div style={{fontSize:10,color:GREEN,textAlign:"center",marginTop:4}}>✓ Alarm gespeichert</div>}
+              </div>
+            )}
           </div>
           <div>
             {type&&<div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:12,padding:"4px 12px",borderRadius:8,background:`${typeColor}12`,border:`0.5px solid ${typeColor}25`}}><div style={{width:7,height:7,borderRadius:"50%",background:typeColor}}/><span style={{fontSize:11,fontWeight:500,color:typeColor}}>{TYPE_DE[type]??type}</span></div>}
