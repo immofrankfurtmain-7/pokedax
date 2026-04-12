@@ -27,8 +27,8 @@ interface Card {
 export default function PreischeckPage() {
   const [query,  setQuery]  = useState("");
   const [sort,   setSort]   = useState("price_desc");
-  const [setId,     setSetId]     = useState(() => typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("set") ?? "") : "");
-  const [setSearch, setSetSearch] = useState(() => typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("set") ?? "") : "");
+  const [setId,     setSetId]     = useState("");
+  const [setSearch, setSetSearch] = useState("");
   const [sets,   setSets]   = useState<{id:string;name:string}[]>([]);
   const [holoOnly, setHoloOnly] = useState(false);
   const [cards,  setCards]  = useState<Card[]>([]);
@@ -50,7 +50,16 @@ export default function PreischeckPage() {
   }, [setId, holoOnly]);
 
   // Read URL params on mount (no Suspense needed with this approach)
-  // Update setSearch to show set name once sets are loaded
+  // Read URL params on mount and set state
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const urlSet = p.get("set") ?? "";
+    const urlQ   = p.get("q")   ?? "";
+    if (urlSet) setSetId(urlSet);
+    if (urlQ)   setQuery(urlQ);
+  }, []);
+
+  // Update setSearch name once sets are loaded
   useEffect(() => {
     if (setId && sets.length > 0) {
       const found = sets.find((s:any) => s.id === setId);

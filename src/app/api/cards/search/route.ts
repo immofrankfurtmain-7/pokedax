@@ -28,14 +28,18 @@ export async function GET(request: NextRequest) {
 
   // Sort: when browsing a set, sort by card number by default
   switch (sort) {
-    case "number_asc":  query = query.order("number",       { ascending: true });  break;
     case "price_asc":   query = query.order("price_market", { ascending: true });  break;
     case "price_desc":  query = query.order("price_market", { ascending: false }); break;
     case "name_asc":    query = query.order("name",         { ascending: true });  break;
     case "trend_desc":  query = query.order("price_avg7",   { ascending: false }); break;
-    default:            query = query.order("number",       { ascending: true });  break;
+    default:
+      // Sort by number as integer (TEXT column needs cast)
+      query = (query as any).order("number::integer", { ascending: true, nullsFirst: false });
+      break;
   }
-  query = query.limit(limit);
+  // When set is specified, increase limit to get all cards
+  const effectiveLimit = set ? Math.min(limit, 500) : limit;
+  query = query.limit(effectiveLimit);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
