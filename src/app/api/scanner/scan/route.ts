@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify({
             contents: [{
               parts: [
-                { text: "Identify this Pokémon TCG card. Return ONLY valid JSON with these exact fields: {name_en: string, set_id: string, number: string}. No markdown, no explanation, just JSON." },
+                { text: "Identify this Pokémon TCG card precisely. Return ONLY valid JSON: {name_en: string (exact English card name), set_id: string (e.g. sv1, swsh1, base1), number: string (card number without leading zeros)}. No markdown, no explanation." },
                 { inline_data: { mime_type: "image/jpeg", data: b64 } },
               ]
             }]
@@ -105,26 +105,49 @@ export async function POST(request: NextRequest) {
         const parsed = JSON.parse(clean);
 
         if (parsed.name_en) {
-          // Suche in DB
-          const { data: found } = await supabase.from("cards")
-            .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
-            .or(`name.ilike.%${parsed.name_en}%,name_en.ilike.%${parsed.name_en}%`)
-            .eq("set_id", parsed.set_id ?? "")
-            .limit(1)
-            .maybeSingle();
+          const cardName = parsed.name_en.trim();
+          const setId    = (parsed.set_id ?? "").toLowerCase();
+          const cardNum  = (parsed.number  ?? "").replace(/^0+/, "");
 
-          if (!found) {
-            // Set-ID match ohne Nummer
-            const { data: found2 } = await supabase.from("cards")
+          // Versuch 1: exakter Name + Set-ID
+          if (setId) {
+            const { data: r1 } = await supabase.from("cards")
               .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
-              .or(`name.ilike.%${parsed.name_en}%,name_en.ilike.%${parsed.name_en}%`)
-              .limit(1)
-              .maybeSingle();
-            card = found2;
-          } else {
-            card = found;
+              .ilike("name", cardName)
+              .eq("set_id", setId)
+              .limit(1).maybeSingle();
+            if (r1) { card = r1; confidence = 95; }
           }
-          confidence = 88;
+
+          // Versuch 2: exakter Name + Nummer
+          if (!card && cardNum) {
+            const { data: r2 } = await supabase.from("cards")
+              .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
+              .ilike("name", cardName)
+              .eq("number", cardNum)
+              .limit(1).maybeSingle();
+            if (r2) { card = r2; confidence = 90; }
+          }
+
+          // Versuch 3: nur Name (flexibel)
+          if (!card) {
+            const { data: r3 } = await supabase.from("cards")
+              .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
+              .ilike("name", `%${cardName}%`)
+              .order("data_quality_score", { ascending: false })
+              .limit(1).maybeSingle();
+            if (r3) { card = r3; confidence = 82; }
+          }
+
+          // Versuch 4: deutschen Namen probieren
+          if (!card) {
+            const { data: r4 } = await supabase.from("cards")
+              .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
+              .ilike("name_de", `%${cardName}%`)
+              .order("data_quality_score", { ascending: false })
+              .limit(1).maybeSingle();
+            if (r4) { card = r4; confidence = 78; }
+          }
         }
       }
     } catch(e) {
