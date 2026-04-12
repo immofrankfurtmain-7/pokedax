@@ -23,6 +23,7 @@ function ConditionBadge({c}:{c:string}) {
 
 function MatchingPanel({cardId}:{cardId:string}) {
   const [tab, setTab] = useState<"offer"|"want">("offer");
+  const [scanStatus, setScanStatus] = useState("Analysiere…");
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
