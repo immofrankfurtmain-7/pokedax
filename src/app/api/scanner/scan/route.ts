@@ -47,9 +47,11 @@ export async function POST(request: NextRequest) {
     if (!file) return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
     imageBuffer = Buffer.from(await file.arrayBuffer());
   } else {
-    const { image_base64 } = await request.json();
-    if (!image_base64) return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
-    imageBuffer = Buffer.from(image_base64.replace(/^data:image\/\w+;base64,/, ""), "base64");
+    const body = await request.json();
+    // Accept both field names for compatibility
+    const b64 = body.image_base64 || body.imageBase64;
+    if (!b64) return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
+    imageBuffer = Buffer.from(b64.replace(/^data:image\/\w+;base64,/, ""), "base64");
   }
 
   // Bild normalisieren
