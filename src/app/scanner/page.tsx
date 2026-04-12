@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -163,25 +163,59 @@ export default function ScannerPage() {
     setError(null);
     setResult(null);
     setScanning(true);
+    setScanStatus("Bild wird analysiert…");
 
     // Preview
     const reader = new FileReader();
     reader.onload = e => setPreview(e.target?.result as string);
     reader.readAsDataURL(file);
 
-    // Convert to base64
-    const base64 = await new Promise<string>((resolve, reject) => {
+    // Bild als Data-URL für OCR
+    const dataUrl = await new Promise<string>((resolve, reject) => {
       const r = new FileReader();
-      r.onload = () => resolve((r.result as string).split(",")[1]);
+      r.onload = () => resolve(r.result as string);
       r.onerror = reject;
       r.readAsDataURL(file);
     });
 
     try {
+      // OCR via Tesseract.js (läuft im Browser, kostenlos, keine API)
+      setScanStatus("Kartentext wird gelesen…");
+      const Tesseract = (await import("tesseract.js")).default;
+      const { data: { text } } = await Tesseract.recognize(dataUrl, "eng+deu", {
+        logger: () => {},
+      });
+
+      // Text parsen: Kartenname ist meist in Zeile 1-3
+      const lines = text.split("
+")
+        .map((l: string) => l.trim())
+        .filter((l: string) => l.length > 1);
+
+      // Nummer extrahieren (Format: 027/091 oder 027)
+      const numberMatch = text.match(/(\d{1,3})\/\d{2,3}/);
+      const cardNumber = numberMatch ? numberMatch[1].replace(/^0+/, "") : "";
+
+      // Set-Code extrachieren (3-5 Großbuchstaben, oft unten)
+      const setMatch = text.match(/([A-Z]{2,5})/g);
+      const setCode = setMatch ? setMatch[setMatch.length - 1] : "";
+
+      // Kartenname: erste sinnvolle Zeile (mehr als 3 Zeichen, keine Zahlen)
+      const nameLine = lines.find((l: string) =>
+        l.length > 3 && !/^\d+$/.test(l) && /[a-zA-Z]/.test(l)
+      ) ?? "";
+
+      setScanStatus("Datenbank wird durchsucht…");
+
       const res = await fetch("/api/scanner/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, mimeType: file.type || "image/jpeg" }),
+        body: JSON.stringify({
+          ocr_name: nameLine,
+          ocr_number: cardNumber,
+          ocr_set: setCode,
+          ocr_text: text.slice(0, 500),
+        }),
       });
 
       const data = await res.json();
