@@ -134,9 +134,11 @@ export async function POST(request: NextRequest) {
 
   if (!card) {
     if (user) {
-      await supabase.from("card_scan_feedback").insert({
-        user_id: user.id, phash_computed: null, confidence: 0, was_correct: false,
-      }).catch(() => {});
+      try {
+        await supabase.from("card_scan_feedback").insert({
+          user_id: user.id, phash_computed: null, confidence: 0, was_correct: false,
+        });
+      } catch(_) {}
     }
     return NextResponse.json({
       status: "no_match",
@@ -147,9 +149,11 @@ export async function POST(request: NextRequest) {
 
   // Scan loggen
   if (user) {
-    await supabase.from("scan_logs").insert({
-      user_id: user.id, card_id: card.id, scan_type: method,
-    }).catch(() => {});
+    try {
+      await supabase.from("scan_logs").insert({
+        user_id: user.id, card_id: card.id, scan_type: method,
+      });
+    } catch(_) {}
   }
 
   return NextResponse.json({
