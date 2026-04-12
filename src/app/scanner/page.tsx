@@ -166,11 +166,11 @@ export default function ScannerPage() {
     setScanStatus("Bild wird analysiert…");
 
     // Preview
-    const reader = new FileReader();
-    reader.onload = e => setPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+    const previewReader = new FileReader();
+    previewReader.onload = e => setPreview(e.target?.result as string);
+    previewReader.readAsDataURL(file);
 
-    // Bild als Data-URL für OCR
+    // Data-URL für Tesseract
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const r = new FileReader();
       r.onload = () => resolve(r.result as string);
@@ -179,43 +179,30 @@ export default function ScannerPage() {
     });
 
     try {
-      // OCR via Tesseract.js (läuft im Browser, kostenlos, keine API)
-      setScanStatus("Kartentext wird gelesen…");
+      // Tesseract.js OCR (Browser, kostenlos, keine API)
+      setScanStatus("Text wird erkannt…");
       const Tesseract = (await import("tesseract.js")).default;
-      const { data: { text } } = await Tesseract.recognize(dataUrl, "eng+deu", {
-        logger: () => {},
-      });
+      const ocrResult = await Tesseract.recognize(dataUrl, "eng+deu", { logger: () => {} });
+      const ocrText = ocrResult.data.text;
 
-      // Text parsen: Kartenname ist meist in Zeile 1-3
-      const lines = text.split("
-")
-        .map((l: string) => l.trim())
-        .filter((l: string) => l.length > 1);
+      // Name: erste sinnvolle Zeile
+      const ocrLines = ocrText.split("\n").map((l: string) => l.trim()).filter((l: string) => l.length > 2);
+      const ocrName = ocrLines.find((l: string) => /[a-zA-Z]/.test(l) && !/^\d+$/.test(l)) ?? "";
 
-      // Nummer extrahieren (Format: 027/091 oder 027)
-      const numberMatch = text.match(/(\d{1,3})\/\d{2,3}/);
-      const cardNumber = numberMatch ? numberMatch[1].replace(/^0+/, "") : "";
+      // Nummer: Format 027/091
+      const numMatch = ocrText.match(/\b(\d{1,3})\/\d{2,3}\b/);
+      const ocrNumber = numMatch ? numMatch[1].replace(/^0+/, "") : "";
 
-      // Set-Code extrachieren (3-5 Großbuchstaben, oft unten)
-      const setMatch = text.match(/([A-Z]{2,5})/g);
-      const setCode = setMatch ? setMatch[setMatch.length - 1] : "";
-
-      // Kartenname: erste sinnvolle Zeile (mehr als 3 Zeichen, keine Zahlen)
-      const nameLine = lines.find((l: string) =>
-        l.length > 3 && !/^\d+$/.test(l) && /[a-zA-Z]/.test(l)
-      ) ?? "";
+      // Set-Code: Großbuchstaben am Ende
+      const setMatches = ocrText.match(/\b[A-Z]{2,5}\b/g);
+      const ocrSet = setMatches ? setMatches[setMatches.length - 1].toLowerCase() : "";
 
       setScanStatus("Datenbank wird durchsucht…");
 
       const res = await fetch("/api/scanner/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ocr_name: nameLine,
-          ocr_number: cardNumber,
-          ocr_set: setCode,
-          ocr_text: text.slice(0, 500),
-        }),
+        body: JSON.stringify({ ocr_name: ocrName, ocr_number: ocrNumber, ocr_set: ocrSet, ocr_text: ocrText.slice(0, 500) }),
       });
 
       const data = await res.json();
@@ -226,7 +213,7 @@ export default function ScannerPage() {
         return;
       }
       if (!res.ok || data.error) {
-        setError(data.error === "Karte nicht erkannt" ? "Karte konnte nicht erkannt werden. Bitte ein klareres Foto versuchen." : "Fehler beim Scannen. Bitte erneut versuchen.");
+        setError(data.message ?? "Karte konnte nicht erkannt werden. Bitte ein klareres Foto versuchen.");
         setScanning(false);
         return;
       }
