@@ -1,149 +1,249 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+/**
+ * pokédax Scanner v2 — Non-AI, Hash-basierter Scanner
+ * POST /api/scanner/scan
+ *
+ * Flow:
+ * 1. User-Foto empfangen
+ * 2. Bild normalisieren (sharp)
+ * 3. pHash + dHash berechnen
+ * 4. Suche in DB via find_card_by_hash() SQL-Funktion
+ * 5. Falls kein Match: Gemini als Fallback (falls aktiviert)
+ * 6. DB aktualisieren (scan_count, ggf. besseres Referenzbild)
+ * 7. Rückgabe: Karte + Konfidenz + Preis
+ */
 
+import { NextRequest, NextResponse } from "next/server";
+import { createRouteClient } from "@/lib/supabase/server";
+import { computePhash, computeDhash, imageQualityScore, normalizeCardImage } from "@/lib/phash";
+
+export const dynamic  = "force-dynamic";
 export const maxDuration = 30;
 
+// Konfidenz-Schwellen
+const THRESHOLD_HIGH   = 90; // Sicher → direkt zurückgeben
+const THRESHOLD_MEDIUM = 70; // Wahrscheinlich → mit Bestätigung
+const THRESHOLD_LOW    = 50; // Unsicher → Gemini Fallback
+const MAX_HASH_DIST    = 10; // Maximale Hamming-Distance
+
 export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createRouteClient(request);
+  const { data: { user } } = await supabase.auth.getUser();
 
-    // ── Parse body ─────────────────────────────────────
-    const body = await request.json();
-    const { imageBase64, mimeType = "image/jpeg" } = body;
-    if (!imageBase64) {
-      return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
-    }
+  // Rate limit check
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles").select("is_premium").eq("id", user.id).single();
+    const isPremium = profile?.is_premium ?? false;
 
-    // ── Scan-Limit für Free-User ────────────────────────
-    let scanCount = 0;
-    if (user) {
-      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-      const { count } = await supabase
-        .from("scan_logs")
-        .select("*", { count: "exact", head: true })
+    if (!isPremium) {
+      const today = new Date().toISOString().split("T")[0];
+      const { count } = await supabase.from("scan_logs")
+        .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .gte("created_at", `${today}T00:00:00.000Z`);
-      scanCount = count ?? 0;
-
-      // Check premium
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_premium, premium_until")
-        .eq("id", user.id)
-        .single();
-
-      const isPremium =
-        profile?.is_premium === true &&
-        (!profile.premium_until || new Date(profile.premium_until) > new Date());
-
-      if (!isPremium && scanCount >= 5) {
-        return NextResponse.json(
-          { error: "LIMIT_REACHED", scansUsed: scanCount, limit: 5 },
-          { status: 429 }
-        );
+        .gte("created_at", today + "T00:00:00Z");
+      if ((count ?? 0) >= 5) {
+        return NextResponse.json({ error: "Tageslimit erreicht", limit_reached: true }, { status: 429 });
       }
     }
+  }
 
-    // ── Gemini Flash Vision ─────────────────────────────
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: "GEMINI_API_KEY fehlt" }, { status: 500 });
+  // Parse image from request
+  let imageBuffer: Buffer;
+  const contentType = request.headers.get("content-type") ?? "";
+
+  if (contentType.includes("multipart/form-data")) {
+    const form = await request.formData();
+    const file = form.get("image") as File | null;
+    if (!file) return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
+    imageBuffer = Buffer.from(await file.arrayBuffer());
+  } else if (contentType.includes("application/json")) {
+    const { image_base64, image_url } = await request.json();
+    if (image_url) {
+      const res = await fetch(image_url);
+      imageBuffer = Buffer.from(await res.arrayBuffer());
+    } else if (image_base64) {
+      const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
+      imageBuffer = Buffer.from(base64Data, "base64");
+    } else {
+      return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
     }
+  } else {
+    return NextResponse.json({ error: "Ungültiger Content-Type" }, { status: 400 });
+  }
 
+  // ── Phase 1: Bildnormalisierung ───────────────────────────
+  const normalizedBuffer = await normalizeCardImage(imageBuffer);
+  const [phash, dhash, quality] = await Promise.all([
+    computePhash(normalizedBuffer),
+    computeDhash(normalizedBuffer),
+    imageQualityScore(normalizedBuffer),
+  ]);
+
+  // ── Phase 2: Datenbanksuche via Hamming-Distance ──────────
+  const { data: dbMatches, error: dbError } = await supabase.rpc("find_card_by_hash", {
+    query_hash: phash,
+    max_distance: MAX_HASH_DIST,
+    result_limit: 5,
+  });
+
+  let matchedCard: any = null;
+  let confidence = 0;
+  let matchMethod = "none";
+
+  if (dbMatches?.length > 0) {
+    const best = dbMatches[0];
+    confidence = best.confidence;
+    matchMethod = "phash";
+
+    if (confidence >= THRESHOLD_HIGH) {
+      // High confidence — accept immediately
+      const { data: card } = await supabase.from("cards")
+        .select("*").eq("id", best.card_id).single();
+      matchedCard = card;
+    } else if (confidence >= THRESHOLD_MEDIUM) {
+      // Medium — return top 3 for user confirmation
+      const cardIds = dbMatches.slice(0, 3).map((m: any) => m.card_id);
+      const { data: cards } = await supabase.from("cards")
+        .select("id,name,name_de,set_id,number,image_url,price_market,rarity")
+        .in("id", cardIds);
+      return NextResponse.json({
+        status: "confirm",
+        candidates: cards,
+        confidence,
+        phash_computed: phash,
+        message: "Bitte die richtige Karte bestätigen",
+      });
+    }
+  }
+
+  // ── Phase 3: Gemini Fallback (wenn Hash-Matching versagt) ─
+  if (!matchedCard && process.env.GEMINI_API_KEY) {
+    matchMethod = "gemini_fallback";
+    const base64 = normalizedBuffer.toString("base64");
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{
             parts: [
-              {
-                text: `You are a Pokémon TCG card identifier. Look at this card image and respond ONLY with a JSON object, nothing else.
-Return exactly this structure:
-{
-  "name": "exact card name as printed (e.g. Charizard ex, Pikachu VMAX, Umbreon ex)",
-  "name_de": "German name if different (e.g. Glurak ex, Mewtu ex), or same as name",
-  "set_id": "TCGdex set ID if visible (e.g. sv01, sv03, neo4, ecard3), or null",
-  "number": "card number if visible (e.g. 006, 107), or null",
-  "confidence": 0.95
-}
-Only output the JSON object, no markdown, no explanation.`
-              },
-              {
-                inline_data: { mime_type: mimeType, data: imageBase64 }
-              }
+              { text: "Identify this Pokémon TCG card. Return ONLY JSON: {name_en, set_id, number, is_holo, variant}. No explanation." },
+              { inline_data: { mime_type: "image/jpeg", data: base64 } },
             ]
-          }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 200 }
+          }]
         })
       }
     );
 
-    if (!geminiRes.ok) {
-      const err = await geminiRes.text();
-      console.error("Gemini error:", err);
-      return NextResponse.json({ error: "KI-Fehler" }, { status: 500 });
+    if (geminiRes.ok) {
+      const geminiData = await geminiRes.json();
+      const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      try {
+        const clean = text.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+
+        // Search DB by name + set
+        const { data: found } = await supabase.from("cards")
+          .select("*")
+          .or(`name.ilike.%${parsed.name_en}%,name_de.ilike.%${parsed.name_en}%`)
+          .limit(3);
+
+        if (found?.length) {
+          matchedCard = found[0];
+          confidence = 85;
+        }
+      } catch(e) {}
     }
+  }
 
-    const geminiData = await geminiRes.json();
-    const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-
-    // Parse Gemini response
-    let cardInfo: { name: string; name_de: string; set_id: string | null; number: string | null; confidence: number };
-    try {
-      const clean = rawText.replace(/```json|```/g, "").trim();
-      cardInfo = JSON.parse(clean);
-    } catch {
-      console.error("Gemini parse error:", rawText);
-      return NextResponse.json({ error: "Karte nicht erkannt" }, { status: 422 });
-    }
-
-    // ── Supabase Karten-Lookup ──────────────────────────
-    const searchName = cardInfo.name_de || cardInfo.name;
-
-    // Try exact match first, then fuzzy
-    let { data: cards } = await supabase
-      .from("cards")
-      .select("id, name, name_de, set_id, number, price_market, price_low, price_avg7, price_avg30, image_url, rarity")
-      .or(`name.ilike.%${searchName}%,name_de.ilike.%${searchName}%`)
-      .order("price_market", { ascending: false })
-      .limit(5);
-
-    if (!cards || cards.length === 0) {
-      // Try with English name
-      const { data: fallback } = await supabase
-        .from("cards")
-        .select("id, name, name_de, set_id, number, price_market, price_low, price_avg7, price_avg30, image_url, rarity")
-        .ilike("name", `%${cardInfo.name}%`)
-        .order("price_market", { ascending: false })
-        .limit(5);
-      cards = fallback ?? [];
-    }
-
-    const bestMatch = cards?.[0] ?? null;
-
-    // ── Log scan ────────────────────────────────────────
+  // ── Phase 4: Kein Match → neue Variante vorschlagen ───────
+  if (!matchedCard) {
+    // Log für spätere manuelle Überprüfung
     if (user) {
-      await supabase.from("scan_logs").insert({
-        user_id:   user.id,
-        card_id:   bestMatch?.id ?? null,
-        scan_type: "gemini",
+      await supabase.from("card_scan_feedback").insert({
+        user_id: user.id,
+        phash_computed: phash,
+        confidence: 0,
+        was_correct: false,
       });
     }
-
-    // ── Return result ───────────────────────────────────
     return NextResponse.json({
-      gemini:    cardInfo,
-      card:      bestMatch,
-      matches:   cards ?? [],
-      scansUsed: user ? scanCount + 1 : null,
-      scansLeft: user ? Math.max(0, 5 - scanCount - 1) : null,
+      status: "no_match",
+      phash_computed: phash,
+      image_quality: quality,
+      message: "Karte nicht erkannt. Möchtest du sie manuell hinzufügen?",
+    });
+  }
+
+  // ── Phase 5: Self-Improving — DB verbessern ───────────────
+  if (matchedCard && user) {
+    // Neues Referenzbild wenn Qualität besser als aktuell
+    if (quality > (matchedCard.data_quality_score ?? 0)) {
+      // Upload des normalisierten Bildes zu Supabase Storage
+      const fileName = `cards/${matchedCard.id}/${Date.now()}.jpg`;
+      const { data: uploadData } = await supabase.storage
+        .from("card-images")
+        .upload(fileName, normalizedBuffer, { contentType: "image/jpeg", upsert: false });
+
+      if (uploadData) {
+        const { data: { publicUrl } } = supabase.storage
+          .from("card-images").getPublicUrl(fileName);
+
+        // Update Referenzbild + Hash
+        await supabase.from("cards").update({
+          reference_image_url: publicUrl,
+          phash,
+          dhash,
+          data_quality_score: quality,
+          last_verified_at: new Date().toISOString(),
+        }).eq("id", matchedCard.id);
+      }
+    }
+
+    // Scan loggen (Trigger updatet scan_count automatisch)
+    await supabase.from("scan_logs").insert({
+      user_id: user.id,
+      card_id: matchedCard.id,
+      scan_type: matchMethod,
     });
 
-  } catch (err) {
-    console.error("Scanner error:", err);
-    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
+    // Feedback loggen
+    await supabase.from("card_scan_feedback").insert({
+      user_id: user.id,
+      card_id: matchedCard.id,
+      phash_computed: phash,
+      confidence,
+      was_correct: true,
+    });
+
+    // Badge-Check: Erster Scan
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/badges`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: user.id }),
+    }).catch(() => {});
   }
+
+  // ── Response ──────────────────────────────────────────────
+  return NextResponse.json({
+    status: "match",
+    card: {
+      id:            matchedCard.id,
+      name:          matchedCard.name_de ?? matchedCard.name,
+      name_en:       matchedCard.name,
+      set_id:        matchedCard.set_id,
+      number:        matchedCard.number,
+      image_url:     matchedCard.image_url,
+      price_market:  matchedCard.price_market,
+      price_low:     matchedCard.price_low,
+      rarity:        matchedCard.rarity,
+      is_holo:       matchedCard.is_holo,
+      scan_count:    (matchedCard.scan_count ?? 0) + 1,
+    },
+    confidence,
+    match_method:   matchMethod,
+    image_quality:  quality,
+    scan_count:     matchedCard.scan_count ?? 0,
+  });
 }
