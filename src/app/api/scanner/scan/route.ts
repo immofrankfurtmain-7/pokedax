@@ -1,16 +1,14 @@
 /**
- * pokédax Scanner v3 — OCR-basiert, keine KI, keine Kosten
- * 
- * Tesseract.js liest im Browser den Kartentext (Name, Nummer, Set-Code)
- * Diese API-Route sucht dann in der eigenen DB.
+ * pokédax Scanner — Gemini + eigene DB
+ * Gemini erkennt den Namen, DB liefert alle Daten
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
 
 export const dynamic   = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
-const SELECT = "id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count,hp,types";
+const SELECT = "id,name,name_de,name_en,set_id,number,image_url,price_market,price_low,price_avg7,price_avg30,rarity,is_holo,scan_count,hp,types";
 
 export async function POST(request: NextRequest) {
   const supabase = await createRouteClient(request);
@@ -32,88 +30,121 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // OCR-Daten empfangen
-  const body = await request.json().catch(() => ({}));
-  const ocrName   = (body.ocr_name   ?? "").trim();
-  const ocrNumber = (body.ocr_number ?? "").replace(/^0+/, "").trim();
-  const ocrSet    = (body.ocr_set    ?? "").toLowerCase().trim();
-  const ocrText   = (body.ocr_text   ?? "").toLowerCase();
-
-  if (!ocrName && !ocrNumber) {
-    return NextResponse.json({
-      status: "no_match",
-      error: "Karte nicht erkannt",
-      message: "Kein Text auf der Karte erkannt. Bitte bessere Beleuchtung.",
-    });
+  // Bild empfangen
+  let imageBuffer: Buffer;
+  try {
+    const ct = request.headers.get("content-type") ?? "";
+    if (ct.includes("multipart/form-data")) {
+      const form = await request.formData();
+      const file = form.get("image") as File | null;
+      if (!file) return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
+      imageBuffer = Buffer.from(await file.arrayBuffer());
+    } else {
+      const body = await request.json();
+      const b64 = body.image_base64 || body.imageBase64;
+      if (!b64) return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
+      imageBuffer = Buffer.from(b64.replace(/^data:image\/\w+;base64,/, ""), "base64");
+    }
+  } catch(e) {
+    return NextResponse.json({ error: "Bild konnte nicht gelesen werden" }, { status: 400 });
   }
 
-  let card: any = null;
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: "Scanner nicht konfiguriert" }, { status: 503 });
+  }
+
+  // Gemini erkennt die Karte
+  let parsed: any = null;
+  try {
+    const b64 = imageBuffer.toString("base64");
+    const gr = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: `Identify this Pokémon TCG card. Return ONLY a JSON object:
+{"name_en": "exact English name e.g. Lapras ex", "name_de": "German name if visible", "number": "card number without leading zeros e.g. 27", "set_code": "3-5 letter code from bottom of card e.g. PAF SVI PAL OBF MEW sv4pt5"}
+No markdown. No explanation. Only JSON.` },
+              { inline_data: { mime_type: "image/jpeg", data: b64 } },
+            ]
+          }]
+        })
+      }
+    );
+    if (gr.ok) {
+      const gd = await gr.json();
+      const text = (gd.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+      parsed = JSON.parse(text.replace(/\`\`\`json|\`\`\`/g, "").trim());
+    }
+  } catch(e) {
+    console.error("Gemini error:", e);
+    return NextResponse.json({ error: "Erkennungsfehler", message: "Scanner konnte Karte nicht analysieren." });
+  }
+
+  if (!parsed?.name_en) {
+    return NextResponse.json({ status: "no_match", error: "Karte nicht erkannt", message: "Bitte klareres Foto versuchen." });
+  }
+
+  const name     = parsed.name_en.trim();
+  const nameDe   = (parsed.name_de ?? "").trim();
+  const num      = (parsed.number ?? "").replace(/^0+/, "");
+  const setCode  = (parsed.set_code ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  let card: any  = null;
   let confidence = 0;
 
-  // ── Suche 1: Name + Nummer + Set (präziseste) ─────────────
-  if (!card && ocrName && ocrNumber && ocrSet) {
-    const { data } = await supabase.from("cards").select(SELECT)
-      .ilike("name", `%${ocrName}%`)
-      .eq("number", ocrNumber)
-      .ilike("set_id", `%${ocrSet}%`)
-      .limit(1).maybeSingle();
-    if (data) { card = data; confidence = 98; }
-  }
+  // 6-stufige Suche — von präzise bis fuzzy
+  const searches = [
+    // 1. Name + Nummer + Set
+    ...(name && num && setCode ? [async () => {
+      const {data} = await supabase.from("cards").select(SELECT)
+        .ilike("name", name).eq("number", num).ilike("set_id", `%${setCode}%`)
+        .limit(1).maybeSingle();
+      return data ? [data, 98] : null;
+    }] : []),
+    // 2. Name + Nummer
+    ...(name && num ? [async () => {
+      const {data} = await supabase.from("cards").select(SELECT)
+        .ilike("name", name).eq("number", num)
+        .order("data_quality_score", {ascending: false}).limit(1).maybeSingle();
+      return data ? [data, 93] : null;
+    }] : []),
+    // 3. Name + Set
+    ...(name && setCode ? [async () => {
+      const {data} = await supabase.from("cards").select(SELECT)
+        .ilike("name", name).ilike("set_id", `%${setCode}%`)
+        .order("data_quality_score", {ascending: false}).limit(1).maybeSingle();
+      return data ? [data, 88] : null;
+    }] : []),
+    // 4. Nur Name
+    ...(name ? [async () => {
+      const {data} = await supabase.from("cards").select(SELECT)
+        .ilike("name", `%${name}%`)
+        .order("data_quality_score", {ascending: false}).limit(1).maybeSingle();
+      return data ? [data, 80] : null;
+    }] : []),
+    // 5. Deutschen Namen
+    ...(nameDe ? [async () => {
+      const {data} = await supabase.from("cards").select(SELECT)
+        .ilike("name_de", `%${nameDe}%`)
+        .order("data_quality_score", {ascending: false}).limit(1).maybeSingle();
+      return data ? [data, 75] : null;
+    }] : []),
+  ];
 
-  // ── Suche 2: Name + Nummer ─────────────────────────────────
-  if (!card && ocrName && ocrNumber) {
-    const { data } = await supabase.from("cards").select(SELECT)
-      .ilike("name", `%${ocrName}%`)
-      .eq("number", ocrNumber)
-      .order("data_quality_score", { ascending: false })
-      .limit(1).maybeSingle();
-    if (data) { card = data; confidence = 93; }
-  }
-
-  // ── Suche 3: Name + Set ─────────────────────────────────────
-  if (!card && ocrName && ocrSet) {
-    const { data } = await supabase.from("cards").select(SELECT)
-      .ilike("name", `%${ocrName}%`)
-      .ilike("set_id", `%${ocrSet}%`)
-      .order("data_quality_score", { ascending: false })
-      .limit(1).maybeSingle();
-    if (data) { card = data; confidence = 88; }
-  }
-
-  // ── Suche 4: Nur Nummer + Set ──────────────────────────────
-  if (!card && ocrNumber && ocrSet) {
-    const { data } = await supabase.from("cards").select(SELECT)
-      .eq("number", ocrNumber)
-      .ilike("set_id", `%${ocrSet}%`)
-      .order("data_quality_score", { ascending: false })
-      .limit(1).maybeSingle();
-    if (data) { card = data; confidence = 85; }
-  }
-
-  // ── Suche 5: Nur Name (fuzzy) ──────────────────────────────
-  if (!card && ocrName) {
-    const { data } = await supabase.from("cards").select(SELECT)
-      .ilike("name", `%${ocrName}%`)
-      .order("data_quality_score", { ascending: false })
-      .limit(1).maybeSingle();
-    if (data) { card = data; confidence = 75; }
-  }
-
-  // ── Suche 6: Deutschen Namen versuchen ─────────────────────
-  if (!card && ocrName) {
-    const { data } = await supabase.from("cards").select(SELECT)
-      .ilike("name_de", `%${ocrName}%`)
-      .order("data_quality_score", { ascending: false })
-      .limit(1).maybeSingle();
-    if (data) { card = data; confidence = 72; }
+  for (const search of searches) {
+    const result = await search();
+    if (result) { [card, confidence] = result; break; }
   }
 
   if (!card) {
     return NextResponse.json({
       status: "no_match",
       error: "Karte nicht erkannt",
-      message: `Karte mit Name "${ocrName}" (Nr. ${ocrNumber}) nicht gefunden.`,
-      ocr_debug: { name: ocrName, number: ocrNumber, set: ocrSet },
+      message: `"${name}" erkannt aber nicht in der Datenbank gefunden.`,
+      gemini_result: parsed,
     });
   }
 
@@ -121,7 +152,7 @@ export async function POST(request: NextRequest) {
   if (user) {
     try {
       await supabase.from("scan_logs").insert({
-        user_id: user.id, card_id: card.id, scan_type: "ocr",
+        user_id: user.id, card_id: card.id, scan_type: "gemini",
       });
     } catch(_) {}
   }
@@ -131,7 +162,7 @@ export async function POST(request: NextRequest) {
     card: {
       id:           card.id,
       name:         card.name_de ?? card.name,
-      name_en:      card.name,
+      name_en:      card.name_en ?? card.name,
       set_id:       card.set_id,
       number:       card.number,
       image_url:    card.image_url,
@@ -142,8 +173,7 @@ export async function POST(request: NextRequest) {
       scan_count:   (card.scan_count ?? 0) + 1,
     },
     confidence,
-    method: "ocr",
-    ocr_debug: { name: ocrName, number: ocrNumber, set: ocrSet },
+    method: "gemini+db",
     scansUsed: null,
   });
 }

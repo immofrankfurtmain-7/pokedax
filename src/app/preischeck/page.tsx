@@ -27,8 +27,8 @@ interface Card {
 export default function PreischeckPage() {
   const [query,  setQuery]  = useState("");
   const [sort,   setSort]   = useState("price_desc");
-  const [setId,  setSetId]  = useState("");
-  const [setSearch, setSetSearch] = useState("");
+  const [setId,     setSetId]     = useState(() => typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("set") ?? "") : "");
+  const [setSearch, setSetSearch] = useState(() => typeof window !== "undefined" ? (new URLSearchParams(window.location.search).get("set") ?? "") : "");
   const [sets,   setSets]   = useState<{id:string;name:string}[]>([]);
   const [holoOnly, setHoloOnly] = useState(false);
   const [cards,  setCards]  = useState<Card[]>([]);
@@ -38,7 +38,7 @@ export default function PreischeckPage() {
   const load = useCallback(async (q:string, s:string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ q, sort:s, limit:"350" });
+      const params = new URLSearchParams({ q, sort: setId ? (s === "price_desc" ? "number_asc" : s) : s, limit:"350" });
       if (setId) params.set("set", setId);
       if (holoOnly) params.set("holo", "1");
       const r = await fetch(`/api/cards/search?${params}`);
@@ -50,19 +50,7 @@ export default function PreischeckPage() {
   }, [setId, holoOnly]);
 
   // Read URL params on mount (no Suspense needed with this approach)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlSet = params.get("set") ?? "";
-    const urlQ   = params.get("q")   ?? "";
-    if (urlSet) {
-      setSetId(urlSet);
-      // Try to find set name from loaded sets, fallback to ID
-      setSetSearch(urlSet);
-    }
-    if (urlQ) { setQuery(urlQ); }
-  }, []);
-
-  // Once sets load, update setSearch to show name if we have a set filter
+  // Update setSearch to show set name once sets are loaded
   useEffect(() => {
     if (setId && sets.length > 0) {
       const found = sets.find((s:any) => s.id === setId);

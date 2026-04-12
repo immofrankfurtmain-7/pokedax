@@ -1,4 +1,4 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -8,10 +8,29 @@ export const dynamic = "force-dynamic";
 interface Props { params: { username: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { username } = await params;
+  const { username } = params as { username: string };
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://pokedax2.vercel.app";
   return {
     title: `${username} – pokédax`,
     description: `Pokémon TCG Profil von ${username} auf pokédax`,
+    openGraph: {
+      title: `@${username} auf pokédax`,
+      description: `Pokémon TCG Sammler-Profil von ${username}`,
+      url: `${appUrl}/profil/${username}`,
+      siteName: "pokédax",
+      images: [{
+        url: `${appUrl}/profil/${username}/og`,
+        width: 1200,
+        height: 630,
+        alt: `${username} pokédax Profil`,
+      }],
+      type: "profile",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `@${username} auf pokédax`,
+      images: [`${appUrl}/profil/${username}/og`],
+    },
   };
 }
 
@@ -19,7 +38,7 @@ const G="#E9A84B",BG1="#111113",BG2="#1a1a1f",BR2="rgba(255,255,255,0.085)";
 const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a",GREEN="#4BBF82";
 
 export default async function ProfilePage({ params }: Props) {
-  const { username } = await params;
+  const { username } = params as { username: string };
   const sb = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
