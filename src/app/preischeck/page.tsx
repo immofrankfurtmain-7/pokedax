@@ -66,8 +66,15 @@ export default function PreischeckPage() {
       if (found) setSetSearch(found.name || found.id);
     }
   }, [sets, setId]);
-  useEffect(() => { load(query, sort); }, [load]);
-  useEffect(() => { load(query, sort); }, [setId, holoOnly]);
+  // Only auto-load on mount if NO set in URL (set comes via setId effect)
+  useEffect(() => {
+    const urlSet = new URLSearchParams(window.location.search).get("set") ?? "";
+    if (!urlSet) load(query, sort);
+  }, []); // eslint-disable-line
+  // Load when setId or holoOnly changes
+  useEffect(() => {
+    if (setId !== undefined) load(query, sort);
+  }, [setId, holoOnly]); // eslint-disable-line
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
