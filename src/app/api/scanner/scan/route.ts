@@ -1,7 +1,10 @@
 /**
- * pokédax Scanner v2 — Non-AI Scanner
- * Nutzt pHash aus DB für Karten-Erkennung
- * Gemini als Fallback
+ * pokédax Scanner v2 — Eigene pHash Erkennung
+ * Kein Gemini, kein externes API.
+ * Nutzt nur die eigene Datenbank mit 21.618 Hashes.
+ * 
+ * Algorithmus: dHash (schnell, kein DCT nötig, funktioniert auf Vercel)
+ * Fallback: Name-Suche wenn Hash-Distanz zu groß
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
@@ -9,23 +12,41 @@ import { createRouteClient } from "@/lib/supabase/server";
 export const dynamic   = "force-dynamic";
 export const maxDuration = 60;
 
-// Einfaches pHash ohne sharp - funktioniert auf Vercel ohne Probleme
-async function simpleHash(buffer: Buffer): Promise<string> {
-  // Resize auf 8x8 via canvas-ähnlicher Methode
-  // Nutzt nur grundlegende Buffer-Operationen
-  const size = buffer.length;
-  const step = Math.max(1, Math.floor(size / 64));
+// dHash — 8x8 Differenz-Hash, schnell und robust
+// Kein DCT, kein großes Matrix-Produkt → läuft problemlos auf Vercel
+async function computeDhash(buffer: Buffer): Promise<string> {
+  // Dynamischer Import von sharp (ExternalPackage in next.config)
+  const sharp = (await import("sharp")).default;
+  
+  // 9x8 = 72 Pixel → 64 horizontale Differenzen
+  const { data } = await sharp(buffer)
+    .resize(9, 8, { fit: "fill" })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const px = Array.from(data as Uint8Array);
   let hash = "";
-  
-  // Sample 64 Bytes gleichmäßig verteilt
-  const samples: number[] = [];
-  for (let i = 0; i < 64; i++) {
-    samples.push(buffer[Math.min(i * step, size - 1)]);
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      hash += px[row * 9 + col] > px[row * 9 + col + 1] ? "1" : "0";
+    }
   }
-  
-  const avg = samples.reduce((s, v) => s + v, 0) / 64;
-  hash = samples.map(v => v >= avg ? "1" : "0").join("");
   return hash;
+}
+
+// aHash — 8x8 Durchschnitts-Hash, noch einfacher
+async function computeAhash(buffer: Buffer): Promise<string> {
+  const sharp = (await import("sharp")).default;
+  const { data } = await sharp(buffer)
+    .resize(8, 8, { fit: "fill" })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const px = Array.from(data as Uint8Array);
+  const avg = px.reduce((s, v) => s + v, 0) / px.length;
+  return px.map(v => v >= avg ? "1" : "0").join("");
 }
 
 function hammingDistance(h1: string, h2: string): number {
@@ -50,7 +71,9 @@ export async function POST(request: NextRequest) {
         .eq("user_id", user.id)
         .gte("created_at", today + "T00:00:00Z");
       if ((count ?? 0) >= 5) {
-        return NextResponse.json({ error: "Tageslimit erreicht", limit_reached: true }, { status: 429 });
+        return NextResponse.json({
+          error: "Tageslimit erreicht", limit_reached: true
+        }, { status: 429 });
       }
     }
   }
@@ -68,113 +91,110 @@ export async function POST(request: NextRequest) {
       const body = await request.json();
       const b64 = body.image_base64 || body.imageBase64;
       if (!b64) return NextResponse.json({ error: "Kein Bild" }, { status: 400 });
-      imageBuffer = Buffer.from(b64.replace(/^data:image\/\w+;base64,/, ""), "base64");
+      imageBuffer = Buffer.from(
+        b64.replace(/^data:image\/\w+;base64,/, ""), "base64"
+      );
     }
   } catch(e) {
     return NextResponse.json({ error: "Bild konnte nicht gelesen werden" }, { status: 400 });
   }
 
-  // Gemini für Erkennung (zuverlässig, pHash kommt später wenn DB groß genug)
   let card: any = null;
   let confidence = 0;
-  let method = "gemini";
+  let method = "phash";
+  let queryHash = "";
 
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      const b64 = imageBuffer.toString("base64");
-      const gr = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{
-              parts: [
-                { text: "Identify this Pokémon TCG card precisely. Return ONLY valid JSON: {name_en: string (exact English card name), set_id: string (e.g. sv1, swsh1, base1), number: string (card number without leading zeros)}. No markdown, no explanation." },
-                { inline_data: { mime_type: "image/jpeg", data: b64 } },
-              ]
-            }]
-          })
-        }
-      );
+  // ── Phase 1: dHash berechnen + DB-Suche ────────────────────
+  try {
+    const dhash = await computeDhash(imageBuffer);
+    queryHash = dhash;
 
-      if (gr.ok) {
-        const gd = await gr.json();
-        const text = gd.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-        const clean = text.replace(/```json|```/g, "").trim();
-        const parsed = JSON.parse(clean);
+    // DB-Suche via SQL Hamming-Distance Funktion
+    const { data: matches } = await supabase.rpc("find_card_by_hash", {
+      query_hash: dhash,
+      max_distance: 12,
+      result_limit: 5,
+    });
 
-        if (parsed.name_en) {
-          const cardName = parsed.name_en.trim();
-          const setId    = (parsed.set_id ?? "").toLowerCase();
-          const cardNum  = (parsed.number  ?? "").replace(/^0+/, "");
+    if (matches && matches.length > 0) {
+      const best = matches[0];
+      const dist = best.distance ?? 999;
+      confidence = Math.round((1 - dist / 64) * 100);
 
-          // Versuch 1: exakter Name + Set-ID
-          if (setId) {
-            const { data: r1 } = await supabase.from("cards")
-              .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
-              .ilike("name", cardName)
-              .eq("set_id", setId)
-              .limit(1).maybeSingle();
-            if (r1) { card = r1; confidence = 95; }
-          }
+      if (confidence >= 85) {
+        // Sehr sicherer Match
+        const { data: found } = await supabase.from("cards")
+          .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count,data_quality_score")
+          .eq("id", best.card_id)
+          .single();
+        if (found) { card = found; method = "dhash_high"; }
 
-          // Versuch 2: exakter Name + Nummer
-          if (!card && cardNum) {
-            const { data: r2 } = await supabase.from("cards")
-              .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
-              .ilike("name", cardName)
-              .eq("number", cardNum)
-              .limit(1).maybeSingle();
-            if (r2) { card = r2; confidence = 90; }
-          }
-
-          // Versuch 3: nur Name (flexibel)
-          if (!card) {
-            const { data: r3 } = await supabase.from("cards")
-              .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
-              .ilike("name", `%${cardName}%`)
-              .order("data_quality_score", { ascending: false })
-              .limit(1).maybeSingle();
-            if (r3) { card = r3; confidence = 82; }
-          }
-
-          // Versuch 4: deutschen Namen probieren
-          if (!card) {
-            const { data: r4 } = await supabase.from("cards")
-              .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
-              .ilike("name_de", `%${cardName}%`)
-              .order("data_quality_score", { ascending: false })
-              .limit(1).maybeSingle();
-            if (r4) { card = r4; confidence = 78; }
-          }
-        }
+      } else if (confidence >= 70) {
+        // Mittlerer Konfidenz — Top 3 zur Bestätigung
+        const cardIds = matches.slice(0, 3).map((m: any) => m.card_id);
+        const { data: candidates } = await supabase.from("cards")
+          .select("id,name,name_de,set_id,number,image_url,price_market,rarity")
+          .in("id", cardIds);
+        return NextResponse.json({
+          status: "confirm",
+          candidates: candidates ?? [],
+          confidence,
+          message: "Bitte die richtige Karte bestätigen",
+        });
       }
-    } catch(e) {
-      console.error("Gemini error:", e);
     }
+  } catch(e) {
+    console.error("dHash error:", e);
   }
 
+  // ── Phase 2: aHash als Fallback ─────────────────────────────
   if (!card) {
-    if (user) {
-      try {
-        await supabase.from("card_scan_feedback").insert({
-          user_id: user.id, phash_computed: null, confidence: 0, was_correct: false,
-        });
-      } catch(_) {}
-    }
+    try {
+      const ahash = await computeAhash(imageBuffer);
+      const { data: matches2 } = await supabase.rpc("find_card_by_hash", {
+        query_hash: ahash,
+        max_distance: 10,
+        result_limit: 3,
+      });
+
+      if (matches2 && matches2.length > 0 && matches2[0].distance <= 8) {
+        const { data: found } = await supabase.from("cards")
+          .select("id,name,name_de,set_id,number,image_url,price_market,price_low,price_avg7,rarity,is_holo,scan_count")
+          .eq("id", matches2[0].card_id)
+          .single();
+        if (found) { card = found; confidence = Math.round((1 - matches2[0].distance / 64) * 100); method = "ahash"; }
+      }
+    } catch(e) {}
+  }
+
+  // ── Phase 3: Kein Match ────────────────────────────────────
+  if (!card) {
+    try {
+      await supabase.from("card_scan_feedback").insert({
+        user_id: user?.id ?? null,
+        phash_computed: queryHash,
+        confidence: 0,
+        was_correct: false,
+      });
+    } catch(_) {}
+
     return NextResponse.json({
       status: "no_match",
       error: "Karte nicht erkannt",
       message: "Karte konnte nicht erkannt werden. Bitte ein klareres Foto versuchen.",
+      hint: "Tipp: Karte flach auf hellen Untergrund legen, gerade von oben fotografieren.",
     });
   }
 
-  // Scan loggen
+  // ── Self-Improving: Scan loggen ────────────────────────────
   if (user) {
     try {
       await supabase.from("scan_logs").insert({
         user_id: user.id, card_id: card.id, scan_type: method,
+      });
+      await supabase.from("card_scan_feedback").insert({
+        user_id: user.id, card_id: card.id,
+        phash_computed: queryHash, confidence, was_correct: true,
       });
     } catch(_) {}
   }
