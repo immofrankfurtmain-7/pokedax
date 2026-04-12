@@ -51,30 +51,28 @@ export default function PreischeckPage() {
 
   // Read URL params on mount (no Suspense needed with this approach)
   // Read URL params on mount and set state
+  // Mount: read URL params
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const urlSet = p.get("set") ?? "";
     const urlQ   = p.get("q")   ?? "";
-    if (urlSet) setSetId(urlSet);
-    if (urlQ)   setQuery(urlQ);
-  }, []);
+    if (urlQ) setQuery(urlQ);
+    // setId triggers load via the effect below
+    setSetId(urlSet); // always set (even empty string triggers initial load)
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Update setSearch name once sets are loaded
+  // Update display name when sets are loaded
   useEffect(() => {
     if (setId && sets.length > 0) {
       const found = sets.find((s:any) => s.id === setId);
       if (found) setSetSearch(found.name || found.id);
     }
   }, [sets, setId]);
-  // Only auto-load on mount if NO set in URL (set comes via setId effect)
+
+  // Load cards when setId or holoOnly changes
   useEffect(() => {
-    const urlSet = new URLSearchParams(window.location.search).get("set") ?? "";
-    if (!urlSet) load(query, sort);
-  }, []); // eslint-disable-line
-  // Load when setId or holoOnly changes
-  useEffect(() => {
-    if (setId !== undefined) load(query, sort);
-  }, [setId, holoOnly]); // eslint-disable-line
+    load(query, sort);
+  }, [setId, holoOnly, load]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

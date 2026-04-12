@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   try {
     const b64 = imageBuffer.toString("base64");
     const gr = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,9 +79,13 @@ No markdown. No explanation. Only JSON.` },
       const text = (gd.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
       parsed = JSON.parse(text.replace(/\`\`\`json|\`\`\`/g, "").trim());
     }
-  } catch(e) {
-    console.error("Gemini error:", e);
-    return NextResponse.json({ error: "Erkennungsfehler", message: "Scanner konnte Karte nicht analysieren." });
+  } catch(e: any) {
+    console.error("Gemini error:", e?.message ?? e);
+    return NextResponse.json({ 
+      error: "Erkennungsfehler", 
+      message: "Scanner konnte Karte nicht analysieren. Bitte erneut versuchen.",
+      debug: e?.message ?? String(e)
+    });
   }
 
   if (!parsed?.name_en) {
