@@ -136,7 +136,11 @@ No markdown. No explanation. Only JSON.` },
 
   for (const search of searches) {
     const result = await search();
-    if (result) { [card, confidence] = result; break; }
+    if (result) {
+      card       = result[0];
+      confidence = result[1] as number;
+      break;
+    }
   }
 
   if (!card) {
