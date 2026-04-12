@@ -1,64 +1,61 @@
 /**
- * pokédax Perceptual Hash Library
- * Runs on Vercel (pure TypeScript + sharp WebAssembly)
- * No native binaries needed.
- *
- * Implements: pHash (DCT-based), dHash (difference hash), aHash (average hash)
- * All produce 64-bit hashes as binary strings for Hamming-Distance matching.
+ * pokédax pHash Library — Pure TypeScript + sharp
+ * Läuft auf Vercel (WebAssembly, keine native Binaries)
+ * 
+ * Implementiert: pHash (DCT), dHash (Differenz), aHash (Durchschnitt)
+ * Alle produzieren 64-Bit Binär-Strings für Hamming-Distance Matching.
  */
-
 import sharp from "sharp";
 
 export interface ImageHashes {
-  phash: string;  // 64-bit perceptual hash (DCT)
-  dhash: string;  // 64-bit difference hash
-  ahash: string;  // 64-bit average hash
-  combined: string; // All three concatenated for multi-hash matching
+  phash: string; // 64-bit DCT Hash — robustester
+  dhash: string; // 64-bit Differenz Hash — schnellster
+  ahash: string; // 64-bit Durchschnitts Hash — simpelster
 }
 
-/** Fetch image from URL and return raw buffer */
-async function fetchImage(url: string): Promise<Buffer> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error(`Image fetch failed: ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
+/** Bild laden (URL oder Buffer) */
+async function loadImage(input: Buffer | string): Promise<Buffer> {
+  if (typeof input === "string") {
+    const res = await fetch(input, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`Image fetch failed: ${res.status} ${input}`);
+    return Buffer.from(await res.arrayBuffer());
+  }
+  return input;
 }
 
-/** Preprocess image: resize, grayscale, normalize */
-async function preprocessImage(
+/** Bild vorverarbeiten: resize + graustufen + normalisieren */
+async function preprocess(
   input: Buffer | string,
-  size: number = 32
-): Promise<{ pixels: number[]; width: number; height: number }> {
-  const src = typeof input === "string" ? await fetchImage(input) : input;
-
-  const { data } = await sharp(src)
-    .resize(size, size, { fit: "fill" })
+  width: number,
+  height: number
+): Promise<number[]> {
+  const buf = await loadImage(input);
+  const { data } = await sharp(buf)
+    .resize(width, height, { fit: "fill" })
     .grayscale()
+    .normalise() // Kontrast normalisieren → bessere Hash-Stabilität
     .raw()
     .toBuffer({ resolveWithObject: true });
-
-  return {
-    pixels: Array.from(data),
-    width: size,
-    height: size,
-  };
+  return Array.from(data as Uint8Array);
 }
 
-/** DCT-based Perceptual Hash (pHash) - most robust */
+/** DCT-basierter Perceptual Hash (pHash) — robustester Algorithmus */
 export async function computePhash(input: Buffer | string): Promise<string> {
   const SIZE = 32;
-  const SMALL = 8;
-  const { pixels } = await preprocessImage(input, SIZE);
+  const KEEP = 8; // Nur 8x8 low-frequency DCT-Koeffizienten
+  const pixels = await preprocess(input, SIZE, SIZE);
 
-  // Apply 2D DCT
-  const dct: number[][] = Array.from({ length: SIZE }, () => new Array(SIZE).fill(0));
+  // 2D DCT berechnen
+  const dct: number[][] = [];
   for (let u = 0; u < SIZE; u++) {
+    dct[u] = [];
     for (let v = 0; v < SIZE; v++) {
       let sum = 0;
       for (let x = 0; x < SIZE; x++) {
         for (let y = 0; y < SIZE; y++) {
-          sum += pixels[x * SIZE + y] *
-            Math.cos(((2 * x + 1) * u * Math.PI) / (2 * SIZE)) *
-            Math.cos(((2 * y + 1) * v * Math.PI) / (2 * SIZE));
+          sum += pixels[x * SIZE + y]
+            * Math.cos(((2 * x + 1) * u * Math.PI) / (2 * SIZE))
+            * Math.cos(((2 * y + 1) * v * Math.PI) / (2 * SIZE));
         }
       }
       const cu = u === 0 ? 1 / Math.sqrt(2) : 1;
@@ -67,107 +64,88 @@ export async function computePhash(input: Buffer | string): Promise<string> {
     }
   }
 
-  // Take top-left 8x8 (low frequencies), skip DC component
+  // Top-left 8x8 extrahieren (ohne DC-Komponente [0][0])
   const lowFreq: number[] = [];
-  for (let u = 0; u < SMALL; u++) {
-    for (let v = 0; v < SMALL; v++) {
+  for (let u = 0; u < KEEP; u++) {
+    for (let v = 0; v < KEEP; v++) {
       if (u === 0 && v === 0) continue;
       lowFreq.push(dct[u][v]);
     }
   }
 
-  const median = [...lowFreq].sort((a, b) => a - b)[Math.floor(lowFreq.length / 2)];
+  // Median berechnen → Bit = 1 wenn Wert > Median
+  const sorted = [...lowFreq].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
   return lowFreq.map(v => (v > median ? "1" : "0")).join("");
 }
 
-/** Difference Hash (dHash) - fast, good for near-duplicates */
+/** Differenz-Hash (dHash) — schnell, gut für Duplikate */
 export async function computeDhash(input: Buffer | string): Promise<string> {
-  const { pixels } = await preprocessImage(input, 9); // 9x8 = 72 pixels → 64 differences
+  // 9 Spalten × 8 Zeilen = 72 Pixel → 64 horizontale Differenzen
+  const pixels = await preprocess(input, 9, 8);
   let hash = "";
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const left = pixels[row * 9 + col];
-      const right = pixels[row * 9 + col + 1];
-      hash += left > right ? "1" : "0";
+      hash += pixels[row * 9 + col] > pixels[row * 9 + col + 1] ? "1" : "0";
     }
   }
   return hash;
 }
 
-/** Average Hash (aHash) - fastest, good for thumbnails */
+/** Durchschnitts-Hash (aHash) — ultra-schnell, grobe Klassifikation */
 export async function computeAhash(input: Buffer | string): Promise<string> {
-  const { pixels } = await preprocessImage(input, 8);
+  const pixels = await preprocess(input, 8, 8);
   const avg = pixels.reduce((s, v) => s + v, 0) / pixels.length;
   return pixels.map(v => (v >= avg ? "1" : "0")).join("");
 }
 
-/** Compute all hashes at once */
+/** Alle drei Hashes auf einmal berechnen */
 export async function computeAllHashes(input: Buffer | string): Promise<ImageHashes> {
+  const buf = await loadImage(input);
   const [phash, dhash, ahash] = await Promise.all([
-    computePhash(input),
-    computeDhash(input),
-    computeAhash(input),
+    computePhash(buf),
+    computeDhash(buf),
+    computeAhash(buf),
   ]);
-  return { phash, dhash, ahash, combined: phash + dhash + ahash };
+  return { phash, dhash, ahash };
 }
 
-/** Hamming distance between two binary hash strings */
-export function hammingDistance(hash1: string, hash2: string): number {
-  if (hash1.length !== hash2.length) return 999;
-  let dist = 0;
-  for (let i = 0; i < hash1.length; i++) {
-    if (hash1[i] !== hash2[i]) dist++;
-  }
-  return dist;
+/** Hamming-Distance zwischen zwei Hash-Strings */
+export function hammingDistance(h1: string, h2: string): number {
+  if (!h1 || !h2 || h1.length !== h2.length) return 999;
+  let d = 0;
+  for (let i = 0; i < h1.length; i++) if (h1[i] !== h2[i]) d++;
+  return d;
 }
 
-/** Confidence score from Hamming distance (0-100) */
-export function hashConfidence(dist: number, hashLength: number = 64): number {
-  return Math.round((1 - dist / hashLength) * 100 * 10) / 10;
+/** Konfidenz aus Hamming-Distance (0-100%) */
+export function hashConfidence(dist: number, len = 64): number {
+  return Math.round((1 - dist / len) * 1000) / 10;
 }
 
 /**
- * Match a query hash against a list of candidates.
- * Returns sorted by confidence descending.
+ * Karte normalisieren für konsistentes Hashing.
+ * 800px breit, WebP Quality 82 = ~700KB-1.2MB pro Karte.
  */
-export function matchHashes(
-  queryHash: string,
-  candidates: { id: string; phash: string; name?: string }[],
-  maxDistance: number = 12
-): Array<{ id: string; distance: number; confidence: number; name?: string }> {
-  return candidates
-    .map(c => ({
-      id: c.id,
-      name: c.name,
-      distance: hammingDistance(queryHash, c.phash),
-      confidence: hashConfidence(hammingDistance(queryHash, c.phash)),
-    }))
-    .filter(r => r.distance <= maxDistance)
-    .sort((a, b) => a.distance - b.distance);
-}
-
-/** Normalize card image for consistent hashing */
 export async function normalizeCardImage(input: Buffer): Promise<Buffer> {
   return sharp(input)
-    .resize(300, 420, { fit: "contain", background: { r: 0, g: 0, b: 0 } })
-    .jpeg({ quality: 90 })
+    .resize(800, null, {
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 82 })
     .toBuffer();
 }
 
-/** Calculate image quality score based on sharpness + contrast */
+/** Bildqualitäts-Score basierend auf Schärfe/Kontrast (0-100) */
 export async function imageQualityScore(input: Buffer): Promise<number> {
-  const { data, info } = await sharp(input)
-    .grayscale()
+  const { data } = await sharp(input)
     .resize(100, 140)
+    .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
-
-  const pixels = Array.from(data as Uint8Array);
-  const mean = pixels.reduce((s, v) => s + v, 0) / pixels.length;
-  const variance = pixels.reduce((s, v) => s + (v - mean) ** 2, 0) / pixels.length;
-  const std = Math.sqrt(variance);
-
-  // Score: higher std = more contrast = better quality
-  // Normalize to 0-100
-  return Math.min(100, Math.round(std * 2));
+  const px = Array.from(data as Uint8Array);
+  const mean = px.reduce((s, v) => s + v, 0) / px.length;
+  const variance = px.reduce((s, v) => s + (v - mean) ** 2, 0) / px.length;
+  return Math.min(100, Math.round(Math.sqrt(variance) * 2));
 }
