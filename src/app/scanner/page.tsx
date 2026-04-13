@@ -393,7 +393,7 @@ export default function ScannerPage() {
                 </div>
                 <div style={{fontSize:20,fontWeight:300,color:TX1,marginBottom:8}}>{result.card?.name_de||result.card?.name||"Unbekannte Karte"}</div>
                 <div style={{fontSize:13,color:TX3,marginBottom:20}}>Diese Karte ist noch nicht in unserer Datenbank.</div>
-                <Link href={`/preischeck?q=${encodeURIComponent(result.card?.name||"Karte erkannt"_de||result.card?.name||"Karte erkannt")}`}
+                <Link href={`/preischeck?q=${encodeURIComponent(result.card?.name_de||result.card?.name||"Unbekannte Karte")}`}
                   style={{padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",fontSize:13,textDecoration:"none"}}>
                   Trotzdem suchen
                 </Link>
