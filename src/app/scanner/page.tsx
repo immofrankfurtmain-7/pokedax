@@ -149,7 +149,6 @@ export default function ScannerPage() {
   const [result,   setResult]       = useState<ScanResult|null>(null);
   const [preview,  setPreview]      = useState<string|null>(null);
   const [error,    setError]        = useState<string|null>(null);
-  const [redirecting, setRedirecting] = useState(false);
   const router = useRouter();
   const [scansToday, setScansToday] = useState<number>(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -198,10 +197,6 @@ export default function ScannerPage() {
       }
 
       setResult(data);
-      if (data.card?.id) {
-        setRedirecting(true);
-        setTimeout(() => router.push(`/preischeck/${data.card.id}`), 1500);
-      }
       if (data.scansUsed !== null) setScansToday(data.scansUsed);
     } catch {
       setError("Verbindungsfehler. Bitte erneut versuchen.");
