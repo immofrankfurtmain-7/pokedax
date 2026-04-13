@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -86,7 +86,7 @@ export default function SetsPage() {
                     const oc=owned[s.id]??0;
                     const pct=s.total?Math.round(oc/s.total*100):0;
                     return (
-                      <Link key={s.id} href={`/preischeck?set=${encodeURIComponent(s.id)}`} style={{
+                      <Link key={s.id} href={`/sets/${s.id}`} style={{
                         background:BG1,border:`0.5px solid ${oc>0?G18:BR1}`,borderRadius:14,
                         padding:"14px 16px",textDecoration:"none",display:"flex",flexDirection:"column",gap:6,
                         transition:"border-color .2s,background .2s",

@@ -58,16 +58,28 @@ export async function POST(request: NextRequest) {
   try {
     const b64 = imageBuffer.toString("base64");
     const gr = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{
             parts: [
-              { text: `Identify this Pokémon TCG card. Return ONLY a JSON object:
-{"name_en": "exact English name e.g. Lapras ex", "name_de": "German name if visible", "number": "card number without leading zeros e.g. 27", "set_code": "3-5 letter code from bottom of card e.g. PAF SVI PAL OBF MEW sv4pt5"}
-No markdown. No explanation. Only JSON.` },
+              { text: `Du bist der weltbeste Pokémon-TCG-Experte mit über 20 Jahren Erfahrung. Analysiere das Foto einer echten physischen Pokémon-Sammelkarte extrem genau.
+
+Gehe Schritt für Schritt vor:
+1. Identifiziere das Pokémon und das Artwork.
+2. Erkenne den Set-Code (unten auf der Karte, z.B. SVI, PAF, sv07, base1).
+3. Erkenne die Kartennummer (unten, z.B. 025/165 oder 027/091).
+4. Bestimme Sprache und Holo-Status.
+
+Gib AUSSCHLIESSLICH ein gültiges JSON zurück. Kein Markdown, keine Einleitung:
+{"name_en":"Lapras ex","name_de":"Lapras ex","number":"27","set_code":"sv04.5","language":"de","is_holo":false,"confidence":0.95}
+
+Regeln:
+- set_code ist der kurze Code exakt wie auf der Karte
+- number ohne führende Nullen (027 → 27)
+- Bei Unsicherheit confidence unter 0.85` },
               { inline_data: { mime_type: "image/jpeg", data: b64 } },
             ]
           }]

@@ -321,7 +321,7 @@ export default function ScannerPage() {
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:18}}>
                   <span style={{width:6,height:6,borderRadius:"50%",background:GREEN,display:"inline-block"}}/>
                   <span style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:GREEN}}>
-                    Erkannt · {Math.round((result.gemini.confidence??0.95)*100)}% Konfidenz
+                    Erkannt · {Math.round((result.confidence??0.95)*100)}% Konfidenz
                   </span>
                 </div>
 
@@ -343,16 +343,37 @@ export default function ScannerPage() {
                   </div>
                 )}
 
-                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:24}}>
+                {/* Action Buttons */}
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
                   <Link href={`/preischeck/${card.id}`} style={{
-                    padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",
-                    fontSize:13,fontWeight:400,textDecoration:"none",
-                    boxShadow:`0 2px 16px ${G25}`,
-                  }}>Preishistorie</Link>
+                    padding:"12px 20px",borderRadius:12,background:G,color:"#0a0808",
+                    fontSize:13,fontWeight:500,textDecoration:"none",textAlign:"center",
+                    boxShadow:`0 2px 16px ${G25}`,display:"block",
+                  }}>◈ Kartendetails ansehen</Link>
+                  <button onClick={async()=>{
+                    const sb=(await import("@/lib/supabase/client")).createClient();
+                    const {data:{session}}=await sb.auth.getSession();
+                    if(!session){window.location.href="/auth/login";return;}
+                    await sb.from("user_collection").upsert({
+                      user_id:session.user.id,card_id:card.id,quantity:1,condition:"NM"
+                    },{onConflict:"user_id,card_id"});
+                    alert(`✓ ${card.name} zum Portfolio hinzugefügt!`);
+                  }} style={{
+                    padding:"12px 20px",borderRadius:12,
+                    background:"rgba(61,184,122,0.1)",color:"#3db87a",
+                    fontSize:13,fontWeight:500,border:"0.5px solid rgba(61,184,122,0.3)",
+                    cursor:"pointer",textAlign:"center",width:"100%",
+                  }}>+ Portfolio hinzufügen</button>
+                  <Link href={`/marketplace?sell=${card.id}`} style={{
+                    padding:"12px 20px",borderRadius:12,
+                    background:"rgba(212,168,67,0.08)",color:G,
+                    fontSize:13,fontWeight:500,border:`0.5px solid ${G18}`,
+                    textDecoration:"none",textAlign:"center",display:"block",
+                  }}>◎ Auf Marktplatz inserieren</Link>
                   <button onClick={()=>{setResult(null);setPreview(null);setError(null);}} style={{
-                    padding:"10px 20px",borderRadius:12,background:"transparent",
-                    color:TX2,fontSize:13,border:`1px solid ${BR2}`,cursor:"pointer",
-                  }}>Neue Karte</button>
+                    padding:"10px",borderRadius:10,background:"transparent",
+                    color:TX3,fontSize:12,border:`0.5px solid ${BR1}`,cursor:"pointer",width:"100%",
+                  }}>↺ Neue Karte scannen</button>
                 </div>
 
                 {/* Matching panel */}
@@ -364,9 +385,9 @@ export default function ScannerPage() {
                 <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",color:"#e8a84a",marginBottom:16,textTransform:"uppercase"}}>
                   ⚠ Karte erkannt — kein Preis gefunden
                 </div>
-                <div style={{fontSize:20,fontWeight:300,color:TX1,marginBottom:8}}>{result.gemini.name_de||result.gemini.name}</div>
+                <div style={{fontSize:20,fontWeight:300,color:TX1,marginBottom:8}}>{result.card?.name_de||result.card?.name||"Unbekannte Karte"}</div>
                 <div style={{fontSize:13,color:TX3,marginBottom:20}}>Diese Karte ist noch nicht in unserer Datenbank.</div>
-                <Link href={`/preischeck?q=${encodeURIComponent(result.gemini.name_de||result.gemini.name)}`}
+                <Link href={`/preischeck?q=${encodeURIComponent(result.card?.name||"Karte erkannt"_de||result.card?.name||"Karte erkannt")}`}
                   style={{padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",fontSize:13,textDecoration:"none"}}>
                   Trotzdem suchen
                 </Link>
