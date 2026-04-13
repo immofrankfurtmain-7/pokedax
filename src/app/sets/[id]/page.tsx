@@ -45,7 +45,15 @@ export default function SetDetailPage() {
     else q = q.order("number", { ascending: true });
 
     const { data } = await q.limit(500);
-    setCards(data || []);
+    // Sort by number as integer client-side (avoids text sort issues like 1,10,100,2)
+    const sorted = (data || []).sort((a, b) => {
+      const na = parseInt(a.number) || 0;
+      const nb = parseInt(b.number) || 0;
+      return sort === "price_desc" ? (b.price_market||0) - (a.price_market||0)
+           : sort === "price_asc"  ? (a.price_market||0) - (b.price_market||0)
+           : na - nb;
+    });
+    setCards(sorted);
     setLoading(false);
   }
 
@@ -115,7 +123,7 @@ export default function SetDetailPage() {
                   <div style={{ aspectRatio: "3/4", background: BG2, position: "relative" }}>
                     {card.image_url ? (
                       <img
-                        src={card.image_url + "/low.webp"}
+                        src={card.image_url?.includes('.') ? card.image_url : card.image_url + "/low.webp"}
                         alt={card.name_de || card.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
