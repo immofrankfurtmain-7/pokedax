@@ -198,10 +198,6 @@ export default function ScannerPage() {
       }
 
       setResult(data);
-      if (data.card?.id) {
-        setRedirecting(true);
-        setTimeout(() => router.push(`/preischeck/${data.card.id}`), 1500);
-      }
       if (data.scansUsed !== null) setScansToday(data.scansUsed);
     } catch {
       setError("Verbindungsfehler. Bitte erneut versuchen.");
