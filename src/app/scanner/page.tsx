@@ -8,11 +8,11 @@ const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,25
 const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
 
 interface ScanResult {
-  status: string;
-  card: { id:string; name:string; name_de:string; name_en:string; set_id:string; number:string; price_market:number|null; price_avg7:number|null; price_avg30:number|null; image_url:string|null; rarity:string|null; hp:string|null } | null;
-  confidence: number;
-  method: string;
+  gemini: { name:string; name_de:string; set_id:string|null; number:string|null; confidence:number };
+  card: { id:string; name:string; name_de:string; set_id:string; number:string; price_market:number; price_avg7:number|null; price_avg30:number|null; image_url:string|null; rarity:string|null } | null;
+  matches: any[];
   scansUsed: number | null;
+  scansLeft: number | null;
 }
 interface Listing { id:string; type:"offer"|"want"; price:number|null; condition:string; note:string; profiles:{username:string}|null }
 
@@ -198,6 +198,10 @@ export default function ScannerPage() {
       }
 
       setResult(data);
+      if (data.card?.id) {
+        setRedirecting(true);
+        setTimeout(() => router.push(`/preischeck/${data.card.id}`), 1500);
+      }
       if (data.scansUsed !== null) setScansToday(data.scansUsed);
     } catch {
       setError("Verbindungsfehler. Bitte erneut versuchen.");
@@ -366,12 +370,12 @@ export default function ScannerPage() {
                     fontSize:13,fontWeight:500,border:"0.5px solid rgba(61,184,122,0.3)",
                     cursor:"pointer",textAlign:"center",width:"100%",
                   }}>+ Portfolio hinzufügen</button>
-                  <Link href={`/marketplace?sell=${card.id}`} style={{
+                  <button onClick={()=>window.location.href=`/marketplace?sell=${card.id}&name=${encodeURIComponent(card.name_de||card.name||"")}`} style={{
                     padding:"12px 20px",borderRadius:12,
                     background:"rgba(212,168,67,0.08)",color:G,
                     fontSize:13,fontWeight:500,border:`0.5px solid ${G18}`,
-                    textDecoration:"none",textAlign:"center",display:"block",
-                  }}>◎ Auf Marktplatz inserieren</Link>
+                    cursor:"pointer",textAlign:"center",width:"100%",
+                  }}>◎ Auf Marktplatz inserieren</button>
                   <button onClick={()=>{setResult(null);setPreview(null);setError(null);}} style={{
                     padding:"10px",borderRadius:10,background:"transparent",
                     color:TX3,fontSize:12,border:`0.5px solid ${BR1}`,cursor:"pointer",width:"100%",
@@ -389,7 +393,7 @@ export default function ScannerPage() {
                 </div>
                 <div style={{fontSize:20,fontWeight:300,color:TX1,marginBottom:8}}>{result.card?.name_de||result.card?.name||"Unbekannte Karte"}</div>
                 <div style={{fontSize:13,color:TX3,marginBottom:20}}>Diese Karte ist noch nicht in unserer Datenbank.</div>
-                <Link href={`/preischeck?q=${encodeURIComponent(result.card?.name_de||result.card?.name||"Unbekannte Karte")}`}
+                <Link href={`/preischeck?q=${encodeURIComponent(result.card?.name||"Karte erkannt"_de||result.card?.name||"Karte erkannt")}`}
                   style={{padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",fontSize:13,textDecoration:"none"}}>
                   Trotzdem suchen
                 </Link>

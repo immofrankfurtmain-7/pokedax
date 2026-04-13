@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -199,11 +199,20 @@ function OfferModal({listing,onClose}:{listing:any;onClose:()=>void}){
   );
 }
 
-function CreateListingModal({onClose,onCreated}:{onClose:()=>void;onCreated:()=>void}){
+function CreateListingModal({onClose,onCreated,preselectCardId}:{onClose:()=>void;onCreated:()=>void;preselectCardId?:string}){
   const [fSearch,setFSearch]=useState("");const [fResults,setFResults]=useState<any[]>([]);
   const [fCard,setFCard]=useState<any>(null);const [fType,setFType]=useState<"offer"|"want">("offer");
   const [fPrice,setFPrice]=useState("");const [fCond,setFCond]=useState("NM");
   const [fNote,setFNote]=useState("");const [fLoading,setFLoading]=useState(false);const [fMsg,setFMsg]=useState("");
+
+  useEffect(()=>{
+    if(!preselectCardId) return;
+    (async()=>{
+      const sb=createClient();
+      const {data}=await sb.from("cards").select("id,name,name_de,set_id,number,image_url,price_market,rarity").eq("id",preselectCardId).single();
+      if(data){setFCard(data);setFSearch(data.name_de||data.name||"");}
+    })();
+  },[preselectCardId]);
 
   async function searchCards(q:string){setFSearch(q);if(q.length<2){setFResults([]);return;}
     const r=await fetch(`/api/cards/search?q=${encodeURIComponent(q)}&limit=5`);const d=await r.json();setFResults(d.cards??[]);}
@@ -293,7 +302,14 @@ export default function MarketplacePage(){
   const [search,   setSearch]   = useState("");
   const [condFilter,setCondFilter]=useState("");
   const [offerModal,setOfferModal]=useState<any>(null);
-  const [showCreate,setShowCreate]=useState(false);
+  const [showCreate,setShowCreate]=useState(()=>{
+    if(typeof window==="undefined") return false;
+    return new URLSearchParams(window.location.search).has("sell");
+  });
+  const [preselectCardId]=useState(()=>{
+    if(typeof window==="undefined") return "";
+    return new URLSearchParams(window.location.search).get("sell")??"";
+  });
 
   useEffect(()=>{loadListings();},[]);
 
@@ -382,7 +398,7 @@ export default function MarketplacePage(){
         )}
       </div>
       {offerModal&&<OfferModal listing={offerModal} onClose={()=>setOfferModal(null)}/>}
-      {showCreate&&<CreateListingModal onClose={()=>setShowCreate(false)} onCreated={loadListings}/>}
+      {showCreate&&<CreateListingModal onClose={()=>setShowCreate(false)} onCreated={loadListings} preselectCardId={preselectCardId}/>}
       <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.5}}`}</style>
     </div>
   );
