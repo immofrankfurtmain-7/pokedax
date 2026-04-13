@@ -217,6 +217,20 @@ export default function ScannerPage() {
     ? ((card.price_market - card.price_avg7) / card.price_avg7 * 100)
     : null;
 
+  async function addToPortfolio(cardId: string, cardName: string) {
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const sb = createClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = "/auth/login"; return; }
+      await sb.from("user_collection").upsert(
+        { user_id: session.user.id, card_id: cardId, quantity: 1, condition: "NM" },
+        { onConflict: "user_id,card_id" }
+      );
+      alert("✓ " + cardName + " zum Portfolio hinzugefügt!");
+    } catch(e) { alert("Fehler beim Hinzufügen"); }
+  }
+
   return (
     <div style={{color:TX1,minHeight:"80vh"}}>
       <div style={{maxWidth:1100,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
@@ -350,15 +364,7 @@ export default function ScannerPage() {
                     fontSize:13,fontWeight:500,textDecoration:"none",textAlign:"center",
                     boxShadow:`0 2px 16px ${G25}`,display:"block",
                   }}>◈ Kartendetails ansehen</Link>
-                  <button onClick={async()=>{
-                    const sb=(await import("@/lib/supabase/client")).createClient();
-                    const {data:{session}}=await sb.auth.getSession();
-                    if(!session){window.location.href="/auth/login";return;}
-                    await sb.from("user_collection").upsert({
-                      user_id:session.user.id,card_id:card.id,quantity:1,condition:"NM"
-                    },{onConflict:"user_id,card_id"});
-                    alert(`✓ ${card.name} zum Portfolio hinzugefügt!`);
-                  }} style={{
+                  <button onClick={()=>addToPortfolio(card.id, card.name||"")} style={{
                     padding:"12px 20px",borderRadius:12,
                     background:"rgba(61,184,122,0.1)",color:"#3db87a",
                     fontSize:13,fontWeight:500,border:"0.5px solid rgba(61,184,122,0.3)",
