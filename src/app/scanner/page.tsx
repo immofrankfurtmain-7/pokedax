@@ -8,11 +8,11 @@ const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,25
 const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
 
 interface ScanResult {
-  gemini: { name:string; name_de:string; set_id:string|null; number:string|null; confidence:number };
-  card: { id:string; name:string; name_de:string; set_id:string; number:string; price_market:number; price_avg7:number|null; price_avg30:number|null; image_url:string|null; rarity:string|null } | null;
-  matches: any[];
+  status: string;
+  card: { id:string; name:string; name_de:string; name_en:string; set_id:string; number:string; price_market:number|null; price_avg7:number|null; price_avg30:number|null; image_url:string|null; rarity:string|null; hp:string|null } | null;
+  confidence: number;
+  method: string;
   scansUsed: number | null;
-  scansLeft: number | null;
 }
 interface Listing { id:string; type:"offer"|"want"; price:number|null; condition:string; note:string; profiles:{username:string}|null }
 
