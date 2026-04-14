@@ -112,42 +112,45 @@ export default function SetDetailPage() {
             {cards.map(card => (
               <Link key={card.id} href={`/preischeck/${card.id}`} style={{ textDecoration: "none" }}>
                 <div style={{
-                  background: BG1, border: `0.5px solid ${BR1}`, borderRadius: 14,
-                  overflow: "hidden", transition: "border-color .2s",
+                  background: "#16161A",
+                  border: `1px solid ${card.price_market ? "rgba(0,184,168,0.15)" : "rgba(255,255,255,0.07)"}`,
+                  borderRadius: 16, overflow: "hidden",
+                  transition: "transform .2s, border-color .2s",
                   cursor: "pointer",
                 }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = G18)}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = BR1)}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,184,168,0.3)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.borderColor = card.price_market ? "rgba(0,184,168,0.15)" : "rgba(255,255,255,0.07)"; }}
                 >
-                  {/* Card Image */}
-                  <div style={{ aspectRatio: "3/4", background: BG2, position: "relative" }}>
-                    {card.image_url ? (
-                      <img
-                        src={card.image_url?.includes('.') ? card.image_url : card.image_url + "/low.webp"}
-                        alt={card.name_de || card.name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: TX3, fontSize: 28 }}>◎</div>
-                    )}
-                    {/* Number badge */}
-                    <div style={{
-                      position: "absolute", bottom: 6, right: 6,
-                      background: "rgba(0,0,0,0.7)", borderRadius: 5,
-                      padding: "2px 6px", fontSize: 9, color: TX3,
-                    }}>#{card.number}</div>
+                  {/* Card Image — padded, smaller */}
+                  <div style={{ padding: "8px 8px 0", background: "#1C1C21" }}>
+                    <div style={{ aspectRatio: "3/4", borderRadius: 10, overflow: "hidden", background: "#222228", position: "relative", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      {card.image_url ? (
+                        <img
+                          src={card.image_url?.includes(".") ? card.image_url : card.image_url + "/low.webp"}
+                          alt={card.name_de || card.name}
+                          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                          onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: 28, opacity:.2, color:"#6E6B66" }}>◎</span>
+                      )}
+                      <div style={{
+                        position: "absolute", bottom: 5, right: 5,
+                        background: "rgba(0,0,0,0.65)", borderRadius: 4,
+                        padding: "2px 5px", fontSize: 9, color: "#6E6B66",
+                      }}>#{card.number}</div>
+                    </div>
                   </div>
 
                   {/* Card Info */}
-                  <div style={{ padding: "10px 10px 12px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: TX1, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <div style={{ padding: "8px 10px 10px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: "#F8F6F2", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {card.name_de || card.name}
                     </div>
-                    <div style={{ fontSize: 11, color: TX3, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 10, color: "#6E6B66", marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {card.rarity || "–"}
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: card.price_market ? G : TX3 }}>
+                    <div style={{ fontSize: 13, fontFamily:"var(--font-mono)", fontWeight: 400, color: card.price_market ? "#EFD7A8" : "#6E6B66" }}>
                       {formatPrice(card.price_market)}
                     </div>
                   </div>
