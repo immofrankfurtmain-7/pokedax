@@ -1,0 +1,13 @@
+const fs = require('fs'), path = require('path');
+const root = 'C:\\Users\\lenovo\\pokedax\\pokedax\\pokedax';
+const file = path.join(root, 'src/components/Navbar.tsx');
+const c = fs.readFileSync(file, 'utf8');
+console.log('File size:', c.length);
+console.log('Has teal T="#00B8A8":', c.includes('#00B8A8'));
+console.log('Has gold G="#D4A843":', c.includes('#D4A843'));
+console.log('Has teal-pulse animation:', c.includes('teal-pulse'));
+console.log('Has Sets link:', c.includes('/sets'));
+console.log('Premium button background:', c.match(/Premium.*background[^;]+/)?.[0]?.slice(0,80));
+console.log('\nFirst 200 chars of const block:');
+const idx = c.indexOf('const T');
+console.log(c.slice(idx, idx+300));
