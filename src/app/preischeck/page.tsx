@@ -2,13 +2,25 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-const G="#E9A84B",G18="rgba(233,168,75,0.18)",G08="rgba(233,168,75,0.08)";
-const BG1="#16161A",BR1="rgba(255,255,255,0.06)",BR2="rgba(255,255,255,0.10)";
-const TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6E6B66";
-const GREEN="#4BBF82",RED="#E04558";
+const T  = "#00B8A8";   // Teal accent
+const TL = "rgba(0,184,168,0.15)";
+const T8 = "rgba(0,184,168,0.08)";
+const GH = "#EFD7A8";   // Champagne — prices
+const BG1 = "#16161A";
+const B2  = "#1C1C21";
+const B3  = "#222228";
+const BR1 = "rgba(255,255,255,0.04)";
+const BR2 = "rgba(255,255,255,0.08)";
+const TX1 = "#F8F6F2";
+const TX2 = "#BEB9B0";
+const TX3 = "#6E6B66";
+const GREEN = "#3db87a";
+const RED   = "#dc4a5a";
+// Legacy alias
+const G = T; const G18 = TL; const G08 = T8;
 
 const TYPE_COLOR:Record<string,string>={
-  Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#E9A84B",
+  Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#00B8A8",
   Psychic:"#A855F7",Fighting:"#EF4444",Darkness:"#888",Metal:"#9CA3AF",
   Dragon:"#7C3AED",Colorless:"#CBD5E1",
 };
@@ -134,15 +146,15 @@ export default function PreischeckPage() {
                 <button key={s.v} type="button" onClick={()=>{setSort(s.v);load(query,s.v);}} style={{
                   padding:"10px 18px",borderRadius:14,fontSize:13,fontWeight:500,
                   cursor:"pointer",border:"none",transition:"all .15s",
-                  background:sort===s.v?G08:"transparent",
-                  color:sort===s.v?G:TX3,
-                  outline:sort===s.v?`1px solid ${G18}`:"none",
+                  background:sort===s.v?T8:"transparent",
+                  color:sort===s.v?T:TX3,
+                  outline:sort===s.v?`1px solid ${TL}`:"none",
                 }}>{s.l}</button>
               ))}
             </div>
             <button type="submit" className="gold-glow" style={{
               padding:"14px 28px",borderRadius:16,
-              background:G,color:"#0a0808",
+              background:T,color:"#0A0A0C",
               fontSize:14,fontWeight:600,border:"none",cursor:"pointer",
               whiteSpace:"nowrap",
             }}>Suchen</button>
@@ -160,8 +172,8 @@ export default function PreischeckPage() {
         {loading ? (
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:16}}>
             {Array.from({length:12}).map((_,i)=>(
-              <div key={i} style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:24,overflow:"hidden",aspectRatio:"3/5",
-                animation:"pulse 1.5s ease-in-out infinite",opacity:.5}}/>
+              <div key={i} style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:18,overflow:"hidden",aspectRatio:"3/5",
+                animation:"pulse 1.5s ease-in-out infinite",opacity:.4}}/>
             ))}
           </div>
         ) : (
@@ -178,29 +190,86 @@ export default function PreischeckPage() {
               const pctCapped = pct!==null ? Math.min(Math.abs(pct),99)*Math.sign(pct) : null;
               return (
                 <Link key={card.id} href={`/preischeck/${card.id}`}
-                  className="card-hover"
-                  style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:24,overflow:"hidden",textDecoration:"none",display:"block",position:"relative"}}>
-                  {/* Image */}
-                  <div style={{aspectRatio:"3/4",background:"#080808",position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    <div style={{position:"absolute",inset:0,background:`radial-gradient(circle at 50% 30%,${tc}18,transparent 65%)`}}/>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt={name} style={{width:"100%",height:"100%",objectFit:"contain",padding:6,position:"relative",zIndex:1}}/>
-                    <div style={{position:"absolute",bottom:0,left:0,right:0,height:"50%",background:`linear-gradient(transparent,${BG1})`,zIndex:2}}/>
-                    {card.types?.[0]&&(
-                      <div style={{position:"absolute",top:10,left:10,zIndex:3,padding:"2px 8px",borderRadius:8,fontSize:9,fontWeight:600,letterSpacing:".04em",background:`${tc}18`,color:tc,border:`1px solid ${tc}28`,backdropFilter:"blur(8px)"}}>
-                        {TYPE_DE[card.types[0]]??card.types[0]}
-                      </div>
-                    )}
+                  style={{
+                    textDecoration:"none", display:"block",
+                    background: BG1,
+                    border: `1px solid ${card.price_market ? TL : BR1}`,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    transition: "transform .2s, border-color .2s, box-shadow .2s",
+                    position: "relative",
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,184,168,0.35)";
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(0,184,168,0.12)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+                    (e.currentTarget as HTMLElement).style.borderColor = card.price_market ? TL : BR1;
+                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
+                  }}>
+
+                  {/* Image area — padded */}
+                  <div style={{ padding: "8px 8px 0", background: B2 }}>
+                    <div style={{
+                      aspectRatio: "3/4", borderRadius: 11,
+                      background: B3, overflow: "hidden",
+                      position: "relative",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {/* Type glow */}
+                      <div style={{ position:"absolute", inset:0, background:`radial-gradient(circle at 50% 40%,${tc}14,transparent 70%)` }}/>
+                      {/* Card image */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={img} alt={name}
+                        style={{ width:"90%", height:"90%", objectFit:"contain", position:"relative", zIndex:1 }}
+                        onError={e => { (e.target as HTMLImageElement).style.display="none"; }}
+                      />
+                      {/* Type badge */}
+                      {card.types?.[0] && (
+                        <div style={{
+                          position:"absolute", top:7, left:7, zIndex:3,
+                          padding:"2px 7px", borderRadius:6,
+                          fontSize:9, fontWeight:600, letterSpacing:".04em",
+                          background:`${tc}20`, color:tc, border:`0.5px solid ${tc}35`,
+                        }}>
+                          {TYPE_DE[card.types[0]] ?? card.types[0]}
+                        </div>
+                      )}
+                      {/* Price dot — green if has price */}
+                      <div style={{
+                        position:"absolute", top:7, right:7, zIndex:3,
+                        width:7, height:7, borderRadius:"50%",
+                        background: card.price_market ? GREEN : TX3,
+                        boxShadow: card.price_market ? `0 0 6px ${GREEN}` : "none",
+                      }}/>
+                      {/* Number */}
+                      <div style={{
+                        position:"absolute", bottom:6, right:7, zIndex:3,
+                        fontSize:9, color:TX3,
+                        background:"rgba(0,0,0,0.5)", padding:"1px 5px", borderRadius:4,
+                      }}>#{card.number}</div>
+                    </div>
                   </div>
+
                   {/* Info */}
-                  <div style={{padding:"14px 16px 18px",position:"relative",zIndex:1}}>
-                    <div style={{fontSize:14,fontWeight:500,color:TX1,marginBottom:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:"-.01em"}}>{name}</div>
-                    <div style={{fontSize:10,color:TX3,marginBottom:12,letterSpacing:".02em"}}>{String(card.set_id).toUpperCase()} · #{card.number}</div>
-                    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between"}}>
-                      <span style={{fontSize:"clamp(16px,1.5vw,20px)",fontWeight:400,fontFamily:"'DM Mono',monospace",color:G,letterSpacing:"-.02em"}}>{price}</span>
-                      {pctCapped!==null&&(
-                        <span style={{fontSize:10.5,fontWeight:600,color:pctCapped>=0?GREEN:RED}}>
-                          {pctCapped>=0?"▲":"▼"}{Math.abs(pctCapped).toLocaleString("de-DE",{maximumFractionDigits:1})} %
+                  <div style={{ padding:"9px 11px 12px" }}>
+                    <div style={{ fontSize:12, fontWeight:500, color:TX1, marginBottom:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {name}
+                    </div>
+                    <div style={{ fontSize:9, color:TX3, marginBottom:7, textTransform:"uppercase", letterSpacing:".05em" }}>
+                      {String(card.set_id).toUpperCase()}
+                    </div>
+                    <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:4 }}>
+                      <span style={{
+                        fontSize:14, fontFamily:"var(--font-mono)", fontWeight:400,
+                        color: card.price_market ? GH : TX3,
+                        letterSpacing:"-.02em",
+                      }}>{price}</span>
+                      {pctCapped !== null && (
+                        <span style={{ fontSize:10, fontWeight:600, color: pctCapped >= 0 ? GREEN : RED, flexShrink:0 }}>
+                          {pctCapped >= 0 ? "▲" : "▼"}{Math.abs(pctCapped).toLocaleString("de-DE",{maximumFractionDigits:1})}%
                         </span>
                       )}
                     </div>
