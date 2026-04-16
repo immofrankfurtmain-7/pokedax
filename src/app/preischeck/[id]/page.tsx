@@ -4,11 +4,11 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const G="#00B8A8",G18="rgba(0,184,168,0.18)",G08="rgba(0,184,168,0.08)";
-const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a",RED="#dc4a5a";
+const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
+const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
+const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
 
-const TYPE_COLOR:Record<string,string>={Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#00B8A8",Psychic:"#A855F7",Fighting:"#EF4444",Darkness:"#6B7280",Metal:"#9CA3AF",Dragon:"#7C3AED",Colorless:"#CBD5E1"};
+const TYPE_COLOR:Record<string,string>={Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#D4A843",Psychic:"#A855F7",Fighting:"#EF4444",Darkness:"#6B7280",Metal:"#9CA3AF",Dragon:"#7C3AED",Colorless:"#CBD5E1"};
 const TYPE_DE:Record<string,string>={Fire:"Feuer",Water:"Wasser",Grass:"Pflanze",Lightning:"Elektro",Psychic:"Psycho",Fighting:"Kampf",Darkness:"Finsternis",Metal:"Metall",Dragon:"Drache",Colorless:"Farblos"};
 
 function PriceChart({avg7,avg30,market,history}:{avg7:number|null;avg30:number|null;market:number|null;history?:{price_market:number;recorded_at:string}[]}) {
@@ -200,9 +200,9 @@ export default function CardDetailPage() {
             {user&&(
               <div style={{marginTop:10}}>
                 {alert ? (
-                  <div style={{padding:"8px 12px",borderRadius:10,background:"rgba(0,184,168,0.06)",border:"0.5px solid rgba(0,184,168,0.18)",display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{padding:"8px 12px",borderRadius:10,background:"rgba(212,168,67,0.06)",border:"0.5px solid rgba(212,168,67,0.18)",display:"flex",alignItems:"center",gap:8}}>
                     <span style={{fontSize:11,color:G,flex:1}}>🔔 Alarm bei {parseFloat(alertPrice).toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
-                    <button onClick={deleteAlert} style={{fontSize:10,color:"#6E6B66",background:"transparent",border:"none",cursor:"pointer"}}>× entfernen</button>
+                    <button onClick={deleteAlert} style={{fontSize:10,color:"#62626f",background:"transparent",border:"none",cursor:"pointer"}}>× entfernen</button>
                   </div>
                 ) : showAlertForm ? (
                   <div style={{display:"flex",gap:6}}>
@@ -217,7 +217,7 @@ export default function CardDetailPage() {
                   </div>
                 ) : (
                   <button onClick={()=>{setShowAlertForm(true);if(card?.price_market)setAlertPrice((card.price_market*0.9).toFixed(2));}} style={{width:"100%",padding:"8px",borderRadius:9,background:"transparent",color:TX3,border:"0.5px solid rgba(255,255,255,0.045)",cursor:"pointer",fontSize:11,transition:"all .15s"}}
-                  onMouseEnter={e=>{(e.currentTarget as any).style.color=G;(e.currentTarget as any).style.borderColor="rgba(0,184,168,0.18)"}}
+                  onMouseEnter={e=>{(e.currentTarget as any).style.color=G;(e.currentTarget as any).style.borderColor="rgba(212,168,67,0.18)"}}
                   onMouseLeave={e=>{(e.currentTarget as any).style.color=TX3;(e.currentTarget as any).style.borderColor="rgba(255,255,255,0.045)"}}>
                     🔔 Preisalarm setzen
                   </button>

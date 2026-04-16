@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const G="#00B8A8",G25="rgba(0,184,168,0.25)",G18="rgba(0,184,168,0.18)",G10="rgba(0,184,168,0.10)",G05="rgba(0,184,168,0.05)";
+const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G10="rgba(212,168,67,0.10)",G05="rgba(0,184,168,0.05)";
 const BG1="#16161A",BG2="#1C1C21",BG3="#222228";
 const BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)",BR3="rgba(255,255,255,0.13)";
 const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66";
@@ -17,7 +17,7 @@ const COND:Record<string,{label:string;color:string}>={
 function ago(d:string){const h=Math.floor((Date.now()-new Date(d).getTime())/3600000);if(h<1)return"Gerade";if(h<24)return`${h}h`;if(h<168)return`${Math.floor(h/24)}T`;return`${Math.floor(h/168)}W`;}
 
 function Avatar({username,size=28}:{username:string;size?:number}){
-  const colors=["#00B8A8","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
+  const colors=["#D4A843","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
   const c=colors[username.charCodeAt(0)%colors.length];
   return <div style={{width:size,height:size,borderRadius:"50%",background:`${c}15`,border:`0.5px solid ${c}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.42,color:c,fontWeight:500,flexShrink:0}}>{username[0].toUpperCase()}</div>;
 }

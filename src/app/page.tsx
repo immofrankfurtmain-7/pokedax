@@ -3,10 +3,10 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const T  = "#00B8A8";  // Teal — primary accent
-const TL = "rgba(0,184,168,0.15)";
-const T8 = "rgba(0,184,168,0.08)";
-const T4 = "rgba(0,184,168,0.04)";
+const T  = "#D4A843";  // Teal — primary accent
+const TL = "rgba(212,168,67,0.15)";
+const T8 = "rgba(212,168,67,0.08)";
+const T4 = "rgba(212,168,67,0.04)";
 const GH = "#EFD7A8";  // Champagne — prices only
 const BG = "#0A0A0C";
 const B1 = "#16161A";
@@ -42,7 +42,7 @@ function TrendingCard({ card }: { card: Card }) {
         overflow: "hidden",
         transition: "transform .2s, border-color .2s",
       }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLElement).style.borderColor = up ? "rgba(61,184,122,0.35)" : "rgba(0,184,168,0.3)"; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; (e.currentTarget as HTMLElement).style.borderColor = up ? "rgba(61,184,122,0.35)" : "rgba(212,168,67,0.3)"; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.borderColor = up ? "rgba(61,184,122,0.18)" : R2; }}>
         {/* Card image with padding */}
         <div style={{ padding: "8px 8px 0", background: B2 }}>
@@ -174,7 +174,7 @@ export default function HomePage() {
                 background: T, color: BG,
                 fontSize:14, fontWeight:500,
                 textDecoration:"none",
-                boxShadow:`0 0 32px rgba(0,184,168,0.25)`,
+                boxShadow:`0 0 32px rgba(212,168,67,0.25)`,
                 letterSpacing:"-.01em",
               }}>Karte scannen</Link>
               <Link href="/preischeck" style={{
@@ -341,7 +341,7 @@ export default function HomePage() {
       {/* ── CTA ──────────────────────────────────────────────── */}
       <section style={{ maxWidth:680, margin:"0 auto", padding:"0 clamp(20px,4vw,48px) clamp(80px,10vw,140px)" }}>
         <div style={{
-          background:`linear-gradient(135deg, rgba(0,184,168,0.08), ${B1})`,
+          background:`linear-gradient(135deg, rgba(212,168,67,0.08), ${B1})`,
           border:`1px solid ${TL}`, borderRadius:24,
           padding:"clamp(36px,5vw,56px) clamp(28px,5vw,52px)",
           textAlign:"center", position:"relative", overflow:"hidden",
@@ -360,7 +360,7 @@ export default function HomePage() {
             padding:"13px 32px", borderRadius:14,
             background:T, color:BG, fontSize:14, fontWeight:500,
             textDecoration:"none",
-            boxShadow:`0 0 32px rgba(0,184,168,0.3)`,
+            boxShadow:`0 0 32px rgba(212,168,67,0.3)`,
           }}>Premium werden ✦</Link>
           <div style={{ marginTop:14, fontSize:11, color:T3 }}>6,99 € / Monat · Jederzeit kündbar</div>
         </div>

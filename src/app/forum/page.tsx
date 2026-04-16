@@ -1,12 +1,12 @@
-﻿"use client";
+"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
-const BG1="#111114",BG2="#18181c",BG3="#202025";
+const BG1="#16161A",BG2="#1C1C21",BG3="#202025";
 const BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
+const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a",RED="#dc4a5a";
 
 const CAT_CONFIG: Record<string,{color:string;icon:string}> = {
   Preisdiskussion: {color:"#E9A84B",icon:"◈"},

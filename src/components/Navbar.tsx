@@ -4,10 +4,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const T    = "#00B8A8";
-const TL   = "rgba(0,184,168,0.15)";
-const T08  = "rgba(0,184,168,0.08)";
-const T04  = "rgba(0,184,168,0.04)";
+const T    = "#D4A843";
+const TL   = "rgba(212,168,67,0.15)";
+const T08  = "rgba(212,168,67,0.08)";
+const T04  = "rgba(212,168,67,0.04)";
 const BG   = "#0A0A0C";
 const B1   = "#16161A";
 const B2   = "#1C1C21";
@@ -108,8 +108,8 @@ export default function Navbar() {
           }}>
             pokédax<span style={{
               color: T,
-              textShadow: `0 0 12px rgba(0,184,168,0.6)`,
-              animation: "teal-pulse 3s ease-in-out infinite",
+              textShadow: `0 0 12px rgba(212,168,67,0.6)`,
+              animation: "gold-pulse 3s ease-in-out infinite",
             }}>.</span>
           </Link>
 
@@ -122,8 +122,8 @@ export default function Navbar() {
                   padding: "7px 16px", borderRadius: 10,
                   fontSize: 13, fontWeight: active ? 500 : 400,
                   color: active ? TX : T3,
-                  background: active ? "rgba(0,184,168,0.08)" : "transparent",
-                  border: active ? "0.5px solid rgba(0,184,168,0.18)" : "0.5px solid transparent",
+                  background: active ? "rgba(212,168,67,0.08)" : "transparent",
+                  border: active ? "0.5px solid rgba(212,168,67,0.18)" : "0.5px solid transparent",
                   textDecoration: "none",
                   transition: "all 0.15s",
                   position: "relative",
@@ -132,9 +132,9 @@ export default function Navbar() {
                   if (!active) {
                     const el = e.currentTarget as HTMLElement;
                     el.style.color = TX;
-                    el.style.background = "rgba(0,184,168,0.06)";
-                    el.style.border = "0.5px solid rgba(0,184,168,0.15)";
-                    el.style.boxShadow = "0 0 16px rgba(0,184,168,0.08)";
+                    el.style.background = "rgba(212,168,67,0.06)";
+                    el.style.border = "0.5px solid rgba(212,168,67,0.15)";
+                    el.style.boxShadow = "0 0 16px rgba(212,168,67,0.08)";
                   }
                 }}
                 onMouseLeave={e => {
@@ -170,7 +170,7 @@ export default function Navbar() {
                     padding: "7px 18px", borderRadius: 10, fontSize: 13,
                     background: T, color: BG, fontWeight: 500,
                     textDecoration: "none",
-                    boxShadow: "0 0 20px rgba(0,184,168,0.25)",
+                    boxShadow: "0 0 20px rgba(212,168,67,0.25)",
                     transition: "box-shadow 0.2s, transform 0.15s",
                   }}
                   onMouseEnter={e => {
@@ -178,7 +178,7 @@ export default function Navbar() {
                     (e.currentTarget as any).style.transform = "translateY(-1px)";
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as any).style.boxShadow = "0 0 20px rgba(0,184,168,0.25)";
+                    (e.currentTarget as any).style.boxShadow = "0 0 20px rgba(212,168,67,0.25)";
                     (e.currentTarget as any).style.transform = "translateY(0)";
                   }}>
                     Premium ✦
@@ -194,13 +194,13 @@ export default function Navbar() {
                     fontSize: 13, fontWeight: 500,
                     color: dropOpen ? T : T2,
                     cursor: "pointer", transition: "all 0.15s",
-                    boxShadow: dropOpen ? "0 0 16px rgba(0,184,168,0.2)" : "none",
+                    boxShadow: dropOpen ? "0 0 16px rgba(212,168,67,0.2)" : "none",
                   }}
                   onMouseEnter={e => {
                     if (!dropOpen) {
                       (e.currentTarget as any).style.borderColor = TL;
                       (e.currentTarget as any).style.color = T;
-                      (e.currentTarget as any).style.boxShadow = "0 0 12px rgba(0,184,168,0.15)";
+                      (e.currentTarget as any).style.boxShadow = "0 0 12px rgba(212,168,67,0.15)";
                     }
                   }}
                   onMouseLeave={e => {
@@ -219,7 +219,7 @@ export default function Navbar() {
                       background: B1,
                       border: "0.5px solid rgba(255,255,255,0.08)",
                       borderRadius: 16,
-                      boxShadow: "0 20px 60px rgba(0,0,0,0.7), 0 0 0 0.5px rgba(0,184,168,0.08)",
+                      boxShadow: "0 20px 60px rgba(0,0,0,0.7), 0 0 0 0.5px rgba(212,168,67,0.08)",
                       overflow: "hidden",
                       animation: "dropIn 0.15s ease-out",
                       zIndex: 200,
@@ -240,7 +240,7 @@ export default function Navbar() {
                           }}
                           onMouseEnter={e => {
                             const el = e.currentTarget as HTMLElement;
-                            el.style.background = "rgba(0,184,168,0.06)";
+                            el.style.background = "rgba(212,168,67,0.06)";
                             el.style.color = TX;
                           }}
                           onMouseLeave={e => {
@@ -386,7 +386,7 @@ export default function Navbar() {
                   padding: "12px 14px", borderRadius: 12, fontSize: 15,
                   color: BG, background: T, fontWeight: 500,
                   textDecoration: "none", textAlign: "center",
-                  boxShadow: "0 0 24px rgba(0,184,168,0.3)",
+                  boxShadow: "0 0 24px rgba(212,168,67,0.3)",
                 }}>Premium werden ✦</Link>
               </>
             )}
@@ -397,7 +397,7 @@ export default function Navbar() {
       <style>{`
         @keyframes dropIn    { from { opacity:0; transform:translateY(-8px) } to { opacity:1; transform:translateY(0) } }
         @keyframes slideDown { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
-        @keyframes teal-pulse { 0%,100% { text-shadow: 0 0 12px rgba(0,184,168,0.6) } 50% { text-shadow: 0 0 20px rgba(0,184,168,0.9), 0 0 40px rgba(0,184,168,0.3) } }
+        @keyframes gold-pulse { 0%,100% { text-shadow: 0 0 12px rgba(212,168,67,0.6) } 50% { text-shadow: 0 0 20px rgba(212,168,67,0.9), 0 0 40px rgba(212,168,67,0.3) } }
         .desktop-nav   { display: flex !important; }
         .desktop-auth  { display: flex !important; }
         .hamburger-btn { display: none !important; }

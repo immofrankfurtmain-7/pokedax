@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const G="#00B8A8",G25="rgba(0,184,168,0.25)",G18="rgba(0,184,168,0.18)",G08="rgba(0,184,168,0.08)",G04="rgba(0,184,168,0.04)";
+const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)",G04="rgba(212,168,67,0.04)";
 const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
 const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a",RED="#dc4a5a";
 
@@ -226,6 +226,19 @@ export default function ScannerPage() {
     } catch(e) { alert("Fehler beim Hinzufügen"); }
   }
 
+  async function addToPortfolio(cardId: string, cardName: string) {
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const sb = createClient();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = "/auth/login"; return; }
+      await sb.from("user_collection").upsert(
+        { user_id: session.user.id, card_id: cardId, quantity: 1, condition: "NM" },
+        { onConflict: "user_id,card_id" }
+      );
+      alert("Karte zum Portfolio hinzugefuegt!");
+    } catch { alert("Fehler beim Hinzufuegen"); }
+  }
 
   return (
     <div style={{color:TX1,minHeight:"80vh"}}>
@@ -302,7 +315,7 @@ export default function ScannerPage() {
 
             {/* Scan counter */}
             <div style={{textAlign:"center",fontSize:12,color:TX3}}>
-              <span style={{padding:"3px 12px",borderRadius:6,background:scansToday>=5?`rgba(220,74,90,0.08)`:`rgba(0,184,168,0.06)`,color:scansToday>=5?RED:TX3}}>
+              <span style={{padding:"3px 12px",borderRadius:6,background:scansToday>=5?`rgba(220,74,90,0.08)`:`rgba(212,168,67,0.06)`,color:scansToday>=5?RED:TX3}}>
                 {scansToday} / 5 Scans heute
               </span>
               {" · "}
@@ -368,7 +381,7 @@ export default function ScannerPage() {
                   }}>+ Portfolio hinzufügen</button>
                   <button onClick={()=>window.location.href=`/marketplace?sell=${card.id}&name=${encodeURIComponent(card.name_de||card.name||"")}`} style={{
                     padding:"12px 20px",borderRadius:12,
-                    background:"rgba(0,184,168,0.08)",color:G,
+                    background:"rgba(212,168,67,0.08)",color:G,
                     fontSize:13,fontWeight:500,border:`0.5px solid ${G18}`,
                     cursor:"pointer",textAlign:"center",width:"100%",
                   }}>◎ Auf Marktplatz inserieren</button>

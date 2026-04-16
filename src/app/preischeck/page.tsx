@@ -2,9 +2,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-const T  = "#00B8A8";   // Teal accent
-const TL = "rgba(0,184,168,0.15)";
-const T8 = "rgba(0,184,168,0.08)";
+const T  = "#D4A843";   // Teal accent
+const TL = "rgba(212,168,67,0.15)";
+const T8 = "rgba(212,168,67,0.08)";
 const GH = "#EFD7A8";   // Champagne — prices
 const BG1 = "#16161A";
 const B2  = "#1C1C21";
@@ -20,7 +20,7 @@ const RED   = "#dc4a5a";
 const G = T; const G18 = TL; const G08 = T8;
 
 const TYPE_COLOR:Record<string,string>={
-  Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#00B8A8",
+  Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#D4A843",
   Psychic:"#A855F7",Fighting:"#EF4444",Darkness:"#888",Metal:"#9CA3AF",
   Dragon:"#7C3AED",Colorless:"#CBD5E1",
 };
@@ -202,7 +202,7 @@ export default function PreischeckPage() {
                   onMouseEnter={e => {
                     (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
                     (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,184,168,0.35)";
-                    (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(0,184,168,0.12)";
+                    (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(212,168,67,0.12)";
                   }}
                   onMouseLeave={e => {
                     (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
