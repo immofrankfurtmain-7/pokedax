@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Navbar from '@/components/layout/Navbar'
+import Navbar from '@/components/Navbar'
 
 type ModPost = {
   id: string

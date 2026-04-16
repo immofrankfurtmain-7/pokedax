@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import Navbar from '@/components/layout/Navbar'
+import Navbar from '@/components/Navbar'
 
 type Wishlist = { id: string; name: string; is_watchlist: boolean; wishlist_items: { count: number }[] }
 type WishItem = { id: string; added_at: string; cards: { id: string; name: string; number: string; image_url: string | null; price_market: number; price_avg7: number | null; sets: { name: string } } }
