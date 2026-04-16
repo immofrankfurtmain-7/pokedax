@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G10="rgba(212,168,67,0.10)",G05="rgba(0,184,168,0.05)";
+const G="#C9A66B",G25="rgba(0,184,168,0.25)",G18="rgba(0,184,168,0.18)",G10="rgba(201,166,107,0.10)",G05="rgba(0,184,168,0.05)";
 const BG1="#16161A",BG2="#1C1C21",BG3="#222228";
 const BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)",BR3="rgba(255,255,255,0.13)";
 const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66";
@@ -17,7 +17,7 @@ const COND:Record<string,{label:string;color:string}>={
 function ago(d:string){const h=Math.floor((Date.now()-new Date(d).getTime())/3600000);if(h<1)return"Gerade";if(h<24)return`${h}h`;if(h<168)return`${Math.floor(h/24)}T`;return`${Math.floor(h/168)}W`;}
 
 function Avatar({username,size=28}:{username:string;size?:number}){
-  const colors=["#D4A843","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
+  const colors=["#C9A66B","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
   const c=colors[username.charCodeAt(0)%colors.length];
   return <div style={{width:size,height:size,borderRadius:"50%",background:`${c}15`,border:`0.5px solid ${c}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.42,color:c,fontWeight:500,flexShrink:0}}>{username[0].toUpperCase()}</div>;
 }
@@ -120,7 +120,64 @@ function OfferModal({listing,onClose}:{listing:any;onClose:()=>void}){
   }
 
   return (
-    
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20,backdropFilter:"blur(8px)"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div style={{background:BG1,border:`0.5px solid ${BR3}`,borderRadius:22,padding:26,width:"100%",maxWidth:440,position:"relative"}}>
+        <div style={{position:"absolute",top:0,left:0,right:0,height:0.5,background:`linear-gradient(90deg,transparent,${G},transparent)`,borderRadius:"22px 22px 0 0"}}/>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+          {card?.image_url&&<img src={card.image_url} alt="" style={{width:44,height:60,objectFit:"contain",borderRadius:6}}/>}
+          <div style={{flex:1}}>
+            <div style={{fontSize:9,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Jetzt kaufen</div>
+            <div style={{fontSize:15,fontWeight:400,color:TX1,lineHeight:1.2}}>{card?.name_de||card?.name}</div>
+            <div style={{fontSize:11,color:TX3,marginTop:2}}>{card?.set_id?.toUpperCase()} · {listing.condition}</div>
+          </div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:TX3,fontSize:18,cursor:"pointer",padding:4}}>×</button>
+        </div>
+
+        {step==="done" ? (
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:28,marginBottom:12}}>✦</div>
+            <div style={{fontSize:15,color:TX1,marginBottom:8}}>Kauf eingeleitet</div>
+            <div style={{fontSize:12,color:TX3,marginBottom:20}}>Du wirst zur sicheren Zahlung weitergeleitet.</div>
+            <button onClick={onClose} style={{padding:"10px 24px",borderRadius:10,background:G,color:"#0a0808",border:"none",cursor:"pointer",fontSize:13}}>Schließen</button>
+          </div>
+        ) : step==="processing" ? (
+          <div style={{textAlign:"center",padding:"24px 0"}}>
+            <div style={{width:32,height:32,border:`2px solid rgba(212,168,67,0.2)`,borderTop:`2px solid ${G}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 12px"}}/>
+            <div style={{fontSize:13,color:TX2}}>Wird verarbeitet…</div>
+          </div>
+        ) : (
+          <>
+            {/* Price */}
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:6}}>Kaufpreis</div>
+              <div style={{position:"relative"}}>
+                <input type="number" value={price} onChange={e=>setPrice(e.target.value)}
+                  placeholder={listing.price?.toString()??"0.00"} min="0" step="0.50"
+                  style={{width:"100%",padding:"11px 40px 11px 14px",borderRadius:11,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:16,fontFamily:"var(--font-mono)",outline:"none"}}/>
+                <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",fontSize:13,color:TX3}}>€</span>
+              </div>
+              {card?.price_market&&<div style={{fontSize:10,color:TX3,marginTop:4}}>Marktwert: {card.price_market.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>}
+            </div>
+
+            {/* Fee breakdown */}
+            {price && parseFloat(price) > 0 && (
+              <div style={{background:BG2,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:TX3,marginBottom:6}}>
+                  <span>Kaufpreis</span><span style={{fontFamily:"var(--font-mono)"}}>{parseFloat(price).toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:TX3,marginBottom:6}}>
+                  <span>Escrow-Gebühr (1%)</span><span style={{fontFamily:"var(--font-mono)"}}>+{escrowFee.toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:TX1,fontWeight:500,borderTop:`0.5px solid ${BR1}`,paddingTop:8,marginTop:4}}>
+                  <span>Gesamt</span><span style={{fontFamily:"var(--font-mono)",color:G}}>{total.toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
+                </div>
+              </div>
+            )}
+
+            {/* Escrow notice */}
+            <div style={{padding:"9px 12px",borderRadius:10,marginBottom:12,background:"rgba(61,184,122,0.06)",border:"0.5px solid rgba(61,184,122,0.15)",fontSize:11,color:"#7dd3b0",lineHeight:1.6}}>
+              ✦ Sicher via pokédax Escrow — Geld wird erst freigegeben wenn du den Erhalt bestätigst.
+            </div>
 
             {error&&<div style={{fontSize:12,color:RED,marginBottom:10,padding:"8px 12px",borderRadius:8,background:"rgba(220,74,90,0.08)"}}>{error}</div>}
 
