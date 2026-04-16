@@ -194,7 +194,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-        <GoldDivider style={{ marginTop:"clamp(48px,6vw,80px)" }} />
+        <div style={{ marginTop:"clamp(48px,6vw,80px)" }}><GoldDivider /></div>
       </div>
 
       {/* FANTASY LEAGUE — COMING SOON */}
