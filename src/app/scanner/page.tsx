@@ -226,19 +226,6 @@ export default function ScannerPage() {
     } catch(e) { alert("Fehler beim Hinzufügen"); }
   }
 
-  async function addToPortfolio(cardId: string, cardName: string) {
-    try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const sb = createClient();
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = "/auth/login"; return; }
-      await sb.from("user_collection").upsert(
-        { user_id: session.user.id, card_id: cardId, quantity: 1, condition: "NM" },
-        { onConflict: "user_id,card_id" }
-      );
-      alert("Karte zum Portfolio hinzugefuegt!");
-    } catch { alert("Fehler beim Hinzufuegen"); }
-  }
 
   return (
     <div style={{color:TX1,minHeight:"80vh"}}>
