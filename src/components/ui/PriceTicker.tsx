@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 
 interface TickerCard { name: string; price: number; change: number; set: string; }

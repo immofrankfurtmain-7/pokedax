@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 export default function TopMoversError({ error, reset }: { error: Error; reset: () => void }) {
   return (

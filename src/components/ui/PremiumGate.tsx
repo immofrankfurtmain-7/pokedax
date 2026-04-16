@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { usePremium } from "@/hooks/usePremium";
 export default function PremiumGate({ children }: { children: React.ReactNode }) {

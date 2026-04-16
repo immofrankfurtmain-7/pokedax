@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f";
 export default function DatenschutzPage() {
   return (

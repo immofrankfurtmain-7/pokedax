@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 // src/components/portfolio/CardGrid.tsx
 
 import { useState } from 'react'

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 export default function PokeballLoader({ text = "Wird geladen..." }: { text?: string }) {
   return (

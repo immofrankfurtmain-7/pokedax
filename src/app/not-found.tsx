@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 const G="#E9A84B",TX1="#f0f0f5",TX2="#a8a8b8",TX3="#6b6b7a";
 export default function NotFound() {
   return (

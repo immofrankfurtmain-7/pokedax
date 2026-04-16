@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 interface Props {
   avg30: number;

@@ -1,4 +1,4 @@
-﻿export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div style={{position:"relative",minHeight:"100vh",background:"#09090b",overflow:"hidden"}}>
       <div style={{position:"absolute",inset:0,pointerEvents:"none",background:"radial-gradient(ellipse 80% 50% at 15% 20%, rgba(212,168,67,0.09) 0%, transparent 60%)"}}/>
