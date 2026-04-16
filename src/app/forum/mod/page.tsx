@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Navbar from '@/components/Navbar'
 
 type ModPost = {
   id: string
@@ -125,7 +124,6 @@ export default function ModPage() {
 
   return (
     <>
-      <Navbar />
       <main className="min-h-screen bg-black text-white">
         <div className="max-w-5xl mx-auto px-4 py-8">
 

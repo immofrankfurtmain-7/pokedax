@@ -425,7 +425,28 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── CTA PREMIUM ────────────────────────────────────── */}
+
+      <section style={{maxWidth:1600,margin:"0 auto",padding:"clamp(60px,8vw,112px) clamp(20px,4vw,40px)"}}>
+        <div style={{background:"#111111",borderRadius:32,padding:"clamp(48px,6vw,80px)",textAlign:"center",border:"1px solid rgba(201,166,107,0.25)",boxShadow:"0 40px 80px -30px rgba(201,166,107,0.2)",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:"15%",right:"15%",height:1,background:"linear-gradient(90deg,transparent,rgba(201,166,107,0.5),transparent)"}}/>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"8px 20px",background:"rgba(201,166,107,0.1)",color:"#C9A66B",borderRadius:100,fontSize:13,fontWeight:600,marginBottom:24,border:"1px solid rgba(201,166,107,0.2)"}}>
+            <span>🏆</span> ✦ COMING SOON
+          </div>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:"clamp(36px,5vw,64px)",lineHeight:1,marginBottom:24,color:"#EDE9E0",letterSpacing:"-0.04em"}}>Fantasy League</h2>
+          <p style={{fontSize:"clamp(15px,1.5vw,20px)",color:"rgba(237,233,224,0.7)",maxWidth:440,margin:"0 auto 48px",lineHeight:1.7}}>
+            Bilde dein Traum-Team aus seltenen Pokémon TCG Karten.<br/>Tritt gegen andere Sammler an und gewinne Preise.
+          </p>
+          <div style={{maxWidth:480,margin:"0 auto"}}>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              <input type="email" placeholder="Deine E-Mail-Adresse" style={{flex:1,minWidth:220,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(201,166,107,0.3)",borderRadius:100,padding:"18px 28px",color:"#EDE9E0",fontSize:15,outline:"none",fontFamily:"inherit"}}/>
+              <button style={{padding:"18px 32px",background:"#C9A66B",color:"#0A0A0A",borderRadius:100,border:"none",fontSize:14,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>Early Access ✦</button>
+            </div>
+            <p style={{fontSize:12,color:"rgba(201,166,107,0.5)",marginTop:14}}>Erhalte Early Access und exklusive Infos zur Fantasy League</p>
+          </div>
+        </div>
+      </section>
+
+            {/* ── CTA PREMIUM ────────────────────────────────────── */}
       <div style={{ maxWidth:800, margin:"0 auto", padding:"0 clamp(20px,4vw,40px) clamp(80px,10vw,140px)" }}>
         <div style={{
           background:BG2, borderRadius:32,
