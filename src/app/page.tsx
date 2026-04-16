@@ -483,3 +483,41 @@ export default function HomePage() {
     </div>
   );
 }
+
+            {/* ── CTA PREMIUM ────────────────────────────────────── */}
+      <div style={{ maxWidth:800, margin:"0 auto", padding:"0 clamp(20px,4vw,40px) clamp(80px,10vw,140px)" }}>
+        <div style={{
+          background:BG2, borderRadius:32,
+          padding:"clamp(48px,6vw,72px)",
+          textAlign:"center", position:"relative", overflow:"hidden",
+          border:`1px solid rgba(201,166,107,0.15)`,
+          boxShadow:`0 40px 80px -30px rgba(201,166,107,0.15)`,
+        }}>
+          <div style={{ position:"absolute", top:0, left:"15%", right:"15%", height:1, background:`linear-gradient(90deg,transparent,${GOLD},transparent)` }}/>
+          <div style={{ fontSize:12, letterSpacing:"0.2em", textTransform:"uppercase", color:GD2, marginBottom:20 }}>✦ Premium</div>
+          <h2 className="heading" style={{ fontSize:"clamp(32px,4vw,56px)", color:TX, marginBottom:16, lineHeight:1.1 }}>
+            Für ernsthafte Sammler.
+          </h2>
+          <p style={{ fontSize:16, color:TX2, lineHeight:1.8, marginBottom:36, maxWidth:360, margin:"0 auto 36px" }}>
+            Unlimitierter Scanner · Marktplatz · Wishlist-Alerts<br/>Preisalarme · 3 % statt 5 % Provision
+          </p>
+          <Link href="/dashboard/premium" className="btn-gold" style={{ fontSize:16, padding:"16px 40px" }}>
+            Premium werden ✦
+          </Link>
+          <div style={{ marginTop:16, fontSize:12, color:"rgba(201,166,107,0.4)" }}>6,99 € / Monat · Jederzeit kündbar</div>
+        </div>
+      </div>
+
+      {/* ── FOOTER ─────────────────────────────────────────── */}
+      <footer style={{
+        background:BG, borderTop:`1px solid rgba(201,166,107,0.1)`,
+        padding:"clamp(40px,5vw,64px) clamp(20px,4vw,40px)",
+        textAlign:"center",
+      }}>
+        <div style={{ fontSize:13, color:"rgba(201,166,107,0.5)" }}>
+          © 2026 pokédax — Weltklasse Design für ernsthafte Sammler
+        </div>
+      </footer>
+    </div>
+  );
+}
