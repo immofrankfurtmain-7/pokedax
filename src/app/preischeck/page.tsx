@@ -2,285 +2,185 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-const T  = "#C9A66B";   // Teal accent
-const TL = "rgba(201,166,107,0.15)";
-const T8 = "rgba(201,166,107,0.08)";
-const GH = "#EFD7A8";   // Champagne — prices
-const BG1 = "#16161A";
-const B2  = "#1C1C21";
-const B3  = "#222228";
-const BR1 = "rgba(255,255,255,0.04)";
-const BR2 = "rgba(255,255,255,0.08)";
-const TX1 = "#F8F6F2";
-const TX2 = "#BEB9B0";
-const TX3 = "#6E6B66";
-const GREEN = "#3db87a";
-const RED   = "#dc4a5a";
-// Legacy alias
-const G = T; const G18 = TL; const G08 = T8;
+const GOLD = "#C9A66B";
+const BG   = "#0A0A0A";
+const BG2  = "#111111";
+const BG3  = "#1A1A1A";
+const TX   = "#EDE9E0";
+const TX2  = "rgba(237,233,224,0.7)";
+const GD2  = "rgba(201,166,107,0.7)";
 
-const TYPE_COLOR:Record<string,string>={
-  Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#C9A66B",
-  Psychic:"#A855F7",Fighting:"#EF4444",Darkness:"#888",Metal:"#9CA3AF",
-  Dragon:"#7C3AED",Colorless:"#CBD5E1",
+const TYPE_COLOR: Record<string,string> = {
+  Fire:"#F97316", Water:"#38BDF8", Grass:"#4ADE80", Lightning:"#FBBF24",
+  Psychic:"#A855F7", Fighting:"#EF4444", Darkness:"#888", Metal:"#9CA3AF",
+  Dragon:"#7C3AED", Colorless:"#CBD5E1",
 };
-const TYPE_DE:Record<string,string>={
-  Fire:"Feuer",Water:"Wasser",Grass:"Pflanze",Lightning:"Elektro",
-  Psychic:"Psycho",Fighting:"Kampf",Darkness:"Finsternis",Metal:"Metall",
-  Dragon:"Drache",Colorless:"Farblos",
+const TYPE_DE: Record<string,string> = {
+  Fire:"Feuer", Water:"Wasser", Grass:"Pflanze", Lightning:"Elektro",
+  Psychic:"Psycho", Fighting:"Kampf", Darkness:"Finsternis", Metal:"Metall",
+  Dragon:"Drache", Colorless:"Farblos",
 };
 
 interface Card {
-  id:string;name:string;name_de?:string;set_id:string;number:string;
-  image_url?:string;price_market?:number;price_low?:number;price_avg30?:number;
-  types?:string[];rarity?:string;
+  id:string; name:string; name_de?:string; set_id:string; number:string;
+  image_url?:string; price_market?:number; price_low?:number; price_avg30?:number;
+  types?:string[]; rarity?:string;
 }
 
 export default function PreischeckPage() {
-  const [query,  setQuery]  = useState("");
-  const [sort,   setSort]   = useState("price_desc");
-  const [setId,     setSetId]     = useState("");
-  const [setSearch, setSetSearch] = useState("");
-  const [sets,   setSets]   = useState<{id:string;name:string}[]>([]);
-  const [holoOnly, setHoloOnly] = useState(false);
-  const [cards,  setCards]  = useState<Card[]>([]);
-  const [loading,setLoading]= useState(true);
-  const [total,  setTotal]  = useState(0);
+  const [query,   setQuery]   = useState("");
+  const [sort,    setSort]    = useState("price_desc");
+  const [setId,   setSetId]   = useState("");
+  const [cards,   setCards]   = useState<Card[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total,   setTotal]   = useState(0);
 
-  const load = useCallback(async (q:string, s:string) => {
+  const load = useCallback(async (q: string, s: string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ q, sort: setId ? (s === "price_desc" ? "number_asc" : s) : s, limit:"350" });
+      const params = new URLSearchParams({ q, sort: s, limit: "48" });
       if (setId) params.set("set", setId);
-      if (holoOnly) params.set("holo", "1");
       const r = await fetch(`/api/cards/search?${params}`);
       const d = await r.json();
       setCards(d.cards ?? []);
       setTotal(d.total ?? d.cards?.length ?? 0);
     } catch { setCards([]); }
     setLoading(false);
-  }, [setId, holoOnly]);
+  }, [setId]);
 
-  // Read URL params on mount (no Suspense needed with this approach)
-  // Read URL params on mount and set state
-  // Mount: read URL params
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const urlSet = p.get("set") ?? "";
-    const urlQ   = p.get("q")   ?? "";
+    const urlQ   = p.get("q") ?? "";
     if (urlQ) setQuery(urlQ);
-    // setId triggers load via the effect below
-    setSetId(urlSet); // always set (even empty string triggers initial load)
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    setSetId(urlSet);
+  }, []);
 
-  // Update display name when sets are loaded
-  useEffect(() => {
-    if (setId && sets.length > 0) {
-      const found = sets.find((s:any) => s.id === setId);
-      if (found) setSetSearch(found.name || found.id);
-    }
-  }, [sets, setId]);
+  useEffect(() => { load(query, sort); }, [setId, load]);
 
-  // Load cards when setId or holoOnly changes
-  useEffect(() => {
-    load(query, sort);
-  }, [setId, holoOnly, load]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    load(query, sort);
-  };
-
-  function fmt(n:number) {
-    return n.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});
+  function fmt(n: number) {
+    return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   const SORTS = [
-    {v:"price_desc", l:"Preis ↓"},
-    {v:"price_asc",  l:"Preis ↑"},
-    {v:"name_asc",   l:"Name A–Z"},
-    {v:"trend_desc", l:"Trend ↑"},
+    { v: "price_desc", l: "Preis ↓" },
+    { v: "price_asc",  l: "Preis ↑" },
+    { v: "name_asc",   l: "Name A–Z" },
+    { v: "trend_desc", l: "Trend ↑"  },
   ];
 
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1200,margin:"0 auto",padding:"80px 24px"}}>
+    <div style={{ background: BG, minHeight: "100vh", color: TX }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap');
+        .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
+        .card-tile { background:#111111; border:1px solid rgba(255,255,255,0.06); border-radius:20px; overflow:hidden; text-decoration:none; display:block; transition:transform 0.25s cubic-bezier(0.22,1,0.36,1),border-color 0.2s,box-shadow 0.25s; }
+        .card-tile:hover { transform:translateY(-6px) scale(1.02); border-color:rgba(201,166,107,0.3); box-shadow:0 20px 50px rgba(0,0,0,0.5),0 0 0 1px rgba(201,166,107,0.1); }
+        .sort-btn { padding:9px 18px; border-radius:100px; border:1px solid transparent; font-size:12px; cursor:pointer; transition:all 0.15s; background:transparent; }
+        .sort-btn.active { background:rgba(201,166,107,0.1); border-color:rgba(201,166,107,0.3); color:#C9A66B; font-weight:600; }
+        .sort-btn:not(.active) { color:rgba(237,233,224,0.5); }
+        .sort-btn:not(.active):hover { color:#EDE9E0; }
+        .search-wrap { position:relative; flex:1; }
+        .search-input { width:100%; padding:16px 20px 16px 52px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:100px; color:#EDE9E0; font-size:15px; outline:none; font-family:inherit; transition:border-color 0.2s; }
+        .search-input:focus { border-color:rgba(201,166,107,0.4); }
+        .search-input::placeholder { color:rgba(237,233,224,0.3); }
+        .btn-gold { padding:14px 28px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; transition:transform 0.2s; white-space:nowrap; }
+        .btn-gold:hover { transform:scale(1.03); }
+        @keyframes skeleton { 0%,100%{opacity:.3} 50%{opacity:.6} }
+        .skel { animation:skeleton 1.5s ease-in-out infinite; }
+      `}</style>
+
+      <div style={{ maxWidth: 1600, margin: "0 auto", padding: "clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
 
         {/* Header */}
-        <div style={{marginBottom:56}}>
-          <h1 style={{
-            fontFamily:"var(--font-display)",
-            fontSize:"clamp(40px,6vw,68px)",
-            fontWeight:300,letterSpacing:"-.085em",
-            lineHeight:1.0,color:TX1,marginBottom:12,
-          }}>Preischeck</h1>
-          <p style={{fontSize:16,color:TX3}}>Live Cardmarket EUR · Täglich aktualisiert</p>
+        <div style={{ marginBottom: 56 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: GD2, marginBottom: 16 }}>Live Cardmarket EUR</div>
+          <h1 className="ph" style={{ fontSize: "clamp(40px,6vw,80px)", fontWeight: 500, color: TX, lineHeight: 1 }}>
+            Preischeck
+          </h1>
         </div>
 
-        {/* Search + Sort */}
-        <form onSubmit={handleSearch} style={{marginBottom:48}}>
-          <div style={{
-            background:BG1,border:`1px solid ${BR2}`,
-            borderRadius:24,padding:24,
-            display:"flex",gap:12,alignItems:"center",
-            flexWrap:"wrap",
-          }}>
-            <div style={{flex:1,minWidth:260,position:"relative"}}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={TX3} strokeWidth="1.5"
-                style={{position:"absolute",left:16,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}>
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input
-                value={query}
-                onChange={e=>setQuery(e.target.value)}
-                placeholder="Karte suchen — Deutsch oder Englisch…"
-                style={{
-                  width:"100%",padding:"14px 14px 14px 46px",
-                  borderRadius:16,background:"rgba(0,0,0,0.3)",
-                  border:`1px solid ${BR2}`,color:TX1,fontSize:15,outline:"none",
-                }}
-              />
-            </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {SORTS.map(s=>(
-                <button key={s.v} type="button" onClick={()=>{setSort(s.v);load(query,s.v);}} style={{
-                  padding:"10px 18px",borderRadius:14,fontSize:13,fontWeight:500,
-                  cursor:"pointer",border:"none",transition:"all .15s",
-                  background:sort===s.v?T8:"transparent",
-                  color:sort===s.v?T:TX3,
-                  outline:sort===s.v?`1px solid ${TL}`:"none",
-                }}>{s.l}</button>
-              ))}
-            </div>
-            <button type="submit" className="gold-glow" style={{
-              padding:"14px 28px",borderRadius:16,
-              background:T,color:"#0A0A0C",
-              fontSize:14,fontWeight:600,border:"none",cursor:"pointer",
-              whiteSpace:"nowrap",
-            }}>Suchen</button>
+        {/* Search bar */}
+        <div style={{ background: BG2, border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "20px 24px", marginBottom: 40, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div className="search-wrap">
+            <span style={{ position: "absolute", left: 20, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: "rgba(237,233,224,0.25)" }}>◎</span>
+            <input className="search-input" value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && load(query, sort)}
+              placeholder="Karte suchen — Deutsch oder Englisch…"/>
           </div>
-        </form>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {SORTS.map(s => (
+              <button key={s.v} className={`sort-btn${sort===s.v?" active":""}`}
+                onClick={() => { setSort(s.v); load(query, s.v); }}>
+                {s.l}
+              </button>
+            ))}
+          </div>
+          <button className="btn-gold" onClick={() => load(query, sort)}>Suchen</button>
+        </div>
 
         {/* Count */}
         {!loading && (
-          <p style={{fontSize:13,color:TX3,marginBottom:24}}>
-            {total > 0 ? `${total.toLocaleString("de-DE")} Karten gefunden` : "Keine Karten gefunden"}
-          </p>
+          <div style={{ fontSize: 12, color: "rgba(237,233,224,0.35)", marginBottom: 28, letterSpacing: "0.06em" }}>
+            {total > 0 ? `${total.toLocaleString("de-DE")} Karten` : "Keine Karten gefunden"}
+          </div>
         )}
 
         {/* Grid */}
-        {loading ? (
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:16}}>
-            {Array.from({length:12}).map((_,i)=>(
-              <div key={i} style={{background:BG1,border:`1px solid ${BR1}`,borderRadius:18,overflow:"hidden",aspectRatio:"3/5",
-                animation:"pulse 1.5s ease-in-out infinite",opacity:.4}}/>
-            ))}
-          </div>
-        ) : (
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:16}}>
-            {cards.map(card=>{
-              const tc  = TYPE_COLOR[card.types?.[0]??""]??"#666";
-              const img = card.image_url??`https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
-              const name = card.name_de??card.name;
-              const price = card.price_market
-                ? fmt(card.price_market)+" €"
-                : card.price_low ? "ab "+fmt(card.price_low)+" €" : "–";
-              const pct = card.price_avg30&&card.price_avg30>0
-                ? ((card.price_market??0)-card.price_avg30)/card.price_avg30*100 : null;
-              const pctCapped = pct!==null ? Math.min(Math.abs(pct),99)*Math.sign(pct) : null;
-              return (
-                <Link key={card.id} href={`/preischeck/${card.id}`}
-                  style={{
-                    textDecoration:"none", display:"block",
-                    background: BG1,
-                    border: `1px solid ${card.price_market ? TL : BR1}`,
-                    borderRadius: 18,
-                    overflow: "hidden",
-                    transition: "transform .2s, border-color .2s, box-shadow .2s",
-                    position: "relative",
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,184,168,0.35)";
-                    (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 40px rgba(201,166,107,0.12)";
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-                    (e.currentTarget as HTMLElement).style.borderColor = card.price_market ? TL : BR1;
-                    (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                  }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 20 }}>
+          {loading ? (
+            Array.from({ length: 12 }).map((_,i) => (
+              <div key={i} className="skel" style={{ background: BG2, borderRadius: 20, aspectRatio: "3/5" }}/>
+            ))
+          ) : cards.map(card => {
+            const tc  = TYPE_COLOR[card.types?.[0] ?? ""] ?? "rgba(201,166,107,0.3)";
+            const img = card.image_url ?? `https://assets.tcgdex.net/en/${card.set_id}/${card.number}/low.webp`;
+            const name = card.name_de ?? card.name;
+            const price = card.price_market ? fmt(card.price_market) + " €"
+              : card.price_low ? "ab " + fmt(card.price_low) + " €" : "–";
+            const pct = card.price_avg30 && card.price_avg30 > 0
+              ? ((card.price_market ?? 0) - card.price_avg30) / card.price_avg30 * 100 : null;
+            const up = pct !== null && pct >= 0;
 
-                  {/* Image area — padded */}
-                  <div style={{ padding: "8px 8px 0", background: B2 }}>
-                    <div style={{
-                      aspectRatio: "3/4", borderRadius: 11,
-                      background: B3, overflow: "hidden",
-                      position: "relative",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      {/* Type glow */}
-                      <div style={{ position:"absolute", inset:0, background:`radial-gradient(circle at 50% 40%,${tc}14,transparent 70%)` }}/>
-                      {/* Card image */}
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt={name}
-                        style={{ width:"90%", height:"90%", objectFit:"contain", position:"relative", zIndex:1 }}
-                        onError={e => { (e.target as HTMLImageElement).style.display="none"; }}
-                      />
-                      {/* Type badge */}
-                      {card.types?.[0] && (
-                        <div style={{
-                          position:"absolute", top:7, left:7, zIndex:3,
-                          padding:"2px 7px", borderRadius:6,
-                          fontSize:9, fontWeight:600, letterSpacing:".04em",
-                          background:`${tc}20`, color:tc, border:`0.5px solid ${tc}35`,
-                        }}>
-                          {TYPE_DE[card.types[0]] ?? card.types[0]}
-                        </div>
-                      )}
-                      {/* Price dot — green if has price */}
-                      <div style={{
-                        position:"absolute", top:7, right:7, zIndex:3,
-                        width:7, height:7, borderRadius:"50%",
-                        background: card.price_market ? GREEN : TX3,
-                        boxShadow: card.price_market ? `0 0 6px ${GREEN}` : "none",
-                      }}/>
-                      {/* Number */}
-                      <div style={{
-                        position:"absolute", bottom:6, right:7, zIndex:3,
-                        fontSize:9, color:TX3,
-                        background:"rgba(0,0,0,0.5)", padding:"1px 5px", borderRadius:4,
-                      }}>#{card.number}</div>
+            return (
+              <Link key={card.id} href={`/preischeck/${card.id}`} className="card-tile">
+                {/* Image */}
+                <div style={{ aspectRatio: "3/4", background: BG3, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ position: "absolute", inset: 0, background: `radial-gradient(circle at 50% 30%,${tc}20,transparent 65%)` }}/>
+                  <img src={img} alt={name} loading="lazy"
+                    style={{ width: "85%", height: "85%", objectFit: "contain", position: "relative", zIndex: 1 }}
+                    onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}/>
+                  {/* Type badge */}
+                  {card.types?.[0] && (
+                    <div style={{ position: "absolute", top: 10, left: 10, zIndex: 3, padding: "3px 10px", borderRadius: 100, fontSize: 9, fontWeight: 700, background: `${tc}25`, color: tc, border: `1px solid ${tc}35` }}>
+                      {TYPE_DE[card.types[0]] ?? card.types[0]}
                     </div>
+                  )}
+                  {/* Trend */}
+                  {pct !== null && (
+                    <div style={{ position: "absolute", top: 10, right: 10, zIndex: 3, padding: "3px 8px", borderRadius: 100, fontSize: 9, fontWeight: 700, background: up ? "rgba(61,184,122,0.15)" : "rgba(220,74,90,0.12)", color: up ? "#3db87a" : "#dc4a5a" }}>
+                      {up ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
+                    </div>
+                  )}
+                  {/* Bottom fade */}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40%", background: `linear-gradient(transparent,${BG2})`, zIndex: 2 }}/>
+                </div>
+                {/* Info */}
+                <div style={{ padding: "14px 16px 18px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: TX, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
+                  <div style={{ fontSize: 10, color: "rgba(237,233,224,0.3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    {card.set_id?.toUpperCase()} · #{card.number}
                   </div>
-
-                  {/* Info */}
-                  <div style={{ padding:"9px 11px 12px" }}>
-                    <div style={{ fontSize:12, fontWeight:500, color:TX1, marginBottom:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                      {name}
-                    </div>
-                    <div style={{ fontSize:9, color:TX3, marginBottom:7, textTransform:"uppercase", letterSpacing:".05em" }}>
-                      {String(card.set_id).toUpperCase()}
-                    </div>
-                    <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:4 }}>
-                      <span style={{
-                        fontSize:14, fontFamily:"var(--font-mono)", fontWeight:400,
-                        color: card.price_market ? GH : TX3,
-                        letterSpacing:"-.02em",
-                      }}>{price}</span>
-                      {pctCapped !== null && (
-                        <span style={{ fontSize:10, fontWeight:600, color: pctCapped >= 0 ? GREEN : RED, flexShrink:0 }}>
-                          {pctCapped >= 0 ? "▲" : "▼"}{Math.abs(pctCapped).toLocaleString("de-DE",{maximumFractionDigits:1})}%
-                        </span>
-                      )}
-                    </div>
+                  <div style={{ fontFamily: "monospace", fontSize: 18, fontWeight: 600, color: card.price_market ? GOLD : "rgba(237,233,224,0.3)" }}>
+                    {price}
                   </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-      <style>{`@keyframes pulse{0%,100%{opacity:.5}50%{opacity:.8}}`}</style>
     </div>
   );
 }
