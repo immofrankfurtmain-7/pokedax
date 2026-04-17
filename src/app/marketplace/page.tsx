@@ -1,389 +1,356 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 
-const G="#C9A66B",G25="rgba(201,166,107,0.25)",G18="rgba(201,166,107,0.18)",G10="rgba(201,166,107,0.10)",G05="rgba(201,166,107,0.05)";
-const BG1="#16161A",BG2="#1C1C21",BG3="#222228";
-const BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)",BR3="rgba(255,255,255,0.13)";
-const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66";
-const GREEN="#3db87a",RED="#dc4a5a",AMBER="#f59e0b";
+const GOLD = "#C9A66B";
+const BG   = "#0A0A0A";
+const BG2  = "#111111";
+const BG3  = "#1A1A1A";
+const TX   = "#EDE9E0";
+const TX2  = "rgba(237,233,224,0.7)";
+const GD2  = "rgba(201,166,107,0.7)";
 
-const COND:Record<string,{label:string;color:string}>={
-  NM:{label:"Near Mint",color:GREEN},LP:{label:"Light Played",color:"#7dd3b0"},
-  MP:{label:"Mod. Played",color:AMBER},HP:{label:"Heavy Played",color:"#fb923c"},D:{label:"Damaged",color:RED},
-};
+const SB = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-function ago(d:string){const h=Math.floor((Date.now()-new Date(d).getTime())/3600000);if(h<1)return"Gerade";if(h<24)return`${h}h`;if(h<168)return`${Math.floor(h/24)}T`;return`${Math.floor(h/168)}W`;}
-
-function Avatar({username,size=28}:{username:string;size?:number}){
-  const colors=["#C9A66B","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
-  const c=colors[username.charCodeAt(0)%colors.length];
-  return <div style={{width:size,height:size,borderRadius:"50%",background:`${c}15`,border:`0.5px solid ${c}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.42,color:c,fontWeight:500,flexShrink:0}}>{username[0].toUpperCase()}</div>;
+interface Listing {
+  id: string; type: "offer"|"want"; price: number|null;
+  condition: string; note: string; card_id: string;
+  profiles: { username: string }|null;
+  cards: { id:string; name:string; name_de:string|null; set_id:string; number:string; image_url:string|null; price_market:number|null }|null;
 }
 
-function ListingCard({l,onOffer}:{l:any;onOffer:(l:any)=>void}){
-  const card=l.cards;
-  const cond=COND[l.condition]??COND.NM;
-  const isDeal=l.type==="offer"&&l.price&&card?.price_market&&l.price<card.price_market*0.95;
-  const seller=l.profiles?.username??"Anonym";
-  const [hov,setHov]=useState(false);
-  return (
-    <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} style={{background:hov?BG2:BG1,border:`0.5px solid ${hov?(isDeal?G18:BR3):BR2}`,borderRadius:18,overflow:"hidden",transition:"all .2s",transform:hov?"translateY(-2px)":"none",boxShadow:hov?`0 8px 32px rgba(0,0,0,0.4)`:undefined,position:"relative"}}>
-      {isDeal&&<div style={{position:"absolute",top:0,left:0,right:0,height:1.5,background:`linear-gradient(90deg,transparent,${G},transparent)`}}/>}
-      <div style={{display:"flex",gap:12,padding:"14px 14px 10px"}}>
-        <Link href={`/preischeck/${card?.id}`} style={{flexShrink:0,textDecoration:"none"}}>
-          <div style={{width:56,height:78,borderRadius:8,background:BG3,overflow:"hidden",border:`0.5px solid ${BR2}`,transition:"all .2s",transform:hov?"scale(1.04)":"scale(1)"}}>
-            {card?.image_url?<img src={card.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"contain"}}/>:<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:TX3,opacity:.2}}>◈</div>}
-          </div>
-        </Link>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-            {isDeal&&<span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,background:G10,color:G,border:`0.5px solid ${G18}`,flexShrink:0}}>DEAL</span>}
-            {l.type==="want"&&<span style={{fontSize:8,fontWeight:700,padding:"1px 5px",borderRadius:3,background:"rgba(96,165,250,0.10)",color:"#60A5FA",border:"0.5px solid rgba(96,165,250,0.2)",flexShrink:0}}>SUCHE</span>}
-          </div>
-          <Link href={`/preischeck/${card?.id}`} style={{textDecoration:"none"}}>
-            <div style={{fontSize:13.5,fontWeight:400,color:TX1,lineHeight:1.3,marginBottom:3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{card?.name_de||card?.name||"Unbekannte Karte"}</div>
-          </Link>
-          <div style={{fontSize:10,color:TX3,marginBottom:6}}>{card?.set_id?.toUpperCase()} · #{card?.number}{card?.rarity&&<span style={{marginLeft:6,opacity:.7}}>{card.rarity}</span>}</div>
-          <span style={{fontSize:9,fontWeight:600,padding:"2px 7px",borderRadius:4,background:`${cond.color}12`,color:cond.color,border:`0.5px solid ${cond.color}25`}}>{l.condition} · {cond.label}</span>
-        </div>
-      </div>
-      <div style={{height:0.5,background:BR1,margin:"0 14px"}}/>
-      <div style={{padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-        <Avatar username={seller} size={24}/>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:11,color:TX2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:4}}>
-            @{seller}
-            {l.seller_stats?.is_verified && <span style={{fontSize:8,color:GREEN}}>✓</span>}
-          </div>
-          <div style={{fontSize:9,color:TX3,display:"flex",alignItems:"center",gap:5}}>
-            {l.seller_stats?.rating_count > 0 ? (
-              <span>⭐ {l.seller_stats.avg_rating?.toFixed(1)} ({l.seller_stats.rating_count})</span>
-            ) : <span>{ago(l.created_at)}</span>}
-          </div>
-        </div>
-        <div style={{textAlign:"right",flexShrink:0}}>
-          {l.price?<div style={{fontSize:17,fontFamily:"var(--font-mono)",fontWeight:300,color:isDeal?G:TX1,letterSpacing:"-.04em",lineHeight:1}}>{l.price.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>:<div style={{fontSize:13,color:TX3,fontStyle:"italic"}}>VB</div>}
-        </div>
-      </div>
-      {l.note&&<div style={{padding:"0 14px 8px",fontSize:11,color:TX3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",borderTop:`0.5px solid ${BR1}`,paddingTop:8}}>"{l.note}"</div>}
-      <div style={{padding:"0 12px 12px"}}>
-        {l.type==="offer"?
-          <button onClick={()=>onOffer(l)} style={{width:"100%",padding:"9px",borderRadius:10,background:hov?G:G10,color:hov?"#0a0808":G,border:`0.5px solid ${hov?G:G18}`,fontSize:12,cursor:"pointer",transition:"all .2s"}}>Angebot machen</button>
-          :<Link href={`/preischeck/${card?.id}`} style={{display:"block",textAlign:"center",padding:"9px",borderRadius:10,background:"rgba(96,165,250,0.06)",color:"#60A5FA",border:"0.5px solid rgba(96,165,250,0.15)",fontSize:12,textDecoration:"none"}}>Ich habe diese Karte →</Link>
-        }
-      </div>
-    </div>
-  );
-}
+export default function MarketplacePage() {
+  const [listings,   setListings]   = useState<Listing[]>([]);
+  const [tab,        setTab]        = useState<"offer"|"want">("offer");
+  const [loading,    setLoading]    = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [user,       setUser]       = useState<any>(null);
+  const [presellId,  setPresellId]  = useState<string|null>(null);
 
-function OfferModal({listing,onClose}:{listing:any;onClose:()=>void}){
-  const [price,   setPrice]   = useState(listing.price?.toString()??"");
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState("");
-  const [step,    setStep]    = useState<"form"|"processing"|"done">("form");
-  const card = listing.cards;
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sell = params.get("sell");
+    if (sell) { setPresellId(sell); setShowCreate(true); }
+    SB.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+  }, []);
 
-  const escrowFee = price ? Math.round(parseFloat(price)*0.01*100)/100 : 0;
-  const total     = price ? Math.round((parseFloat(price)+escrowFee)*100)/100 : 0;
+  const loadListings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/marketplace?type=${tab}&limit=24`);
+      const data = await res.json();
+      setListings(data.listings ?? []);
+    } catch {}
+    setLoading(false);
+  }, [tab]);
 
-  async function checkout() {
-    if (!price || parseFloat(price) <= 0) return;
-    setLoading(true); setError("");
-    const sb = createClient();
-    const {data:{session}} = await sb.auth.getSession();
-    if (!session) { setError("Bitte zuerst anmelden."); setLoading(false); return; }
-    const h: Record<string,string> = {"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`};
-    const res = await fetch("/api/marketplace/escrow/create", {
-      method:"POST", headers:h,
-      body: JSON.stringify({ listing_id: listing.id, offered_price: parseFloat(price) }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      // Seller not verified → redirect to settings
-      if (data.error?.includes("nicht verifiziert")) {
-        setError("Verkäufer noch nicht für Zahlungen verifiziert. Bitte later versuchen.");
-      } else {
-        setError(data.error ?? "Fehler beim Erstellen des Kaufs.");
-      }
-      setLoading(false); return;
-    }
-    setStep("processing");
-    // Stripe Payment — open checkout in new tab or redirect
-    if (data.client_secret) {
-      // Redirect to escrow page to complete payment
-      window.location.href = `/marketplace/escrow/${data.escrow_id}?pay=1`;
-    } else {
-      setStep("done");
-    }
-  }
+  useEffect(() => { loadListings(); }, [loadListings]);
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20,backdropFilter:"blur(8px)"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{background:BG1,border:`0.5px solid ${BR3}`,borderRadius:22,padding:26,width:"100%",maxWidth:440,position:"relative"}}>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:0.5,background:`linear-gradient(90deg,transparent,${G},transparent)`,borderRadius:"22px 22px 0 0"}}/>
-        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-          {card?.image_url&&<img src={card.image_url} alt="" style={{width:44,height:60,objectFit:"contain",borderRadius:6}}/>}
-          <div style={{flex:1}}>
-            <div style={{fontSize:9,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:4}}>Jetzt kaufen</div>
-            <div style={{fontSize:15,fontWeight:400,color:TX1,lineHeight:1.2}}>{card?.name_de||card?.name}</div>
-            <div style={{fontSize:11,color:TX3,marginTop:2}}>{card?.set_id?.toUpperCase()} · {listing.condition}</div>
+    <div style={{ background: BG, minHeight: "100vh", color: TX }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap');
+        .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
+        .listing-card { background:#111111; border:1px solid rgba(255,255,255,0.07); border-radius:20px; overflow:hidden; transition:transform 0.25s cubic-bezier(0.22,1,0.36,1),border-color 0.2s,box-shadow 0.25s; }
+        .listing-card:hover { transform:translateY(-4px); border-color:rgba(201,166,107,0.25); box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+        .listing-card.deal { border-color:rgba(201,166,107,0.3); background:linear-gradient(135deg,rgba(201,166,107,0.05),#111111); }
+        .tab-btn { padding:10px 28px; border-radius:100px; border:1px solid transparent; font-size:14px; cursor:pointer; transition:all 0.2s; background:transparent; }
+        .tab-btn.active { background:rgba(201,166,107,0.1); border-color:rgba(201,166,107,0.3); color:#C9A66B; font-weight:600; }
+        .tab-btn:not(.active) { color:rgba(237,233,224,0.5); }
+        .tab-btn:not(.active):hover { color:#EDE9E0; }
+        .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:13px 26px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s,box-shadow 0.2s; }
+        .btn-gold:hover { transform:scale(1.03); box-shadow:0 8px 32px rgba(201,166,107,0.3); }
+        @keyframes skeleton { 0%,100%{opacity:.3} 50%{opacity:.6} }
+        .skel { animation:skeleton 1.5s ease-in-out infinite; background:#111; border-radius:20px; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation:fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+      `}</style>
+
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 56, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 20 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: GD2, marginBottom: 16 }}>
+              Escrow-gesicherter Handel
+            </div>
+            <h1 className="ph" style={{ fontSize: "clamp(40px,6vw,80px)", fontWeight: 500, color: TX, lineHeight: 1 }}>
+              Marktplatz
+            </h1>
           </div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:TX3,fontSize:18,cursor:"pointer",padding:4}}>×</button>
+          <button onClick={() => { if (!user) { window.location.href = "/auth/login"; return; } setShowCreate(true); }}
+            className="btn-gold" style={{ fontSize: 15 }}>
+            + Inserieren ✦
+          </button>
         </div>
 
-        {step==="done" ? (
-          <div style={{textAlign:"center",padding:"20px 0"}}>
-            <div style={{fontSize:28,marginBottom:12}}>✦</div>
-            <div style={{fontSize:15,color:TX1,marginBottom:8}}>Kauf eingeleitet</div>
-            <div style={{fontSize:12,color:TX3,marginBottom:20}}>Du wirst zur sicheren Zahlung weitergeleitet.</div>
-            <button onClick={onClose} style={{padding:"10px 24px",borderRadius:10,background:G,color:"#0a0808",border:"none",cursor:"pointer",fontSize:13}}>Schließen</button>
-          </div>
-        ) : step==="processing" ? (
-          <div style={{textAlign:"center",padding:"24px 0"}}>
-            <div style={{width:32,height:32,border:`2px solid rgba(212,168,67,0.2)`,borderTop:`2px solid ${G}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 12px"}}/>
-            <div style={{fontSize:13,color:TX2}}>Wird verarbeitet…</div>
-          </div>
-        ) : (
-          <>
-            {/* Price */}
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".08em",marginBottom:6}}>Kaufpreis</div>
-              <div style={{position:"relative"}}>
-                <input type="number" value={price} onChange={e=>setPrice(e.target.value)}
-                  placeholder={listing.price?.toString()??"0.00"} min="0" step="0.50"
-                  style={{width:"100%",padding:"11px 40px 11px 14px",borderRadius:11,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:16,fontFamily:"var(--font-mono)",outline:"none"}}/>
-                <span style={{position:"absolute",right:14,top:"50%",transform:"translateY(-50%)",fontSize:13,color:TX3}}>€</span>
-              </div>
-              {card?.price_market&&<div style={{fontSize:10,color:TX3,marginTop:4}}>Marktwert: {card.price_market.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>}
-            </div>
-
-            {/* Fee breakdown */}
-            {price && parseFloat(price) > 0 && (
-              <div style={{background:BG2,borderRadius:10,padding:"12px 14px",marginBottom:12}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:TX3,marginBottom:6}}>
-                  <span>Kaufpreis</span><span style={{fontFamily:"var(--font-mono)"}}>{parseFloat(price).toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:TX3,marginBottom:6}}>
-                  <span>Escrow-Gebühr (1%)</span><span style={{fontFamily:"var(--font-mono)"}}>+{escrowFee.toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
-                </div>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:TX1,fontWeight:500,borderTop:`0.5px solid ${BR1}`,paddingTop:8,marginTop:4}}>
-                  <span>Gesamt</span><span style={{fontFamily:"var(--font-mono)",color:G}}>{total.toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
-                </div>
-              </div>
-            )}
-
-            {/* Escrow notice */}
-            <div style={{padding:"9px 12px",borderRadius:10,marginBottom:12,background:"rgba(61,184,122,0.06)",border:"0.5px solid rgba(61,184,122,0.15)",fontSize:11,color:"#7dd3b0",lineHeight:1.6}}>
-              ✦ Sicher via pokédax Escrow — Geld wird erst freigegeben wenn du den Erhalt bestätigst.
-            </div>
-
-            {error&&<div style={{fontSize:12,color:RED,marginBottom:10,padding:"8px 12px",borderRadius:8,background:"rgba(220,74,90,0.08)"}}>{error}</div>}
-
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={checkout} disabled={loading||!price||parseFloat(price)<=0} style={{
-                flex:1,padding:"12px",borderRadius:11,
-                background:price&&parseFloat(price)>0?G:"rgba(255,255,255,0.04)",
-                color:price&&parseFloat(price)>0?"#0a0808":TX3,
-                border:"none",cursor:price&&parseFloat(price)>0?"pointer":"not-allowed",
-                fontSize:13,fontWeight:400,
-              }}>{loading?"Weiterleitung…":"Sicher kaufen ✦"}</button>
-              <Link href={`/profil/${listing.profiles?.username??""}`} style={{padding:"12px 14px",borderRadius:11,background:"transparent",color:TX2,border:`0.5px solid ${BR2}`,fontSize:13,textDecoration:"none",display:"flex",alignItems:"center"}}>Profil</Link>
-            </div>
-          </>
-        )}
-      </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  );
-}
-
-function CreateListingModal({onClose,onCreated}:{onClose:()=>void;onCreated:()=>void}){
-  const [fSearch,setFSearch]=useState("");const [fResults,setFResults]=useState<any[]>([]);
-  const [fCard,setFCard]=useState<any>(null);const [fType,setFType]=useState<"offer"|"want">("offer");
-  const [fPrice,setFPrice]=useState("");const [fCond,setFCond]=useState("NM");
-  const [fNote,setFNote]=useState("");const [fLoading,setFLoading]=useState(false);const [fMsg,setFMsg]=useState("");
-
-  async function searchCards(q:string){setFSearch(q);if(q.length<2){setFResults([]);return;}
-    const r=await fetch(`/api/cards/search?q=${encodeURIComponent(q)}&limit=5`);const d=await r.json();setFResults(d.cards??[]);}
-
-  async function submit(){
-    if(!fCard){setFMsg("Bitte eine Karte wählen.");return;}
-    setFLoading(true);
-    const sb=createClient();const{data:{session}}=await sb.auth.getSession();
-    const h:Record<string,string>={"Content-Type":"application/json"};
-    if(session?.access_token) h["Authorization"]=`Bearer ${session.access_token}`;
-    const res=await fetch("/api/marketplace",{method:"POST",headers:h,body:JSON.stringify({card_id:fCard.id,type:fType,price:parseFloat(fPrice)||null,condition:fCond,note:fNote})});
-    const data=await res.json();
-    if(!res.ok){setFMsg(data.error??"Fehler.");}
-    else{setFMsg("✓ Inserat erstellt!");setTimeout(()=>{onClose();onCreated();},800);}
-    setFLoading(false);
-  }
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20,backdropFilter:"blur(8px)"}} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
-      <div style={{background:BG1,border:`0.5px solid ${BR3}`,borderRadius:22,padding:24,width:"100%",maxWidth:480,position:"relative"}}>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:0.5,background:`linear-gradient(90deg,transparent,${G},transparent)`,borderRadius:"22px 22px 0 0"}}/>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-          <div style={{fontSize:14,fontWeight:400,color:TX1}}>Neue Karte inserieren</div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:TX3,fontSize:18,cursor:"pointer"}}>×</button>
+        {/* Escrow info */}
+        <div style={{ padding: "16px 24px", marginBottom: 40, background: "rgba(201,166,107,0.06)", border: "1px solid rgba(201,166,107,0.2)", borderRadius: 100, display: "inline-flex", alignItems: "center", gap: 12, fontSize: 13, color: GD2 }}>
+          <span style={{ fontSize: 18 }}>✦</span>
+          <span>Sicher via pokédax Escrow — Geld wird erst freigegeben wenn du den Erhalt bestätigst.</span>
         </div>
-        <div style={{display:"flex",gap:6,marginBottom:14}}>
-          {([["offer","Ich biete an"],["want","Ich suche"]] as const).map(([t,l])=>(
-            <button key={t} onClick={()=>setFType(t)} style={{flex:1,padding:"8px",borderRadius:9,fontSize:12,border:"none",cursor:"pointer",background:fType===t?(t==="offer"?G:G10):"transparent",color:fType===t?(t==="offer"?"#0a0808":G):TX3,outline:`0.5px solid ${fType===t?G:BR2}`,transition:"all .15s"}}>{l}</button>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 48 }}>
+          {(["offer","want"] as const).map(t => (
+            <button key={t} className={`tab-btn${tab===t?" active":""}`} onClick={() => setTab(t)}>
+              {t === "offer" ? "Angebote" : "Gesuche"}
+            </button>
           ))}
         </div>
-        <div style={{marginBottom:12}}>
-          {fCard?(
-            <div style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:BG2,borderRadius:9,border:`0.5px solid ${G18}`}}>
-              {fCard.image_url&&<img src={fCard.image_url} alt="" style={{width:22,height:30,objectFit:"contain"}}/>}
-              <div style={{flex:1}}><div style={{fontSize:13,color:TX1}}>{fCard.name_de||fCard.name}</div><div style={{fontSize:10,color:TX3}}>{fCard.set_id?.toUpperCase()}</div></div>
-              <div style={{fontSize:13,fontFamily:"var(--font-mono)",color:G}}>{fCard.price_market?.toFixed(2)} €</div>
-              <button onClick={()=>setFCard(null)} style={{background:"transparent",border:"none",color:TX3,cursor:"pointer",fontSize:16}}>×</button>
-            </div>
-          ):(
-            <div>
-              <input value={fSearch} onChange={e=>searchCards(e.target.value)} placeholder="Kartenname suchen…"
-                style={{width:"100%",padding:"9px 12px",borderRadius:9,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:13,outline:"none"}}/>
-              {fResults.length>0&&<div style={{marginTop:4,display:"flex",flexDirection:"column",gap:3}}>
-                {fResults.map((c:any)=>(
-                  <div key={c.id} onClick={()=>{setFCard(c);setFResults([]);}} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:BG2,borderRadius:7,border:`0.5px solid ${BR1}`,cursor:"pointer"}}>
-                    {c.image_url&&<img src={c.image_url} alt="" style={{width:18,height:25,objectFit:"contain"}}/>}
-                    <div style={{flex:1,fontSize:12,color:TX1}}>{c.name_de||c.name}</div>
-                    <div style={{fontSize:11,fontFamily:"var(--font-mono)",color:G}}>{c.price_market?.toFixed(2)} €</div>
+
+        {/* Grid */}
+        {loading ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16 }}>
+            {Array.from({length: 8}).map((_,i) => (
+              <div key={i} className="skel" style={{ height: 140 }}/>
+            ))}
+          </div>
+        ) : listings.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "100px 20px" }}>
+            <div style={{ fontSize: 56, opacity: 0.1, marginBottom: 24, color: GOLD }}>◎</div>
+            <h2 className="ph" style={{ fontSize: 32, fontWeight: 500, color: TX2, marginBottom: 16 }}>
+              {tab === "offer" ? "Noch keine Angebote" : "Noch keine Gesuche"}
+            </h2>
+            <button onClick={() => setShowCreate(true)} className="btn-gold">Erstes Inserat erstellen</button>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 16 }}>
+            {listings.map((l, i) => {
+              const card   = l.cards;
+              const imgSrc = card?.image_url ? (card.image_url.includes(".") ? card.image_url : card.image_url + "/low.webp") : null;
+              const isDeal = l.price && card?.price_market && l.price < card.price_market * 0.92;
+              return (
+                <div key={l.id} className={`listing-card fade-up${isDeal ? " deal" : ""}`} style={{ animationDelay: `${i * 30}ms` }}>
+                  <div style={{ display: "flex", gap: 0 }}>
+                    {/* Card image */}
+                    <Link href={`/preischeck/${card?.id}`} style={{ textDecoration: "none", flexShrink: 0 }}>
+                      <div style={{ width: 80, background: BG3, display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 6px", alignSelf: "stretch" }}>
+                        {imgSrc ? (
+                          <img src={imgSrc} alt="" style={{ width: "100%", aspectRatio: "3/4", objectFit: "contain", borderRadius: 8 }}/>
+                        ) : (
+                          <div style={{ width: "100%", aspectRatio: "3/4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, opacity: 0.15 }}>◎</div>
+                        )}
+                      </div>
+                    </Link>
+
+                    {/* Info */}
+                    <div style={{ flex: 1, padding: "16px 18px", minWidth: 0 }}>
+                      {isDeal && (
+                        <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, letterSpacing: "0.1em", marginBottom: 6 }}>
+                          ✦ DEAL · UNTER MARKTWERT
+                        </div>
+                      )}
+                      <Link href={`/preischeck/${card?.id}`} style={{ textDecoration: "none" }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: TX, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {card?.name_de || card?.name || "Karte"}
+                        </div>
+                      </Link>
+                      <div style={{ fontSize: 10, color: "rgba(237,233,224,0.35)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+                        {card?.set_id} · #{card?.number} · {l.condition}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                        <div className="ph" style={{ fontSize: 22, fontWeight: 500, color: GOLD }}>
+                          {l.price ? l.price.toFixed(2) + " €" : "VHS"}
+                        </div>
+                        <div style={{ fontSize: 11, color: "rgba(237,233,224,0.35)" }}>
+                          @{l.profiles?.username ?? "Anonym"}
+                        </div>
+                      </div>
+                      {card?.price_market && l.price && (
+                        <div style={{ fontSize: 10, color: "rgba(237,233,224,0.3)", marginTop: 4 }}>
+                          Marktwert: {card.price_market.toFixed(2)} €
+                          {isDeal && <span style={{ color: "#3db87a", marginLeft: 6 }}>↓ {((1 - l.price/card.price_market)*100).toFixed(0)}% günstiger</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>}
-            </div>
-          )}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-          <div>
-            <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".06em",marginBottom:5}}>Preis (€)</div>
-            <input value={fPrice} onChange={e=>setFPrice(e.target.value)} type="number" placeholder={fCard?.price_market?.toFixed(2)??"0.00"} min="0" step="0.50"
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:13,outline:"none"}}/>
+                  {l.note && (
+                    <div style={{ padding: "10px 18px", borderTop: "1px solid rgba(255,255,255,0.05)", fontSize: 12, color: TX2, fontStyle: "italic" }}>
+                      „{l.note}"
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <div>
-            <div style={{fontSize:10,color:TX3,textTransform:"uppercase",letterSpacing:".06em",marginBottom:5}}>Zustand</div>
-            <select value={fCond} onChange={e=>setFCond(e.target.value)} style={{width:"100%",padding:"9px 12px",borderRadius:8,background:BG1,border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}>
-              {["NM","LP","MP","HP","D"].map(c=><option key={c} value={c}>{c} — {COND[c]?.label}</option>)}
-            </select>
-          </div>
-        </div>
-        <input value={fNote} onChange={e=>setFNote(e.target.value)} placeholder="Notiz: Versand, Tausch, Grading…"
-          style={{width:"100%",padding:"9px 12px",borderRadius:8,background:"rgba(0,0,0,0.3)",border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none",marginBottom:10}}/>
-        {fMsg&&<div style={{fontSize:12,color:fMsg.startsWith("✓")?GREEN:RED,marginBottom:10}}>{fMsg}</div>}
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={submit} disabled={fLoading||!fCard} style={{flex:1,padding:"11px",borderRadius:10,background:fCard?G:"rgba(255,255,255,0.04)",color:fCard?"#0a0808":TX3,border:"none",cursor:fCard?"pointer":"not-allowed",fontSize:13}}>
-            {fLoading?"Speichert…":"Veröffentlichen"}
-          </button>
-          <button onClick={onClose} style={{padding:"11px 16px",borderRadius:10,background:"transparent",color:TX2,fontSize:13,border:`0.5px solid ${BR1}`,cursor:"pointer"}}>Abbrechen</button>
-        </div>
+        )}
       </div>
+
+      {showCreate && (
+        <CreateModal
+          presellCardId={presellId}
+          onClose={() => { setShowCreate(false); setPresellId(null); }}
+          onCreated={() => { setShowCreate(false); setPresellId(null); loadListings(); }}
+        />
+      )}
     </div>
   );
 }
 
-export default function MarketplacePage(){
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading,  setLoading]  = useState(true);
-  const [tab,      setTab]      = useState<"offer"|"want"|"all">("offer");
-  const [sort,     setSort]     = useState("newest");
-  const [search,   setSearch]   = useState("");
-  const [condFilter,setCondFilter]=useState("");
-  const [offerModal,setOfferModal]=useState<any>(null);
-  const [showCreate,setShowCreate]=useState(false);
+function CreateModal({ presellCardId, onClose, onCreated }: {
+  presellCardId: string|null; onClose: ()=>void; onCreated: ()=>void;
+}) {
+  const [search,    setSearch]    = useState("");
+  const [results,   setResults]   = useState<any[]>([]);
+  const [card,      setCard]      = useState<any>(null);
+  const [type,      setType]      = useState<"offer"|"want">("offer");
+  const [price,     setPrice]     = useState("");
+  const [condition, setCondition] = useState("NM");
+  const [note,      setNote]      = useState("");
+  const [loading,   setLoading]   = useState(false);
+  const [msg,       setMsg]       = useState("");
 
-  useEffect(()=>{loadListings();},[]);
+  useEffect(() => {
+    if (!presellCardId) return;
+    SB.from("cards").select("id,name,name_de,set_id,number,image_url,price_market")
+      .eq("id", presellCardId).single()
+      .then(({ data }) => { if (data) { setCard(data); setSearch(data.name_de || data.name); } });
+  }, [presellCardId]);
 
-  async function loadListings(){
+  async function searchCards(q: string) {
+    setSearch(q);
+    if (q.length < 2) { setResults([]); return; }
+    const res = await fetch(`/api/cards/search?q=${encodeURIComponent(q)}&limit=6`);
+    const data = await res.json();
+    setResults(data.cards ?? []);
+  }
+
+  async function submit() {
+    if (!card) { setMsg("Bitte eine Karte wählen."); return; }
     setLoading(true);
-    const sb=createClient();
-    const{data}=await sb.from("marketplace_listings")
-      .select(`id,type,price,condition,note,created_at,user_id,is_active,
-        profiles!marketplace_listings_user_id_fkey(username,avatar_url),
-        cards!marketplace_listings_card_id_fkey(id,name,name_de,set_id,number,price_market,price_avg7,image_url,rarity,types),
-        seller_stats!marketplace_listings_seller_id_fkey(avg_rating,rating_count,is_verified)`)
-      .eq("is_active",true).order("created_at",{ascending:false}).limit(60);
-    const normalized=(data??[]).map((l:any)=>({...l,
-      profiles:Array.isArray(l.profiles)?l.profiles[0]:l.profiles,
-      cards:Array.isArray(l.cards)?l.cards[0]:l.cards,
-      seller_stats:Array.isArray(l.seller_stats)?l.seller_stats[0]:l.seller_stats,
-    }));
-    setListings(normalized);
+    try {
+      const { data: { session } } = await SB.auth.getSession();
+      if (!session) { window.location.href = "/auth/login"; return; }
+
+      // Direct Supabase insert (more reliable than API route)
+      const { error } = await SB.from("marketplace_listings").insert({
+        user_id:   session.user.id,
+        seller_id: session.user.id,
+        card_id:   card.id,
+        type,
+        price:     price ? parseFloat(price) : null,
+        condition,
+        note:      note.trim() || null,
+        is_active: true,
+      });
+
+      if (error) { setMsg("Fehler: " + error.message); setLoading(false); return; }
+      setMsg("✓ Inserat erstellt!");
+      setTimeout(onCreated, 800);
+    } catch (e: any) { setMsg("Fehler: " + e.message); }
     setLoading(false);
   }
 
-  let filtered=listings.filter(l=>{
-    if(tab!=="all"&&l.type!==tab) return false;
-    if(search&&!(l.cards?.name_de??l.cards?.name??"").toLowerCase().includes(search.toLowerCase())&&!(l.profiles?.username??"").toLowerCase().includes(search.toLowerCase())) return false;
-    if(condFilter&&l.condition!==condFilter) return false;
-    return true;
-  });
-  if(sort==="price_asc") filtered=[...filtered].sort((a,b)=>(a.price??999)-(b.price??999));
-  if(sort==="price_desc") filtered=[...filtered].sort((a,b)=>(b.price??0)-(a.price??0));
-  if(sort==="deal") filtered=[...filtered].sort((a,b)=>{const da=a.price&&a.cards?.price_market?a.price/a.cards.price_market:1;const db=b.price&&b.cards?.price_market?b.price/b.cards.price_market:1;return da-db;});
-
-  const dealCount=listings.filter(l=>l.type==="offer"&&l.price&&l.cards?.price_market&&l.price<l.cards.price_market*0.95).length;
-
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1200,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
-        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:16,marginBottom:"clamp(28px,4vw,44px)"}}>
-          <div>
-            <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:12,display:"flex",alignItems:"center",gap:8}}><span style={{width:16,height:0.5,background:TX3,display:"inline-block"}}/>Marktplatz</div>
-            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(26px,4.5vw,48px)",fontWeight:200,letterSpacing:"-.055em",marginBottom:6,lineHeight:1.05}}>Kaufen &<br/><span style={{color:G}}>verkaufen.</span></h1>
-            <div style={{display:"flex",gap:14,marginTop:10,flexWrap:"wrap"}}>
-              <span style={{fontSize:12,color:TX3}}>{listings.filter(l=>l.type==="offer").length} Angebote</span>
-              <span style={{fontSize:12,color:TX3}}>{listings.filter(l=>l.type==="want").length} Gesuche</span>
-              {dealCount>0&&<span style={{fontSize:12,color:G}}>✦ {dealCount} Deals unter Marktwert</span>}
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "#0F0F0F", borderRadius: 24, width: "100%", maxWidth: 520, padding: 36, position: "relative", border: "1px solid rgba(201,166,107,0.2)", maxHeight: "90vh", overflow: "auto" }}>
+        <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.5),transparent)" }}/>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, cursor: "pointer", color: TX2 }}>×</button>
+
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Marktplatz</div>
+        <h2 className="ph" style={{ fontSize: 32, fontWeight: 500, marginBottom: 28, color: TX }}>Inserat erstellen</h2>
+
+        {/* Type toggle */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+          {(["offer","want"] as const).map(t => (
+            <button key={t} onClick={() => setType(t)} style={{
+              flex: 1, padding: "13px", borderRadius: 100, cursor: "pointer",
+              background: type === t ? TX : "rgba(255,255,255,0.04)",
+              color: type === t ? BG : TX2,
+              border: `1px solid ${type === t ? TX : "rgba(255,255,255,0.1)"}`,
+              fontSize: 14, fontWeight: 600, transition: "all 0.2s",
+            }}>{t === "offer" ? "Anbieten" : "Suchen"}</button>
+          ))}
+        </div>
+
+        {/* Card search */}
+        <div style={{ marginBottom: 16, position: "relative" }}>
+          <input value={search} onChange={e => searchCards(e.target.value)}
+            placeholder="Karte suchen…"
+            style={{ width: "100%", padding: "14px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: TX, fontSize: 15, outline: "none", fontFamily: "inherit", transition: "border-color 0.2s" }}
+            onFocus={e => (e.target as any).style.borderColor = "rgba(201,166,107,0.4)"}
+            onBlur={e  => (e.target as any).style.borderColor = "rgba(255,255,255,0.1)"}/>
+          {results.length > 0 && !card && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10, background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0 0 12px 12px", boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}>
+              {results.map((r: any) => (
+                <button key={r.id} onClick={() => { setCard(r); setSearch(r.name_de || r.name); setResults([]); }} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  width: "100%", padding: "12px 16px", background: "none", border: "none",
+                  cursor: "pointer", textAlign: "left", borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  transition: "background 0.1s",
+                }}
+                onMouseEnter={e => (e.currentTarget as any).style.background = "rgba(255,255,255,0.04)"}
+                onMouseLeave={e => (e.currentTarget as any).style.background = "none"}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: TX }}>{r.name_de || r.name}</div>
+                  <div style={{ fontSize: 11, color: GD2, marginLeft: "auto", flexShrink: 0 }}>
+                    {r.set_id} · #{r.number}{r.price_market ? ` · ${r.price_market.toFixed(2)} €` : ""}
+                  </div>
+                </button>
+              ))}
             </div>
-          </div>
-          <button onClick={()=>setShowCreate(true)} style={{padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",fontSize:13,fontWeight:400,border:"none",cursor:"pointer",boxShadow:`0 2px 16px ${G25}`,flexShrink:0}}>+ Inserat</button>
+          )}
         </div>
 
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14,alignItems:"center"}}>
-          <div style={{display:"flex",gap:2,background:BG1,borderRadius:11,padding:3,border:`0.5px solid ${BR2}`}}>
-            {([["offer","Kaufangebote"],["want","Gesuche"],["all","Alle"]] as const).map(([t,l])=>(
-              <button key={t} onClick={()=>setTab(t)} style={{padding:"6px 16px",borderRadius:8,fontSize:12,border:"none",cursor:"pointer",background:tab===t?BG2:"transparent",color:tab===t?TX1:TX3,transition:"all .15s"}}>{l}</button>
-            ))}
-          </div>
-          <select value={sort} onChange={e=>setSort(e.target.value)} style={{padding:"7px 12px",borderRadius:9,background:BG1,border:`0.5px solid ${BR2}`,color:TX2,fontSize:12,outline:"none"}}>
-            <option value="newest">Neueste zuerst</option>
-            <option value="price_asc">Preis aufsteigend</option>
-            <option value="price_desc">Preis absteigend</option>
-            <option value="deal">Beste Deals</option>
-          </select>
-          <select value={condFilter} onChange={e=>setCondFilter(e.target.value)} style={{padding:"7px 12px",borderRadius:9,background:BG1,border:`0.5px solid ${BR2}`,color:TX2,fontSize:12,outline:"none"}}>
-            <option value="">Alle Zustände</option>
-            {["NM","LP","MP","HP","D"].map(c=><option key={c} value={c}>{c} · {COND[c]?.label}</option>)}
-          </select>
-          <div style={{position:"relative",flex:1,minWidth:160,maxWidth:280}}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Karte oder Verkäufer…"
-              style={{width:"100%",padding:"7px 8px 7px 28px",borderRadius:9,background:BG1,border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}/>
-          </div>
-        </div>
-
-        {loading?(
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
-            {Array.from({length:8}).map((_,i)=><div key={i} style={{height:240,background:BG1,border:`0.5px solid ${BR1}`,borderRadius:18,opacity:.3,animation:"pulse 1.5s ease-in-out infinite"}}/>)}
-          </div>
-        ):filtered.length===0?(
-          <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:20,padding:"60px",textAlign:"center"}}>
-            <div style={{fontSize:32,marginBottom:16,opacity:.2}}>◈</div>
-            <div style={{fontSize:14,color:TX3,marginBottom:20}}>Keine Einträge gefunden.</div>
-            <button onClick={()=>setTab("all")} style={{fontSize:13,color:G,background:"transparent",border:"none",cursor:"pointer"}}>Alle anzeigen →</button>
-          </div>
-        ):(
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
-            {filtered.map(l=><ListingCard key={l.id} l={l} onOffer={setOfferModal}/>)}
+        {/* Selected card */}
+        {card && (
+          <div style={{ display: "flex", gap: 12, padding: "12px 14px", background: "rgba(201,166,107,0.06)", borderRadius: 12, marginBottom: 20, alignItems: "center", border: "1px solid rgba(201,166,107,0.15)" }}>
+            {card.image_url && (
+              <img src={card.image_url.includes(".") ? card.image_url : card.image_url + "/low.webp"}
+                alt="" style={{ width: 36, height: 50, objectFit: "contain", borderRadius: 4 }}/>
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: TX }}>{card.name_de || card.name}</div>
+              <div style={{ fontSize: 11, color: GD2 }}>{card.set_id} · #{card.number}{card.price_market ? ` · Marktwert: ${card.price_market.toFixed(2)} €` : ""}</div>
+            </div>
+            <button onClick={() => { setCard(null); setSearch(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: TX2, fontSize: 18 }}>×</button>
           </div>
         )}
+
+        {/* Price */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Preis (€)</label>
+          <input type="number" step="0.50" min="0" value={price} onChange={e => setPrice(e.target.value)}
+            placeholder={card?.price_market ? `Marktwert: ${card.price_market.toFixed(2)} €` : "0.00"}
+            style={{ width: "100%", padding: "14px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: TX, fontSize: 15, outline: "none", fontFamily: "inherit" }}/>
+        </div>
+
+        {/* Condition */}
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Zustand</label>
+          <div style={{ display: "flex", gap: 6 }}>
+            {["NM","LP","MP","HP","D"].map(c => (
+              <button key={c} onClick={() => setCondition(c)} style={{
+                flex: 1, padding: "10px 0", borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                border: "1px solid", transition: "all 0.15s",
+                borderColor: condition === c ? "rgba(201,166,107,0.5)" : "rgba(255,255,255,0.1)",
+                background: condition === c ? "rgba(201,166,107,0.12)" : "transparent",
+                color: condition === c ? GOLD : TX2,
+              }}>{c}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Note */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Notiz (optional)</label>
+          <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+            placeholder="Zustand, Versand, etc."
+            style={{ width: "100%", padding: "14px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: TX, fontSize: 14, outline: "none", resize: "none", fontFamily: "inherit" }}/>
+        </div>
+
+        {msg && <div style={{ marginBottom: 16, fontSize: 13, color: msg.startsWith("✓") ? "#3db87a" : "#dc4a5a" }}>{msg}</div>}
+
+        <button onClick={submit} disabled={loading || !card} className="btn-gold"
+          style={{ width: "100%", justifyContent: "center", fontSize: 15, padding: "16px", opacity: loading || !card ? 0.5 : 1, borderRadius: 100 }}>
+          {loading ? "Erstelle Inserat…" : "Inserat veröffentlichen ✦"}
+        </button>
       </div>
-      {offerModal&&<OfferModal listing={offerModal} onClose={()=>setOfferModal(null)}/>}
-      {showCreate&&<CreateListingModal onClose={()=>setShowCreate(false)} onCreated={loadListings}/>}
-      <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.5}}`}</style>
     </div>
   );
 }
