@@ -1,409 +1,346 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 
-const G="#C9A66B",G25="rgba(201,166,107,0.25)",G18="rgba(201,166,107,0.18)",G08="rgba(201,166,107,0.08)",G04="rgba(201,166,107,0.04)";
-const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a",RED="#dc4a5a";
+const GOLD = "#C9A66B";
+const BG   = "#0A0A0A";
+const BG2  = "#111111";
+const BG3  = "#1A1A1A";
+const TX   = "#EDE9E0";
+const TX2  = "rgba(237,233,224,0.7)";
+const GD2  = "rgba(201,166,107,0.7)";
+const GD3  = "rgba(201,166,107,0.25)";
+const GD4  = "rgba(201,166,107,0.1)";
+
+const SB = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface ScanResult {
   status: string;
-  card: { id:string; name:string; name_de:string; name_en:string; set_id:string; number:string; price_market:number|null; price_avg7:number|null; price_avg30:number|null; image_url:string|null; rarity:string|null; hp:string|null } | null;
+  card?: {
+    id: string; name: string; name_en: string; set_id: string;
+    number: string; image_url: string | null; price_market: number | null;
+    price_low: number | null; rarity: string | null; hp: string | null; scan_count: number;
+  };
   confidence: number;
-  method: string;
-  scansUsed: number | null;
-}
-interface Listing { id:string; type:"offer"|"want"; price:number|null; condition:string; note:string; profiles:{username:string}|null }
-
-function ConditionBadge({c}:{c:string}) {
-  const colors:Record<string,string> = {NM:GREEN,LP:"#a4d87a",MP:G,HP:RED,D:RED};
-  return <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:4,background:"rgba(255,255,255,0.04)",color:colors[c]??TX3,border:"0.5px solid rgba(255,255,255,0.08)"}}>{c}</span>;
+  error?: string; message?: string;
 }
 
-function MatchingPanel({cardId}:{cardId:string}) {
-  const [tab, setTab] = useState<"offer"|"want">("offer");
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [formType, setFormType] = useState<"offer"|"want">("offer");
-  const [formPrice, setFormPrice] = useState("");
-  const [formCond, setFormCond] = useState("NM");
-  const [formNote, setFormNote] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function loadListings(t: "offer"|"want") {
-    setLoading(true);
-    const res = await fetch(`/api/marketplace?card_id=${cardId}&type=${t}`);
-    const data = await res.json();
-    setListings(data.listings ?? []);
-    setLoading(false);
-  }
-
-  useEffect(() => { loadListings(tab); }, [tab, cardId]);
-
-  async function submitListing() {
-    setSubmitting(true);
-    await fetch("/api/marketplace", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ card_id:cardId, type:formType, price:parseFloat(formPrice)||null, condition:formCond, note:formNote }),
-    });
-    setSubmitting(false);
-    setShowForm(false);
-    loadListings(tab);
-  }
-
-  return (
-    <div style={{marginTop:24,background:BG1,border:`1px solid ${BR2}`,borderRadius:22,overflow:"hidden"}}>
-      {/* Tabs */}
-      <div style={{display:"flex",borderBottom:`1px solid ${BR1}`}}>
-        {([["offer","Kaufangebote"],["want","Suchangebote"]] as const).map(([t,l])=>(
-          <button key={t} onClick={()=>setTab(t)} style={{
-            flex:1,padding:"14px",fontSize:13,fontWeight:500,border:"none",cursor:"pointer",
-            background:tab===t?BG2:"transparent",
-            color:tab===t?TX1:TX3,
-            borderBottom:tab===t?`2px solid ${G}`:"2px solid transparent",
-            transition:"all .2s",
-          }}>{l} {tab===t&&listings.length>0&&<span style={{fontSize:10,background:G08,color:G,padding:"1px 6px",borderRadius:4,marginLeft:6}}>{listings.length}</span>}</button>
-        ))}
-      </div>
-      {/* List */}
-      <div style={{padding:"0 4px"}}>
-        {loading ? (
-          <div style={{padding:"28px",textAlign:"center",fontSize:13,color:TX3}}>Lädt…</div>
-        ) : listings.length === 0 ? (
-          <div style={{padding:"28px",textAlign:"center"}}>
-            <div style={{fontSize:13,color:TX3,marginBottom:12}}>Noch keine {tab==="offer"?"Angebote":"Suchanfragen"}</div>
-            <button onClick={()=>{setFormType(tab);setShowForm(true);}} style={{
-              padding:"8px 20px",borderRadius:10,fontSize:12,fontWeight:500,
-              background:G,color:"#0a0808",border:"none",cursor:"pointer",
-            }}>Ich {tab==="offer"?"biete an":"suche"} ✦</button>
-          </div>
-        ) : (
-          <>
-            {listings.map(l=>(
-              <div key={l.id} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderBottom:`1px solid ${BR1}`}}>
-                <div style={{width:36,height:36,borderRadius:"50%",background:BG2,border:`1px solid ${BR1}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:G,fontWeight:500,flexShrink:0}}>
-                  {(l.profiles?.username?.[0]??"?").toUpperCase()}
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,color:TX1,fontWeight:400}}>{l.profiles?.username??"Anonym"}</div>
-                  {l.note&&<div style={{fontSize:11,color:TX3,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.note}</div>}
-                </div>
-                <ConditionBadge c={l.condition}/>
-                {l.price&&<div style={{fontSize:15,fontWeight:400,fontFamily:"var(--font-mono)",color:G,flexShrink:0}}>{l.price.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div>}
-                <a href={`/profil/${l.profiles?.username??""}`} style={{
-                  padding:"7px 14px",borderRadius:10,fontSize:12,fontWeight:500,
-                  background:tab==="offer"?G:"transparent",color:tab==="offer"?"#0a0808":G,
-                  border:tab==="offer"?"none":`1px solid ${G18}`,textDecoration:"none",flexShrink:0,
-                }}>Kontakt</a>
-              </div>
-            ))}
-            <div style={{padding:"12px 16px"}}>
-              <button onClick={()=>{setFormType(tab);setShowForm(true);}} style={{
-                fontSize:12,color:TX3,background:"transparent",border:`1px solid ${BR1}`,
-                borderRadius:8,padding:"6px 14px",cursor:"pointer",
-              }}>+ Eigenes Angebot erstellen</button>
-            </div>
-          </>
-        )}
-      </div>
-      {/* Create listing form */}
-      {showForm&&(
-        <div style={{padding:"16px",background:BG2,borderTop:`1px solid ${BR1}`}}>
-          <div style={{fontSize:12,fontWeight:500,color:TX1,marginBottom:12}}>
-            {formType==="offer"?"Ich biete diese Karte an":"Ich suche diese Karte"}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-            <div>
-              <div style={{fontSize:9,color:TX3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>Preis (€)</div>
-              <input value={formPrice} onChange={e=>setFormPrice(e.target.value)} type="number" placeholder="z.B. 45.00"
-                style={{width:"100%",padding:"9px 12px",borderRadius:8,background:"rgba(0,0,0,0.3)",border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none"}}/>
-            </div>
-            <div>
-              <div style={{fontSize:9,color:TX3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>Zustand</div>
-              <select value={formCond} onChange={e=>setFormCond(e.target.value)}
-                style={{width:"100%",padding:"9px 12px",borderRadius:8,background:BG1,border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none"}}>
-                {["NM","LP","MP","HP","D"].map(c=><option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-          <input value={formNote} onChange={e=>setFormNote(e.target.value)} placeholder="Kurze Notiz (optional)"
-            style={{width:"100%",padding:"9px 12px",borderRadius:8,background:"rgba(0,0,0,0.3)",border:`1px solid ${BR2}`,color:TX1,fontSize:13,outline:"none",marginBottom:10}}/>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={submitListing} disabled={submitting} style={{flex:1,padding:"10px",borderRadius:10,background:G,color:"#0a0808",fontSize:13,fontWeight:500,border:"none",cursor:"pointer"}}>
-              {submitting?"Wird gespeichert…":"Veröffentlichen"}
-            </button>
-            <button onClick={()=>setShowForm(false)} style={{padding:"10px 16px",borderRadius:10,background:"transparent",color:TX2,fontSize:13,border:`1px solid ${BR1}`,cursor:"pointer"}}>Abbrechen</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+interface WishlistMatch {
+  id: string;
+  max_price: number | null;
+  profiles: { username: string } | null;
 }
 
 export default function ScannerPage() {
-  const [dragging, setDragging]     = useState(false);
-  const [scanning, setScanning]     = useState(false);
-  const [result,   setResult]       = useState<ScanResult|null>(null);
-  const [preview,  setPreview]      = useState<string|null>(null);
-  const [error,    setError]        = useState<string|null>(null);
-  const router = useRouter();
-  const [scansToday, setScansToday] = useState<number>(0);
+  const [preview,  setPreview]  = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [result,   setResult]   = useState<ScanResult | null>(null);
+  const [matches,  setMatches]  = useState<WishlistMatch[]>([]);
+  const [error,    setError]    = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [added,    setAdded]    = useState(false);
+  const [scanCount, setScanCount] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load scan count on mount
-  useEffect(() => {
-    fetch("/api/scanner/count").then(r=>r.json()).then(d=>setScansToday(d.count??0)).catch(()=>{});
-  }, []);
-
-  async function handleFile(file: File) {
-    setError(null);
-    setResult(null);
+  const handleFile = useCallback(async (file: File) => {
+    setError(null); setResult(null); setAdded(false); setMatches([]);
     setScanning(true);
 
-    // Preview
     const reader = new FileReader();
     reader.onload = e => setPreview(e.target?.result as string);
     reader.readAsDataURL(file);
 
-    // Convert to base64
-    const base64 = await new Promise<string>((resolve, reject) => {
+    const base64 = await new Promise<string>((res, rej) => {
       const r = new FileReader();
-      r.onload = () => resolve((r.result as string).split(",")[1]);
-      r.onerror = reject;
+      r.onload  = () => res((r.result as string).split(",")[1]);
+      r.onerror = rej;
       r.readAsDataURL(file);
     });
 
     try {
+      const { data: { session } } = await SB.auth.getSession();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (session?.access_token) headers["Authorization"] = `Bearer ${session.access_token}`;
+
+      // Check scan count for free users
+      if (session?.user) {
+        const today = new Date().toISOString().split("T")[0];
+        const { count } = await SB.from("scan_logs")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", session.user.id)
+          .gte("created_at", today + "T00:00:00Z");
+        setScanCount(count ?? 0);
+      }
+
       const res = await fetch("/api/scanner/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers,
         body: JSON.stringify({ imageBase64: base64, mimeType: file.type || "image/jpeg" }),
       });
-
-      const data = await res.json();
+      const data: ScanResult = await res.json();
 
       if (res.status === 429) {
-        setError("Du hast dein Tageslimit von 5 Scans erreicht. Upgrade auf Premium für unlimitierte Scans.");
-        setScanning(false);
-        return;
+        setError("Tageslimit von 5 Scans erreicht. Upgrade auf Premium für unlimitierte Scans.");
+      } else if (!res.ok || data.error) {
+        setError(data.message ?? "Karte konnte nicht erkannt werden. Bitte klareres Foto versuchen.");
+      } else {
+        setResult(data);
+        // Check wishlist matches
+        if (data.card?.id) {
+          const { data: wm } = await SB
+            .from("user_wishlist")
+            .select("id, max_price, profiles!user_wishlist_user_id_fkey(username)")
+            .eq("card_id", data.card.id)
+            .limit(5);
+          if (wm?.length) {
+            setMatches(wm.map((m: any) => ({
+              ...m,
+              profiles: Array.isArray(m.profiles) ? m.profiles[0] : m.profiles,
+            })));
+          }
+        }
       }
-      if (!res.ok || data.error) {
-        setError(data.error === "Karte nicht erkannt" ? "Karte konnte nicht erkannt werden. Bitte ein klareres Foto versuchen." : "Fehler beim Scannen. Bitte erneut versuchen.");
-        setScanning(false);
-        return;
-      }
-
-      setResult(data);
-      if (data.scansUsed !== null) setScansToday(data.scansUsed);
     } catch {
       setError("Verbindungsfehler. Bitte erneut versuchen.");
     }
     setScanning(false);
-  }
+  }, []);
 
-  const card = result?.card;
-  const priceFormatted = card?.price_market
-    ? card.price_market.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " €"
-    : null;
-  const trend7 = card?.price_avg7 && card?.price_market
-    ? ((card.price_market - card.price_avg7) / card.price_avg7 * 100)
-    : null;
-
-  async function addToPortfolio(cardId: string, cardName: string) {
+  async function addToPortfolio() {
+    if (!result?.card) return;
     try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const sb = createClient();
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = "/auth/login"; return; }
-      await sb.from("user_collection").upsert(
-        { user_id: session.user.id, card_id: cardId, quantity: 1, condition: "NM" },
+      const { data: { user } } = await SB.auth.getUser();
+      if (!user) { window.location.href = "/auth/login"; return; }
+      await SB.from("user_collection").upsert(
+        { user_id: user.id, card_id: result.card.id, quantity: 1, condition: "NM" },
         { onConflict: "user_id,card_id" }
       );
-      alert("✓ " + cardName + " zum Portfolio hinzugefügt!");
-    } catch(e) { alert("Fehler beim Hinzufügen"); }
+      setAdded(true);
+    } catch { setError("Fehler beim Hinzufügen zum Portfolio."); }
   }
 
+  const card   = result?.card;
+  const imgSrc = card?.image_url
+    ? (card.image_url.includes(".") ? card.image_url : card.image_url + "/high.webp")
+    : null;
 
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+    <div style={{ background: BG, minHeight: "100vh", color: TX }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap');
+        .ph { font-family: 'Playfair Display', serif; letter-spacing: -0.05em; }
+        .upload-zone { border: 1.5px dashed rgba(201,166,107,0.3); border-radius: 20px; transition: border-color 0.2s, background 0.2s; cursor: pointer; }
+        .upload-zone:hover, .upload-zone.drag { border-color: #C9A66B; background: rgba(201,166,107,0.04); }
+        .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s,box-shadow 0.2s; }
+        .btn-gold:hover { transform:scale(1.03); box-shadow:0 8px 32px rgba(201,166,107,0.35); }
+        .btn-outline { display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border:1px solid rgba(201,166,107,0.4); color:#C9A66B; border-radius:100px; background:transparent; font-size:14px; cursor:pointer; text-decoration:none; transition:all 0.2s; }
+        .btn-outline:hover { background:#C9A66B; color:#0A0A0A; }
+        .match-card { background:#111111; border:1px solid rgba(201,166,107,0.2); border-radius:16px; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; transition:border-color 0.2s; }
+        .match-card:hover { border-color:rgba(201,166,107,0.4); }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+        .scan-line { position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,rgba(201,166,107,0.6),transparent); animation:scanMove 1.5s ease-in-out infinite; }
+        @keyframes scanMove { 0%{top:10%} 100%{top:90%} }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+      `}</style>
+
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
 
         {/* Header */}
-        <div style={{textAlign:"center",marginBottom:"clamp(48px,6vw,72px)"}}>
-          <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <span style={{width:16,height:0.5,background:TX3,display:"inline-block"}}/>KI-Scanner · Gemini Flash<span style={{width:16,height:0.5,background:TX3,display:"inline-block"}}/>
+        <div style={{ marginBottom: 64 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: GD2, marginBottom: 16 }}>
+            KI-Scanner
           </div>
-          <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(36px,6vw,68px)",fontWeight:200,letterSpacing:"-.055em",lineHeight:1.0,marginBottom:18}}>
-            Foto machen.<br/><span style={{color:G}}>Preis wissen.</span>
+          <h1 className="ph" style={{ fontSize: "clamp(40px,6vw,80px)", fontWeight: 500, color: TX, marginBottom: 16, lineHeight: 1 }}>
+            Karte fotografieren.<br/><span style={{ color: GOLD }}>Wert sofort sehen.</span>
           </h1>
-          <p style={{fontSize:"clamp(14px,1.6vw,18px)",color:TX2,maxWidth:460,margin:"0 auto",lineHeight:1.8,fontWeight:300}}>
-            Halte deine Karte vor die Kamera. In Sekunden erhältst du den aktuellen Cardmarket-Wert.
+          <p style={{ fontSize: 16, color: TX2, maxWidth: 480 }}>
+            Powered by Gemini AI · Erkennt jede Pokémon-Karte in Sekunden
           </p>
+          {scanCount !== null && scanCount >= 3 && (
+            <div style={{ marginTop: 16, padding: "10px 18px", background: "rgba(201,166,107,0.08)", border: "1px solid rgba(201,166,107,0.2)", borderRadius: 100, display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: GOLD }}>
+              ✦ {5 - scanCount} von 5 Gratis-Scans übrig · <Link href="/dashboard/premium" style={{ color: GOLD, fontWeight: 600 }}>Premium für ∞</Link>
+            </div>
+          )}
         </div>
 
-        {/* Main layout */}
-        <div className="scanner-split" style={{
-          background:BG1,border:`1px solid ${BR2}`,borderRadius:28,
-          overflow:"hidden",display:"grid",gridTemplateColumns:"1fr 1fr",minHeight:480,
-          position:"relative",
-        }}>
-          <div style={{position:"absolute",top:0,left:0,right:0,height:1,background:`linear-gradient(90deg,transparent,${G25},transparent)`}}/>
+        <div style={{ display: "grid", gridTemplateColumns: card ? "1fr 1fr" : "1fr", gap: 48, maxWidth: card ? "100%" : 560, alignItems: "start" }}>
 
-          {/* Left: Upload */}
-          <div style={{padding:"clamp(28px,4vw,52px)",display:"flex",flexDirection:"column",justifyContent:"center",borderRight:`1px solid ${BR1}`}}>
-            <input ref={inputRef} type="file" accept="image/*" style={{display:"none"}}
-              onChange={e=>e.target.files?.[0]&&handleFile(e.target.files[0])}/>
+          {/* Upload Zone */}
+          <div>
+            <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
 
-            {/* Drop zone */}
             <div
-              onClick={()=>inputRef.current?.click()}
-              onDragOver={e=>{e.preventDefault();setDragging(true);}}
-              onDragLeave={()=>setDragging(false)}
-              onDrop={e=>{e.preventDefault();setDragging(false);e.dataTransfer.files[0]&&handleFile(e.dataTransfer.files[0]);}}
+              className={`upload-zone${dragging ? " drag" : ""}`}
+              onClick={() => !scanning && inputRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={e => { e.preventDefault(); setDragging(false); e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]); }}
               style={{
-                borderRadius:18,border:`1.5px dashed ${dragging?G25:BR2}`,
-                background:dragging?G04:"rgba(0,0,0,0.2)",
-                display:"flex",flexDirection:"column",alignItems:"center",
-                justifyContent:"center",gap:12,cursor:"pointer",
-                aspectRatio:"4/3",marginBottom:20,
-                transition:"all .4s var(--ease)",overflow:"hidden",position:"relative",
-              }}>
+                aspectRatio: preview ? "3/4" : "4/3",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                overflow: "hidden", position: "relative",
+                background: preview ? "transparent" : BG2,
+              }}
+            >
               {preview ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={preview} alt="Vorschau" style={{width:"100%",height:"100%",objectFit:"contain",padding:12}}/>
+                <img src={preview} alt="Vorschau" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
               ) : (
-                <>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={TX3} strokeWidth="1.2" style={{opacity:.4}}>
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
-                  </svg>
-                  <div style={{textAlign:"center"}}>
-                    <div style={{fontSize:14,color:TX2,marginBottom:4,fontWeight:300}}>Foto hier ablegen</div>
-                    <div style={{fontSize:12,color:TX3}}>oder klicken zum Hochladen</div>
-                    <div style={{fontSize:10,color:TX3,marginTop:8,padding:"3px 12px",borderRadius:6,background:"rgba(255,255,255,0.04)",display:"inline-block"}}>JPG · PNG · WEBP · max 10 MB</div>
-                  </div>
-                </>
+                <div style={{ textAlign: "center", padding: 40 }}>
+                  <div style={{ fontSize: 56, color: GOLD, opacity: 0.3, marginBottom: 20 }}>⊙</div>
+                  <div style={{ fontSize: 17, fontWeight: 500, color: TX, marginBottom: 8 }}>Karte hochladen</div>
+                  <div style={{ fontSize: 13, color: TX2 }}>Drag & Drop oder klicken</div>
+                  <div style={{ fontSize: 11, color: "rgba(237,233,224,0.4)", marginTop: 8 }}>JPG, PNG, HEIC</div>
+                </div>
+              )}
+
+              {/* Scanning overlay */}
+              {scanning && (
+                <div style={{ position: "absolute", inset: 0, background: "rgba(10,10,10,0.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
+                  <div className="scan-line"/>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", border: "2px solid rgba(201,166,107,0.2)", borderTopColor: GOLD, animation: "spin 0.8s linear infinite" }}/>
+                  <div style={{ fontSize: 14, color: GD2, letterSpacing: "0.1em" }}>Analysiere Karte…</div>
+                </div>
               )}
             </div>
 
-            <button onClick={()=>!scanning&&inputRef.current?.click()} style={{
-              width:"100%",padding:"14px",borderRadius:16,
-              background:scanning?"transparent":G,
-              color:scanning?G:"#0a0808",
-              fontSize:14,fontWeight:400,border:scanning?`1px solid ${G18}`:"none",
-              cursor:scanning?"wait":"pointer",letterSpacing:"-.01em",
-              transition:"all .3s",boxShadow:scanning?"none":`0 2px 20px ${G25}`,
-              marginBottom:12,
-            }}>
-              {scanning ? "Erkennt Karte…" : "Jetzt scannen"}
-            </button>
-
-            {/* Scan counter */}
-            <div style={{textAlign:"center",fontSize:12,color:TX3}}>
-              <span style={{padding:"3px 12px",borderRadius:6,background:scansToday>=5?`rgba(220,74,90,0.08)`:`rgba(201,166,107,0.06)`,color:scansToday>=5?RED:TX3}}>
-                {scansToday} / 5 Scans heute
-              </span>
-              {" · "}
-              <Link href="/dashboard/premium" style={{color:G,textDecoration:"none",fontSize:12}}>Unlimitiert mit Premium ✦</Link>
+            <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+              <button onClick={() => inputRef.current?.click()} disabled={scanning} className="btn-gold"
+                style={{ flex: 1, justifyContent: "center", opacity: scanning ? 0.5 : 1 }}>
+                {scanning ? "Analysiere…" : preview ? "Neues Foto" : "Foto auswählen"}
+              </button>
+              {preview && !scanning && (
+                <button onClick={() => { setPreview(null); setResult(null); setError(null); setMatches([]); }}
+                  className="btn-outline" style={{ padding: "13px 20px" }}>✕</button>
+              )}
             </div>
-          </div>
 
-          {/* Right: Result */}
-          <div style={{padding:"clamp(28px,4vw,52px)",display:"flex",flexDirection:"column",justifyContent:"center"}}>
-            {scanning ? (
-              <div style={{textAlign:"center"}}>
-                <div style={{width:52,height:52,borderRadius:"50%",border:`1.5px solid ${G18}`,borderTopColor:G,margin:"0 auto 20px",animation:"spin 0.8s linear infinite"}}/>
-                <div style={{fontSize:15,color:TX2,fontWeight:300}}>KI analysiert deine Karte…</div>
-                <div style={{fontSize:12,color:TX3,marginTop:8}}>Abgleich mit 22.000+ Karten</div>
-              </div>
-            ) : error ? (
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:14,color:RED,marginBottom:16,lineHeight:1.6}}>{error}</div>
-                {error.includes("Tageslimit") && (
-                  <Link href="/dashboard/premium" style={{display:"inline-block",padding:"12px 24px",borderRadius:14,background:G,color:"#0a0808",fontSize:13,fontWeight:400,textDecoration:"none"}}>Premium werden ✦</Link>
-                )}
-              </div>
-            ) : result && card ? (
-              <div>
-                {/* Card found */}
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:18}}>
-                  <span style={{width:6,height:6,borderRadius:"50%",background:GREEN,display:"inline-block"}}/>
-                  <span style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:GREEN}}>
-                    Erkannt · {Math.round((result.confidence??0.95)*100)}% Konfidenz
-                  </span>
-                </div>
-
-                {/* Card name */}
-                <div style={{fontFamily:"var(--font-display)",fontSize:"clamp(22px,3vw,36px)",fontWeight:200,letterSpacing:"-.04em",color:TX1,marginBottom:6,lineHeight:1.1}}>
-                  {card.name_de || card.name}
-                </div>
-                <div style={{fontSize:13,color:TX3,marginBottom:20}}>
-                  {card.set_id?.toUpperCase()} · #{card.number} {card.rarity&&`· ${card.rarity}`}
-                </div>
-
-                {/* Price */}
-                <div style={{fontFamily:"var(--font-mono)",fontSize:"clamp(36px,4.5vw,56px)",fontWeight:300,color:G,letterSpacing:"-.05em",lineHeight:1,marginBottom:8}}>
-                  {priceFormatted}
-                </div>
-                {trend7 !== null && (
-                  <div style={{fontSize:12,color:trend7>=0?GREEN:RED,marginBottom:24}}>
-                    {trend7>=0?"▲":"▼"} {Math.abs(trend7).toFixed(1)} % vs. 7-Tage-Schnitt
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
-                  <Link href={`/preischeck/${card.id}`} style={{
-                    padding:"12px 20px",borderRadius:12,background:G,color:"#0a0808",
-                    fontSize:13,fontWeight:500,textDecoration:"none",textAlign:"center",
-                    boxShadow:`0 2px 16px ${G25}`,display:"block",
-                  }}>◈ Kartendetails ansehen</Link>
-                  <button onClick={()=>addToPortfolio(card.id, card.name||"")} style={{
-                    padding:"12px 20px",borderRadius:12,
-                    background:"rgba(61,184,122,0.1)",color:"#3db87a",
-                    fontSize:13,fontWeight:500,border:"0.5px solid rgba(61,184,122,0.3)",
-                    cursor:"pointer",textAlign:"center",width:"100%",
-                  }}>+ Portfolio hinzufügen</button>
-                  <button onClick={()=>window.location.href=`/marketplace?sell=${card.id}&name=${encodeURIComponent(card.name_de||card.name||"")}`} style={{
-                    padding:"12px 20px",borderRadius:12,
-                    background:"rgba(201,166,107,0.08)",color:G,
-                    fontSize:13,fontWeight:500,border:`0.5px solid ${G18}`,
-                    cursor:"pointer",textAlign:"center",width:"100%",
-                  }}>◎ Auf Marktplatz inserieren</button>
-                  <button onClick={()=>{setResult(null);setPreview(null);setError(null);}} style={{
-                    padding:"10px",borderRadius:10,background:"transparent",
-                    color:TX3,fontSize:12,border:`0.5px solid ${BR1}`,cursor:"pointer",width:"100%",
-                  }}>↺ Neue Karte scannen</button>
-                </div>
-
-                {/* Matching panel */}
-                <MatchingPanel cardId={card.id}/>
-              </div>
-            ) : result && !card ? (
-              // Gemini recognized but no DB match
-              <div>
-                <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",color:"#e8a84a",marginBottom:16,textTransform:"uppercase"}}>
-                  ⚠ Karte erkannt — kein Preis gefunden
-                </div>
-                <div style={{fontSize:20,fontWeight:300,color:TX1,marginBottom:8}}>{result.card?.name_de||result.card?.name||"Unbekannte Karte"}</div>
-                <div style={{fontSize:13,color:TX3,marginBottom:20}}>Diese Karte ist noch nicht in unserer Datenbank.</div>
-                <Link href={`/preischeck?q=${encodeURIComponent(result.card?.name_de||result.card?.name||"Erkannte Karte")}`}
-                  style={{padding:"10px 20px",borderRadius:12,background:G,color:"#0a0808",fontSize:13,textDecoration:"none"}}>
-                  Trotzdem suchen
-                </Link>
-              </div>
-            ) : (
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:48,opacity:.08,marginBottom:14}}>◎</div>
-                <div style={{fontSize:15,color:TX3,fontWeight:300,lineHeight:1.7}}>Lade eine Karte hoch<br/>um den Preis zu sehen</div>
+            {error && (
+              <div style={{ marginTop: 16, padding: "14px 18px", background: "rgba(220,74,90,0.08)", border: "1px solid rgba(220,74,90,0.2)", borderRadius: 12, fontSize: 13, color: "#dc4a5a" }}>
+                {error}
               </div>
             )}
           </div>
+
+          {/* Result */}
+          {card && (
+            <div className="fade-up">
+              {/* Card display */}
+              <div style={{
+                background: BG2, borderRadius: 24, overflow: "hidden",
+                border: "1px solid rgba(201,166,107,0.2)",
+                boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
+                marginBottom: 28,
+              }}>
+                {/* Image */}
+                <div style={{ background: BG3, padding: "24px 24px 0", display: "flex", justifyContent: "center" }}>
+                  <div style={{ width: "60%", aspectRatio: "3/4", position: "relative" }}>
+                    {imgSrc ? (
+                      <img src={imgSrc} alt={card.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, opacity: 0.2 }}>◎</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div style={{ padding: "24px 28px 28px" }}>
+                  {/* Confidence badge */}
+                  <div style={{ marginBottom: 12 }}>
+                    <span style={{ padding: "3px 12px", borderRadius: 100, background: "rgba(201,166,107,0.1)", color: GOLD, fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", border: "1px solid rgba(201,166,107,0.2)" }}>
+                      ✓ ERKANNT · {result?.confidence ?? 0}% Konfidenz
+                    </span>
+                  </div>
+
+                  <h2 className="ph" style={{ fontSize: "clamp(22px,3vw,32px)", fontWeight: 500, color: TX, marginBottom: 6 }}>
+                    {card.name}
+                  </h2>
+                  <div style={{ fontSize: 12, color: TX2, marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    {card.set_id?.toUpperCase()} · #{card.number}{card.rarity ? ` · ${card.rarity}` : ""}
+                  </div>
+
+                  {card.price_market && (
+                    <div style={{ marginBottom: 24 }}>
+                      <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 6 }}>Marktwert</div>
+                      <div className="ph" style={{ fontSize: "clamp(32px,4vw,48px)", fontWeight: 500, color: GOLD, lineHeight: 1 }}>
+                        {card.price_market.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €
+                      </div>
+                      {card.price_low && (
+                        <div style={{ fontSize: 13, color: TX2, marginTop: 4 }}>
+                          Ab {card.price_low.toLocaleString("de-DE", { minimumFractionDigits: 2 })} € verfügbar
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <Link href={`/preischeck/${card.id}`} className="btn-gold" style={{ justifyContent: "center" }}>
+                      Kartendetails ansehen
+                    </Link>
+                    <button onClick={addToPortfolio} disabled={added} style={{
+                      padding: "13px 24px", borderRadius: 100, border: "1px solid rgba(201,166,107,0.3)",
+                      background: added ? "rgba(201,166,107,0.1)" : "transparent",
+                      color: added ? GOLD : TX2, fontSize: 14, cursor: added ? "default" : "pointer",
+                      transition: "all 0.2s",
+                    }}>
+                      {added ? "✓ Portfolio hinzugefügt" : "+ Zu meiner Sammlung"}
+                    </button>
+                    <Link href={`/marketplace?sell=${card.id}`} style={{
+                      padding: "13px 24px", borderRadius: 100, border: "1px solid rgba(255,255,255,0.1)",
+                      color: TX2, fontSize: 14, textDecoration: "none", textAlign: "center",
+                      transition: "all 0.2s",
+                    }}>
+                      Auf Marktplatz inserieren →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wishlist Matches */}
+              {matches.length > 0 && (
+                <div style={{ background: BG2, borderRadius: 20, border: "1px solid rgba(201,166,107,0.3)", overflow: "hidden", boxShadow: "0 0 0 1px rgba(201,166,107,0.1)" }}>
+                  {/* Top gold line */}
+                  <div style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.5),transparent)" }}/>
+                  <div style={{ padding: "20px 24px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                      <span style={{ fontSize: 18, color: GOLD }}>✦</span>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: TX }}>
+                          {matches.length} {matches.length === 1 ? "Sammler sucht" : "Sammler suchen"} diese Karte!
+                        </div>
+                        <div style={{ fontSize: 12, color: TX2 }}>Direkt verkaufen zum Wunschpreis</div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {matches.map(m => (
+                        <div key={m.id} className="match-card">
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: TX }}>@{m.profiles?.username ?? "Sammler"}</div>
+                            {m.max_price && (
+                              <div style={{ fontSize: 12, color: GD2 }}>
+                                Zahlt bis {m.max_price.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €
+                              </div>
+                            )}
+                          </div>
+                          <Link href={`/marketplace?sell=${card.id}`} className="btn-gold" style={{ padding: "10px 20px", fontSize: 13 }}>
+                            Verkaufen ✦
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

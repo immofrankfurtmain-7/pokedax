@@ -1,299 +1,285 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
-const G="#C9A66B",G18="rgba(201,166,107,0.18)",G08="rgba(201,166,107,0.08)";
-const BG1="#16161A",BG2="#1C1C21",BG3="#202025";
-const BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a",RED="#dc4a5a";
+const GOLD = "#C9A66B";
+const BG   = "#0A0A0A";
+const BG2  = "#111111";
+const BG3  = "#1A1A1A";
+const TX   = "#EDE9E0";
+const TX2  = "rgba(237,233,224,0.7)";
+const GD2  = "rgba(201,166,107,0.7)";
 
-const CAT_CONFIG: Record<string,{color:string;icon:string}> = {
-  Preisdiskussion: {color:"#E9A84B",icon:"◈"},
-  Neuigkeiten:     {color:"#60A5FA",icon:"◉"},
-  Einsteiger:      {color:"#34D399",icon:"◎"},
-  Sammlung:        {color:"#A78BFA",icon:"◇"},
-  Strategie:       {color:"#F472B6",icon:"◆"},
-  Tausch:          {color:"#38BDF8",icon:"◈"},
-  "Fake-Check":    {color:"#FB923C",icon:"⚠"},
-  Marktplatz:      {color:"#C084FC",icon:"◉"},
-};
+const SB = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-interface Post {
-  id:string; title:string; content?:string; upvotes:number; created_at:string;
-  reply_count?:number; view_count?:number; is_pinned?:boolean; is_hot?:boolean;
-  profiles?:{username:string;avatar_url:string|null;is_premium?:boolean};
-  forum_categories?:{name:string};
-}
-
-function timeAgo(d:string) {
-  const mins = Math.floor((Date.now()-new Date(d).getTime())/60000);
-  if (mins<1) return "Gerade";
-  if (mins<60) return `${mins} Min.`;
-  const h = Math.floor(mins/60);
-  if (h<24) return `${h} Std.`;
-  const days = Math.floor(h/24);
-  if (days<7) return `${days} T.`;
-  return `${Math.floor(days/7)} Wo.`;
-}
-
-function Avatar({username, size=28}:{username:string;size?:number}) {
-  const colors = [G,"#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
-  const c = colors[username.charCodeAt(0)%colors.length];
-  return (
-    <div style={{width:size,height:size,borderRadius:"50%",background:`${c}18`,border:`1px solid ${c}30`,
-      display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.45,color:c,fontWeight:500,flexShrink:0}}>
-      {username[0].toUpperCase()}
-    </div>
-  );
-}
-
-function PostRow({post,onUpvote}:{post:Post;onUpvote:(id:string)=>void}) {
-  const cat = post.forum_categories?.name ?? "Forum";
-  const cfg = CAT_CONFIG[cat] ?? {color:G,icon:"●"};
-  const author = post.profiles?.username ?? "Anonym";
-
-  return (
-    <div style={{
-      display:"flex",alignItems:"flex-start",gap:0,
-      borderBottom:`1px solid ${BR1}`,
-      transition:"background .12s",
-    }}
-    onMouseEnter={e=>(e.currentTarget.style.background=BG2)}
-    onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
-
-      {/* Upvote */}
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 12px 14px 16px",flexShrink:0,minWidth:52}}>
-        <button onClick={(e)=>{e.preventDefault();e.stopPropagation();onUpvote(post.id);}} style={{
-          width:28,height:28,borderRadius:8,background:"transparent",border:`1px solid ${BR2}`,
-          display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
-          fontSize:11,color:TX3,transition:"all .15s",
-        }}
-        onMouseEnter={e=>{(e.currentTarget as any).style.borderColor=G;(e.currentTarget as any).style.color=G;}}
-        onMouseLeave={e=>{(e.currentTarget as any).style.borderColor="rgba(255,255,255,0.085)";(e.currentTarget as any).style.color=TX3;}}>
-          ▲
-        </button>
-        <div style={{fontSize:12,fontWeight:500,color:post.upvotes>0?TX2:TX3,marginTop:4,fontFamily:"var(--font-mono)",lineHeight:1}}>
-          {post.upvotes}
-        </div>
-      </div>
-
-      {/* Content */}
-      <Link href={`/forum/post/${post.id}`} style={{flex:1,padding:"14px 16px 14px 0",textDecoration:"none",display:"block",minWidth:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:7,flexWrap:"wrap"}}>
-          {post.is_pinned&&<span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:"rgba(212,168,67,0.1)",color:G,border:`0.5px solid ${G18}`}}>📌 GEPINNT</span>}
-          {post.is_hot&&<span style={{fontSize:9,fontWeight:600,padding:"1px 7px",borderRadius:4,background:"rgba(239,68,68,0.1)",color:"#f87171",border:"0.5px solid rgba(239,68,68,0.2)"}}>🔥 HOT</span>}
-          <span style={{fontSize:9,fontWeight:600,padding:"2px 8px",borderRadius:5,background:`${cfg.color}12`,color:cfg.color,border:`0.5px solid ${cfg.color}25`,letterSpacing:".04em"}}>
-            {cfg.icon} {cat.toUpperCase()}
-          </span>
-        </div>
-        <div style={{fontSize:14,fontWeight:400,color:TX1,lineHeight:1.4,marginBottom:8,
-          overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-          {post.title}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-          <Avatar username={author} size={18}/>
-          <span style={{fontSize:11,color:TX2}}>@{author}</span>
-          {post.profiles?.is_premium&&<span style={{fontSize:8,color:G,fontWeight:600}}>✦</span>}
-          <span style={{width:2,height:2,borderRadius:"50%",background:TX3,flexShrink:0}}/>
-          <span style={{fontSize:11,color:TX3}}>{timeAgo(post.created_at)}</span>
-          <span style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12}}>
-            {(post.reply_count??0)>0&&(
-              <span style={{fontSize:11,color:TX3,display:"flex",alignItems:"center",gap:4}}>
-                💬 {post.reply_count}
-              </span>
-            )}
-          </span>
-        </div>
-      </Link>
-    </div>
-  );
+function timeAgo(date: string) {
+  const m = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
+  if (m < 1)    return "gerade eben";
+  if (m < 60)   return `${m} Min.`;
+  if (m < 1440) return `${Math.floor(m / 60)} Std.`;
+  return `${Math.floor(m / 1440)}d`;
 }
 
 export default function ForumPage() {
-  const [posts,   setPosts]   = useState<Post[]>([]);
-  const [cats,    setCats]    = useState<string[]>([]);
-  const [cat,     setCat]     = useState("alle");
-  const [sort,    setSort]    = useState<"hot"|"neu"|"top">("hot");
-  const [search,  setSearch]  = useState("");
+  const [posts,   setPosts]   = useState<any[]>([]);
+  const [cats,    setCats]    = useState<any[]>([]);
+  const [catId,   setCatId]   = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [user,    setUser]    = useState<any>(null);
+  const [showNew, setShowNew] = useState(false);
+  const channelRef = useRef<any>(null);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    SB.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+    SB.from("forum_categories").select("id,name,slug,icon").order("name")
+      .then(({ data }) => setCats(data ?? []));
+    loadPosts(null);
 
-  async function load() {
+    channelRef.current = SB.channel("forum_realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "forum_posts" }, () => loadPosts(catId))
+      .subscribe();
+    return () => { channelRef.current?.unsubscribe(); };
+  }, []);
+
+  useEffect(() => { loadPosts(catId); }, [catId]);
+
+  async function loadPosts(categoryId: string | null) {
     setLoading(true);
     try {
-      const sb = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-      const [pR, cR] = await Promise.all([
-        sb.from("forum_posts")
-          .select("id,title,content,upvotes,created_at,profiles(username,avatar_url,is_premium),forum_categories(name)")
-          .order("created_at",{ascending:false})
-          .limit(60),
-        sb.from("forum_categories").select("name").order("name"),
-      ]);
-      const normalized = (pR.data??[]).map((p:any)=>({
+      let q = SB.from("forum_posts")
+        .select(`id,title,body,upvotes,created_at,card_id,
+          profiles!forum_posts_user_id_fkey(username),
+          forum_categories!forum_posts_category_id_fkey(name,slug),
+          cards!forum_posts_card_id_fkey(name,name_de,image_url)`)
+        .eq("is_deleted", false)
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (categoryId) q = q.eq("category_id", categoryId);
+      const { data } = await q;
+      setPosts((data ?? []).map((p: any) => ({
         ...p,
-        profiles: Array.isArray(p.profiles)?p.profiles[0]:p.profiles,
-        forum_categories: Array.isArray(p.forum_categories)?p.forum_categories[0]:p.forum_categories,
-      }));
-      setPosts(normalized as Post[]);
-      const uniqueCats = Array.from(new Set(normalized.map((p:any)=>p.forum_categories?.name).filter(Boolean))) as string[];
-      setCats(uniqueCats);
-    } catch(e) { console.error(e); }
+        profiles:         Array.isArray(p.profiles)         ? p.profiles[0]         : p.profiles,
+        forum_categories: Array.isArray(p.forum_categories) ? p.forum_categories[0] : p.forum_categories,
+        cards:            Array.isArray(p.cards)            ? p.cards[0]            : p.cards,
+      })));
+    } catch {}
     setLoading(false);
   }
 
-  async function upvote(postId: string) {
-    const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
-    const post = posts.find(p=>p.id===postId);
-    if (!post) return;
-    await sb.from("forum_posts").update({upvotes:(post.upvotes??0)+1}).eq("id",postId);
-    setPosts(prev=>prev.map(p=>p.id===postId?{...p,upvotes:(p.upvotes??0)+1}:p));
+  async function upvote(postId: string, current: number) {
+    if (!user) { window.location.href = "/auth/login"; return; }
+    try {
+      await SB.from("forum_posts").update({ upvotes: current + 1 }).eq("id", postId);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, upvotes: p.upvotes + 1 } : p));
+    } catch {}
   }
 
-  let filtered = posts.filter(p => {
-    if (cat!=="alle" && p.forum_categories?.name!==cat) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      if (!p.title.toLowerCase().includes(q) && !(p.profiles?.username??'').toLowerCase().includes(q)) return false;
-    }
-    return true;
-  });
-
-  if (sort==="top")  filtered = [...filtered].sort((a,b)=>(b.upvotes??0)-(a.upvotes??0));
-  if (sort==="hot")  filtered = [...filtered].sort((a,b)=>{
-    const sA = (a.upvotes??0)*2 + (a.reply_count??0)*3;
-    const sB = (b.upvotes??0)*2 + (b.reply_count??0)*3;
-    return sB - sA;
-  });
-
-  const pinned  = filtered.filter(p=>p.is_pinned);
-  const regular = filtered.filter(p=>!p.is_pinned);
-  const sorted  = [...pinned, ...regular];
-
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1160,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
+    <div style={{ background: BG, minHeight: "100vh", color: TX }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap');
+        .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
+        .post-row { background:#111111; border:1px solid rgba(255,255,255,0.06); border-radius:16px; overflow:hidden; transition:border-color 0.2s,transform 0.2s; cursor:pointer; }
+        .post-row:hover { border-color:rgba(201,166,107,0.25); transform:translateY(-1px); }
+        .cat-btn { padding:9px 18px; border-radius:100px; border:1px solid transparent; font-size:13px; cursor:pointer; transition:all 0.2s; background:transparent; }
+        .cat-btn.active { background:rgba(201,166,107,0.1); border-color:rgba(201,166,107,0.3); color:#C9A66B; font-weight:600; }
+        .cat-btn:not(.active) { color:rgba(237,233,224,0.5); }
+        .cat-btn:not(.active):hover { color:#EDE9E0; background:rgba(255,255,255,0.04); }
+        .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:12px 24px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s; }
+        .btn-gold:hover { transform:scale(1.03); }
+        .vote-btn { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:0 20px; background:transparent; border:none; border-right:1px solid rgba(255,255,255,0.06); cursor:pointer; min-width:60px; flex-shrink:0; transition:background 0.15s; }
+        .vote-btn:hover { background:rgba(201,166,107,0.06); }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation:fadeUp 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+        .live-dot { width:7px; height:7px; border-radius:50%; background:#3db87a; animation:livePulse 2s ease-in-out infinite; }
+        @keyframes livePulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(61,184,122,0)} 50%{opacity:0.7;box-shadow:0 0 0 4px rgba(61,184,122,0.1)} }
+      `}</style>
 
-        <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:14,marginBottom:"clamp(28px,4vw,44px)"}}>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 56, display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 20 }}>
           <div>
-            <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-              <span style={{width:16,height:0.5,background:TX3}}/>Community
-            </div>
-            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(26px,4vw,46px)",fontWeight:200,letterSpacing:"-.055em",marginBottom:4}}>Forum</h1>
-            <p style={{fontSize:12,color:TX3}}>{loading?"Lädt…":`${posts.length} Beiträge`}</p>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: GD2, marginBottom: 16 }}>Community</div>
+            <h1 className="ph" style={{ fontSize: "clamp(36px,5vw,72px)", fontWeight: 500, color: TX, lineHeight: 1 }}>
+              Forum &<br/><span style={{ color: GOLD }}>Austausch</span>
+            </h1>
           </div>
-          <Link href="/forum/new" style={{padding:"10px 22px",borderRadius:12,background:G,color:"#0a0808",fontSize:13,fontWeight:400,textDecoration:"none",boxShadow:`0 2px 16px rgba(212,168,67,0.2)`,flexShrink:0}}>
-            + Beitrag
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className="live-dot"/>
+              <span style={{ fontSize: 11, color: TX2 }}>Live</span>
+            </div>
+            <button onClick={() => { if (!user) { window.location.href = "/auth/login"; return; } setShowNew(true); }}
+              className="btn-gold">+ Beitrag erstellen</button>
+          </div>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"1fr 240px",gap:16,alignItems:"start"}}>
-          <div>
-            {/* Toolbar */}
-            <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-              <div style={{position:"relative",flex:1,minWidth:200}}>
-                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Suchen…"
-                  style={{width:"100%",padding:"8px 8px 8px 30px",borderRadius:10,background:BG1,border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}/>
-              </div>
-              <div style={{display:"flex",gap:2,background:BG1,borderRadius:11,padding:3,border:`0.5px solid ${BR1}`}}>
-                {([["hot","🔥 Hot"],["neu","✦ Neu"],["top","▲ Top"]] as const).map(([s,l])=>(
-                  <button key={s} onClick={()=>setSort(s)} style={{
-                    padding:"5px 14px",borderRadius:8,fontSize:12,fontWeight:400,border:"none",cursor:"pointer",
-                    background:sort===s?BG2:"transparent",color:sort===s?TX1:TX3,transition:"all .15s",
-                  }}>{l}</button>
-                ))}
-              </div>
-            </div>
+        <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 48, alignItems: "start" }}>
 
-            {/* Category pills */}
-            <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              <button onClick={()=>setCat("alle")} style={{
-                padding:"5px 14px",borderRadius:8,fontSize:11,border:"none",cursor:"pointer",
-                background:cat==="alle"?BG3:"transparent",color:cat==="alle"?TX1:TX3,
-                outline:`1px solid ${cat==="alle"?BR2:BR1}`,transition:"all .15s",
-              }}>Alle</button>
-              {cats.map(c=>{
-                const cfg = CAT_CONFIG[c]??{color:G,icon:"●"};
-                const on = cat===c;
-                return (
-                  <button key={c} onClick={()=>setCat(c)} style={{
-                    padding:"5px 14px",borderRadius:8,fontSize:11,border:"none",cursor:"pointer",
-                    background:on?`${cfg.color}12`:"transparent",color:on?cfg.color:TX3,
-                    outline:`1px solid ${on?cfg.color+"30":BR1}`,transition:"all .15s",
-                  }}>{cfg.icon} {c}</button>
-                );
-              })}
-            </div>
-
-            {/* Posts */}
-            <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:18,overflow:"hidden"}}>
-              {loading ? (
-                Array.from({length:8}).map((_,i)=>(
-                  <div key={i} style={{height:76,borderBottom:`1px solid ${BR1}`,opacity:.3,animation:"pulse 1.5s ease-in-out infinite"}}/>
-                ))
-              ) : sorted.length===0 ? (
-                <div style={{padding:"48px",textAlign:"center"}}>
-                  <div style={{fontSize:14,color:TX3,marginBottom:12}}>Keine Beiträge gefunden.</div>
-                  <Link href="/forum/new" style={{fontSize:13,color:G,textDecoration:"none"}}>Ersten Beitrag erstellen →</Link>
-                </div>
-              ) : sorted.map(post=>(
-                <PostRow key={post.id} post={post} onUpvote={upvote}/>
+          {/* Sidebar */}
+          <div style={{ position: "sticky", top: 100 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 12 }}>Kategorien</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <button className={`cat-btn${catId === null ? " active" : ""}`} onClick={() => setCatId(null)}>
+                Alle Beiträge
+              </button>
+              {cats.map(cat => (
+                <button key={cat.id} className={`cat-btn${catId === cat.id ? " active" : ""}`} onClick={() => setCatId(cat.id)}>
+                  {cat.icon && <span style={{ marginRight: 6 }}>{cat.icon}</span>}
+                  {cat.name}
+                </button>
               ))}
+            </div>
+
+            {/* Stats */}
+            <div style={{ marginTop: 32, padding: "20px", background: BG2, borderRadius: 16, border: "1px solid rgba(201,166,107,0.1)" }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 12 }}>Community</div>
+              <div style={{ fontSize: 28, fontWeight: 500, color: GOLD, fontFamily: "'Playfair Display', serif" }}>{posts.length}</div>
+              <div style={{ fontSize: 12, color: TX2 }}>Aktive Beiträge</div>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div style={{display:"flex",flexDirection:"column",gap:12,position:"sticky",top:76}}>
-            <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,overflow:"hidden"}}>
-              <div style={{padding:"12px 16px",borderBottom:`0.5px solid ${BR1}`,fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Community</div>
-              <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
-                {[{l:"Beiträge",v:posts.length},{l:"Heute",v:posts.filter(p=>new Date(p.created_at)>new Date(Date.now()-86400000)).length},{l:"Kategorien",v:cats.length}].map(s=>(
-                  <div key={s.l} style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:12,color:TX3}}>{s.l}</span>
-                    <span style={{fontSize:13,color:TX1,fontFamily:"var(--font-mono)"}}>{s.v}</span>
-                  </div>
+          {/* Posts */}
+          <div>
+            {loading ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} style={{ height: 90, background: BG2, borderRadius: 16, opacity: 0.4, animation: "fadeUp 1.5s ease-in-out infinite" }}/>
                 ))}
               </div>
-            </div>
-
-            <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,overflow:"hidden"}}>
-              <div style={{padding:"12px 16px",borderBottom:`0.5px solid ${BR1}`,fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Kategorien</div>
-              <div style={{padding:"8px 0"}}>
-                {cats.map(c=>{
-                  const cfg = CAT_CONFIG[c]??{color:G,icon:"●"};
-                  const count = posts.filter(p=>p.forum_categories?.name===c).length;
+            ) : posts.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "80px 20px" }}>
+                <div style={{ fontSize: 48, opacity: 0.15, marginBottom: 16, color: GOLD }}>◉</div>
+                <div style={{ fontSize: 18, color: TX2, marginBottom: 24 }}>Noch keine Beiträge</div>
+                <button onClick={() => setShowNew(true)} className="btn-gold">Ersten Beitrag erstellen</button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {posts.map((post, i) => {
+                  const imgSrc = post.cards?.image_url?.includes(".") ? post.cards.image_url : (post.cards?.image_url ? post.cards.image_url + "/low.webp" : null);
                   return (
-                    <button key={c} onClick={()=>setCat(cat===c?"alle":c)} style={{
-                      width:"100%",display:"flex",alignItems:"center",gap:10,
-                      padding:"8px 16px",background:"transparent",border:"none",cursor:"pointer",
-                    }}
-                    onMouseEnter={e=>(e.currentTarget.style.background=BG2)}
-                    onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
-                      <span style={{width:6,height:6,borderRadius:"50%",background:cfg.color,flexShrink:0}}/>
-                      <span style={{flex:1,textAlign:"left",fontSize:12,color:cat===c?cfg.color:TX2}}>{c}</span>
-                      <span style={{fontSize:10,color:TX3,fontFamily:"var(--font-mono)"}}>{count}</span>
-                    </button>
+                    <div key={post.id} className="post-row fade-up" style={{ animationDelay: `${i * 30}ms`, display: "flex" }}>
+                      {/* Vote */}
+                      <button className="vote-btn" onClick={() => upvote(post.id, post.upvotes)}>
+                        <span style={{ fontSize: 12, color: GD2 }}>▲</span>
+                        <span style={{ fontFamily: "monospace", fontSize: 14, fontWeight: 600, color: TX }}>{post.upvotes}</span>
+                      </button>
+
+                      {/* Content */}
+                      <Link href={`/forum/post/${post.id}`} style={{ textDecoration: "none", flex: 1, padding: "16px 20px", display: "flex", gap: 14 }}>
+                        {imgSrc && (
+                          <div style={{ width: 40, height: 56, borderRadius: 6, overflow: "hidden", background: BG3, flexShrink: 0, border: "1px solid rgba(255,255,255,0.06)" }}>
+                            <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }}/>
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
+                            {post.forum_categories && (
+                              <span style={{ padding: "2px 10px", borderRadius: 100, background: "rgba(201,166,107,0.08)", color: GD2, fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid rgba(201,166,107,0.15)" }}>
+                                {post.forum_categories.name}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: TX, marginBottom: 4, lineHeight: 1.3 }}>{post.title}</div>
+                          {post.body && (
+                            <div style={{ fontSize: 13, color: TX2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.6 }}>
+                              {post.body}
+                            </div>
+                          )}
+                          <div style={{ marginTop: 8, display: "flex", gap: 12, fontSize: 11, color: "rgba(237,233,224,0.35)" }}>
+                            <span>@{post.profiles?.username ?? "Anonym"}</span>
+                            <span>vor {timeAgo(post.created_at)}</span>
+                            {post.cards && <span style={{ color: GD2 }}>◎ {post.cards.name_de || post.cards.name}</span>}
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
                   );
                 })}
               </div>
-            </div>
-
-            <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,padding:"14px 16px"}}>
-              <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3,marginBottom:10}}>Quick Links</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                {[{href:"/forum/new",label:"+ Beitrag erstellen",c:G},{href:"/marketplace",label:"◈ Marktplatz",c:TX3},{href:"/scanner",label:"◎ KI-Scanner",c:TX3},{href:"/leaderboard",label:"▲ Leaderboard",c:TX3}].map(l=>(
-                  <Link key={l.href} href={l.href} style={{fontSize:12,color:l.c,textDecoration:"none",padding:"3px 0"}}>{l.label}</Link>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
-      <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:.5}}`}</style>
+
+      {showNew && <NewPostModal cats={cats} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); loadPosts(catId); }}/>}
+    </div>
+  );
+}
+
+function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: () => void; onCreated: () => void }) {
+  const [title, setTitle] = useState("");
+  const [body,  setBody]  = useState("");
+  const [catId, setCatId] = useState<string | null>(cats[0]?.id ?? null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit() {
+    if (!title.trim()) { setError("Bitte einen Titel eingeben."); return; }
+    setLoading(true);
+    try {
+      const { data: { session } } = await SB.auth.getSession();
+      if (!session) { window.location.href = "/auth/login"; return; }
+      const { error: e } = await SB.from("forum_posts").insert({
+        user_id: session.user.id, title: title.trim(),
+        body: body.trim() || null, category_id: catId,
+        upvotes: 0, is_deleted: false,
+      });
+      if (e) { setError(e.message); setLoading(false); return; }
+      onCreated();
+    } catch (e: any) { setError(e.message); }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "#111111", borderRadius: 24, width: "100%", maxWidth: 540, padding: 36, position: "relative", border: "1px solid rgba(201,166,107,0.2)" }}>
+        <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.4),transparent)" }}/>
+        <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 22, cursor: "pointer", color: TX2 }}>×</button>
+        <h2 className="ph" style={{ fontSize: 28, fontWeight: 500, marginBottom: 24, color: TX }}>Neuer Beitrag</h2>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Kategorie</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {cats.map(cat => (
+              <button key={cat.id} onClick={() => setCatId(cat.id)} style={{
+                padding: "7px 16px", borderRadius: 100, fontSize: 12, fontWeight: 500, cursor: "pointer",
+                border: "1px solid", transition: "all 0.15s",
+                borderColor: catId === cat.id ? "rgba(201,166,107,0.4)" : "rgba(255,255,255,0.1)",
+                background: catId === cat.id ? "rgba(201,166,107,0.1)" : "transparent",
+                color: catId === cat.id ? GOLD : TX2,
+              }}>{cat.icon && cat.icon + " "}{cat.name}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Titel</div>
+          <input value={title} onChange={e => setTitle(e.target.value)} maxLength={120}
+            placeholder="Worum geht es?"
+            style={{ width: "100%", padding: "14px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: TX, fontSize: 15, outline: "none", fontFamily: "inherit" }}/>
+        </div>
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Inhalt</div>
+          <textarea value={body} onChange={e => setBody(e.target.value)} rows={4}
+            placeholder="Schreib mehr dazu…"
+            style={{ width: "100%", padding: "14px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: TX, fontSize: 15, outline: "none", resize: "vertical", minHeight: 100, fontFamily: "inherit" }}/>
+        </div>
+
+        {error && <div style={{ marginBottom: 16, fontSize: 13, color: "#dc4a5a" }}>{error}</div>}
+
+        <button onClick={submit} disabled={loading || !title.trim()}
+          className="btn-gold" style={{ width: "100%", justifyContent: "center", opacity: loading || !title.trim() ? 0.5 : 1 }}>
+          {loading ? "Veröffentliche…" : "Beitrag veröffentlichen"}
+        </button>
+      </div>
     </div>
   );
 }
