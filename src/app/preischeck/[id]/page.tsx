@@ -2,296 +2,306 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 
-const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
-const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
+const GOLD = "#C9A66B";
+const BG   = "#0A0A0A";
+const BG2  = "#111111";
+const BG3  = "#1A1A1A";
+const TX   = "#EDE9E0";
+const TX2  = "rgba(237,233,224,0.7)";
+const GD2  = "rgba(201,166,107,0.7)";
 
-const TYPE_COLOR:Record<string,string>={Fire:"#F97316",Water:"#38BDF8",Grass:"#4ADE80",Lightning:"#D4A843",Psychic:"#A855F7",Fighting:"#EF4444",Darkness:"#6B7280",Metal:"#9CA3AF",Dragon:"#7C3AED",Colorless:"#CBD5E1"};
-const TYPE_DE:Record<string,string>={Fire:"Feuer",Water:"Wasser",Grass:"Pflanze",Lightning:"Elektro",Psychic:"Psycho",Fighting:"Kampf",Darkness:"Finsternis",Metal:"Metall",Dragon:"Drache",Colorless:"Farblos"};
-
-function PriceChart({avg7,avg30,market,history}:{avg7:number|null;avg30:number|null;market:number|null;history?:{price_market:number;recorded_at:string}[]}) {
-  if (!market) return null;
-  let pts:number[];
-  if (history && history.length>=3) {
-    pts = history.map(h=>h.price_market).reverse();
-  } else {
-    const now=market;
-    const p30=avg30??market*0.88, p7=avg7??market*0.96;
-    pts=[p30,p30*1.02,p30*0.98,p30*1.04,p30*1.01,p7*0.97,p7,p7*1.02,p7*0.99,p7*1.01,now*0.98,now*1.01,now*0.99,now];
-  }
-  const min=Math.min(...pts)*0.97, max=Math.max(...pts)*1.03, range=max-min;
-  const W=600, H=80;
-  const xStep=W/(pts.length-1);
-  const toY=(v:number)=>H-((v-min)/range)*H;
-  const pathD=pts.map((v,i)=>`${i===0?"M":"L"}${i*xStep},${toY(v)}`).join(" ");
-  const trend7=avg7?((market-avg7)/avg7*100):null;
-  const trend30=avg30?((market-avg30)/avg30*100):null;
-  return (
-    <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:18,padding:"18px",marginBottom:12}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:14}}>
-        <div style={{fontSize:10,fontWeight:500,color:TX3,textTransform:"uppercase",letterSpacing:".08em"}}>Preisverlauf</div>
-        <div style={{display:"flex",gap:16}}>
-          {trend7!==null&&<div style={{textAlign:"right"}}><div style={{fontSize:9,color:TX3,marginBottom:2}}>7 Tage</div><div style={{fontSize:12,fontWeight:500,color:trend7>=0?GREEN:RED}}>{trend7>=0?"+":""}{trend7.toFixed(1)}%</div></div>}
-          {trend30!==null&&<div style={{textAlign:"right"}}><div style={{fontSize:9,color:TX3,marginBottom:2}}>30 Tage</div><div style={{fontSize:12,fontWeight:500,color:trend30>=0?GREEN:RED}}>{trend30>=0?"+":""}{trend30.toFixed(1)}%</div></div>}
-        </div>
-      </div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{display:"block",height:64}}>
-        <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={G} stopOpacity=".2"/><stop offset="100%" stopColor={G} stopOpacity="0"/></linearGradient></defs>
-        <path d={pathD+` L${(pts.length-1)*xStep},${H} L0,${H}Z`} fill="url(#cg)"/>
-        <path d={pathD} fill="none" stroke={G} strokeWidth="1.8" opacity=".8"/>
-        <circle cx={(pts.length-1)*xStep} cy={toY(market)} r="3" fill={G}/>
-      </svg>
-    </div>
-  );
-}
+const SB = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function CardDetailPage() {
-  const {id} = useParams() as {id:string};
-  const [card, setCard] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [inColl, setInColl] = useState(false);
-  const [inWish, setInWish] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [adding, setAdding] = useState(false);
-  const [priceHistory,  setPriceHistory]  = useState<any[]>([]);
-  const [forumPosts,    setForumPosts]    = useState<any[]>([]);
-  const [alert,         setAlert]         = useState<any>(null);
-  const [alertPrice,    setAlertPrice]    = useState("");
-  const [alertSaved,    setAlertSaved]    = useState(false);
-  const [showAlertForm, setShowAlertForm] = useState(false);
+  const { id } = useParams();
+  const [card,     setCard]     = useState<any>(null);
+  const [listings, setListings] = useState<any[]>([]);
+  const [similar,  setSimilar]  = useState<any[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [added,    setAdded]    = useState(false);
+  const [wished,   setWished]   = useState(false);
 
-  useEffect(()=>{
-    let cancelled = false;
+  useEffect(() => {
+    if (!id) return;
     async function load() {
-      const sb = createClient();
-
-      // Load card
-      const { data: cardData } = await sb.from("cards")
-        .select("id,name,name_de,set_id,number,types,rarity,image_url,price_market,price_low,price_avg7,price_avg30,hp,category,stage,illustrator,regulation_mark,is_holo,is_reverse_holo")
-        .eq("id", id).single();
-      if (cancelled) return;
-      setCard(cardData);
-      setLoading(false);
-
-      // Load price history
-      const { data: hist } = await sb.from("price_history")
-        .select("price_market,recorded_at")
-        .eq("card_id", id)
-        .order("recorded_at", {ascending:false})
-        .limit(30);
-      if (!cancelled) setPriceHistory(hist ?? []);
-
-      // Load forum posts (needs sprint3.sql card_id column)
-      try {
-        const { data: posts } = await sb.from("forum_posts")
-          .select("id,title,upvotes,created_at,profiles(username)")
-          .eq("card_id", id)
-          .eq("is_deleted", false)
-          .order("created_at", {ascending:false})
-          .limit(5);
-        if (!cancelled && posts) setForumPosts(posts.map((p:any)=>({
-          ...p,
-          profiles: Array.isArray(p.profiles) ? p.profiles[0] : p.profiles,
-        })));
-      } catch(_) {}
-
-      // Load auth + collection/wishlist state
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session?.user || cancelled) return;
-      setUser(session.user);
-      // Load price alert for this card
-      const alertRes = await fetch(`/api/price-alerts?card_id=${id}`, {
-        headers: { "Authorization": `Bearer ${session.access_token}` }
-      });
-      const alertData = await alertRes.json();
-      if (!cancelled && alertData.alert) {
-        setAlert(alertData.alert);
-        setAlertPrice(alertData.alert.target_price?.toString() ?? "");
-      }
-      const [col, wish] = await Promise.all([
-        sb.from("user_collection").select("id").eq("user_id", session.user.id).eq("card_id", id).maybeSingle(),
-        sb.from("user_wishlist").select("id").eq("user_id", session.user.id).eq("card_id", id).maybeSingle(),
+      const [{ data: c }, { data: l }] = await Promise.all([
+        SB.from("cards").select("id,name,name_de,name_en,set_id,number,hp,types,rarity,is_holo,image_url,price_market,price_low,price_avg7,price_avg30,attacks,abilities,illustrator,regulation_mark,category,stage,scan_count").eq("id", id as string).single(),
+        SB.from("marketplace_listings")
+          .select("id,type,price,condition,profiles!marketplace_listings_user_id_fkey(username)")
+          .eq("card_id", id as string).eq("is_active", true).order("price", { ascending: true }).limit(8),
       ]);
-      if (!cancelled) {
-        setInColl(!!col.data);
-        setInWish(!!wish.data);
+      setCard(c);
+      setListings((l ?? []).map((x: any) => ({ ...x, profiles: Array.isArray(x.profiles) ? x.profiles[0] : x.profiles })));
+
+      // Similar cards from same set
+      if (c?.set_id) {
+        const { data: sim } = await SB.from("cards")
+          .select("id,name,name_de,image_url,price_market,number")
+          .eq("set_id", c.set_id).not("id","eq",id as string)
+          .not("price_market","is",null).order("price_market", { ascending: false }).limit(6);
+        setSimilar(sim ?? []);
       }
+      setLoading(false);
     }
     load();
-    return () => { cancelled = true; };
-  },[id]);
+  }, [id]);
 
-  async function saveAlert() {
-    if (!alertPrice || !user) return;
-    const sb = createClient();
-    const {data:{session}} = await sb.auth.getSession();
-    const h:Record<string,string> = {"Content-Type":"application/json"};
-    if (session?.access_token) h["Authorization"] = `Bearer ${session.access_token}`;
-    const res = await fetch("/api/price-alerts", {
-      method: "POST", headers: h,
-      body: JSON.stringify({ card_id: id, target_price: parseFloat(alertPrice) }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setAlert(data.alert);
-      setAlertSaved(true);
-      setShowAlertForm(false);
-      setTimeout(() => setAlertSaved(false), 3000);
-    }
+  async function addToPortfolio() {
+    const { data: { user } } = await SB.auth.getUser();
+    if (!user) { window.location.href = "/auth/login"; return; }
+    try {
+      await SB.from("user_collection").upsert({ user_id: user.id, card_id: id, quantity: 1, condition: "NM" }, { onConflict: "user_id,card_id" });
+      setAdded(true);
+    } catch {}
   }
 
-  async function deleteAlert() {
-    if (!user) return;
-    const sb = createClient();
-    const {data:{session}} = await sb.auth.getSession();
-    const h:Record<string,string> = {};
-    if (session?.access_token) h["Authorization"] = `Bearer ${session.access_token}`;
-    await fetch(`/api/price-alerts?card_id=${id}`, { method: "DELETE", headers: h });
-    setAlert(null); setAlertPrice(""); setShowAlertForm(false);
+  async function addToWishlist() {
+    const { data: { user } } = await SB.auth.getUser();
+    if (!user) { window.location.href = "/auth/login"; return; }
+    try {
+      await SB.from("user_wishlist").upsert({ user_id: user.id, card_id: id }, { onConflict: "user_id,card_id" });
+      setWished(true);
+    } catch {}
   }
 
-  async function toggleCollection(){
-    if(!user||!card) return;
-    setAdding(true);
-    const sb=createClient();
-    if(inColl){await sb.from("user_collection").delete().eq("user_id",user.id).eq("card_id",id);setInColl(false);}
-    else{await sb.from("user_collection").insert({user_id:user.id,card_id:id,quantity:1,condition:"NM"});setInColl(true);}
-    setAdding(false);
-  }
+  if (loading) return <div style={{ background: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: GD2 }}>Lade…</div>;
+  if (!card)   return <div style={{ background: BG, minHeight: "100vh", display: "flex", flexDirection:"column", alignItems: "center", justifyContent: "center", gap:16 }}><div style={{color:TX2}}>Karte nicht gefunden</div><Link href="/preischeck" style={{color:GOLD}}>← Zurück</Link></div>;
 
-  async function toggleWishlist(){
-    if(!user||!card) return;
-    setAdding(true);
-    const sb=createClient();
-    if(inWish){await sb.from("user_wishlist").delete().eq("user_id",user.id).eq("card_id",id);setInWish(false);}
-    else{await sb.from("user_wishlist").insert({user_id:user.id,card_id:id});setInWish(true);}
-    setAdding(false);
-  }
-
-  if(loading) return <div style={{color:TX1,minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontSize:14,color:TX3}}>Lädt…</div></div>;
-  if(!card) return <div style={{color:TX1,minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{fontSize:14,color:TX3,marginBottom:12}}>Karte nicht gefunden.</div><Link href="/preischeck" style={{color:G,textDecoration:"none",fontSize:13}}>← Zurück</Link></div></div>;
-
-  const type=card.types?.[0];
-  const typeColor=type?(TYPE_COLOR[type]??TX3):TX3;
+  const imgSrc  = card.image_url ? (card.image_url.includes(".") ? card.image_url : card.image_url + "/high.webp") : null;
+  const pct30   = card.price_avg30 && card.price_market ? ((card.price_market - card.price_avg30) / card.price_avg30 * 100) : null;
+  const up30    = pct30 !== null && pct30 >= 0;
 
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1000,margin:"0 auto",padding:"clamp(40px,6vw,72px) clamp(16px,3vw,28px)"}}>
-        <Link href="/preischeck" style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,color:TX3,textDecoration:"none",marginBottom:28}}>← Zurück</Link>
-        <div style={{display:"grid",gridTemplateColumns:"clamp(200px,28vw,280px) 1fr",gap:24,alignItems:"start"}}>
-          <div>
-            <div style={{background:BG2,borderRadius:18,overflow:"hidden",border:`0.5px solid ${BR2}`,aspectRatio:"2/3",display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-              {card.image_url?<img src={card.image_url} alt={card.name_de??card.name} style={{width:"100%",height:"100%",objectFit:"contain",padding:12}}/>:<div style={{fontSize:48,opacity:.1}}>◈</div>}
-              {(card.is_holo||card.is_reverse_holo)&&<div style={{position:"absolute",top:10,right:10,padding:"2px 8px",borderRadius:5,background:G08,color:G,fontSize:9,fontWeight:600}}>{card.is_reverse_holo?"REV. HOLO":"HOLO"}</div>}
-            </div>
-            <div style={{display:"flex",gap:8,marginTop:12}}>
-              <button onClick={toggleCollection} disabled={!user||adding} style={{flex:1,padding:"10px",borderRadius:11,fontSize:12,border:"none",cursor:user?"pointer":"default",background:inColl?G08:"rgba(255,255,255,0.04)",color:inColl?G:TX3,outline:`0.5px solid ${inColl?G18:BR1}`,transition:"all .2s"}}>
-                {inColl?"✓ In Sammlung":"+ Sammlung"}
-              </button>
-              <button onClick={toggleWishlist} disabled={!user||adding} style={{flex:1,padding:"10px",borderRadius:11,fontSize:12,border:"none",cursor:user?"pointer":"default",background:inWish?"rgba(220,74,90,0.08)":"rgba(255,255,255,0.04)",color:inWish?RED:TX3,outline:`0.5px solid ${inWish?"rgba(220,74,90,0.2)":BR1}`,transition:"all .2s"}}>
-                {inWish?"♥ Wunschliste":"♡ Wunschliste"}
-              </button>
-            </div>
-            {!user&&<div style={{fontSize:10,color:TX3,textAlign:"center",marginTop:8}}><Link href="/auth/login" style={{color:G,textDecoration:"none"}}>Anmelden</Link> zum Sammeln</div>}
+    <div style={{ background: BG, minHeight: "100vh", color: TX }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap');
+        .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
+        .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s; width:100%; justify-content:center; }
+        .btn-gold:hover { transform:scale(1.02); }
+        .btn-outline { display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border:1px solid rgba(201,166,107,0.3); color:#C9A66B; border-radius:100px; background:transparent; font-size:14px; cursor:pointer; text-decoration:none; transition:all 0.2s; width:100%; justify-content:center; }
+        .btn-outline:hover { background:#C9A66B; color:#0A0A0A; }
+        .listing-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:#1A1A1A; border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.15s; }
+        .listing-row:hover { background:#1F1F1F; }
+        .listing-row:last-child { border-bottom:none; }
+        .sim-card { background:#111111; border:1px solid rgba(255,255,255,0.06); border-radius:16px; overflow:hidden; text-decoration:none; display:block; transition:transform 0.2s,border-color 0.2s; }
+        .sim-card:hover { transform:translateY(-4px); border-color:rgba(201,166,107,0.25); }
+        .attack-row { padding:16px 18px; background:#1A1A1A; border-bottom:1px solid rgba(255,255,255,0.05); }
+        .attack-row:last-child { border-bottom:none; }
+        .stat-cell { padding:16px; background:#111111; border-right:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05); }
+        .breadcrumb-link { color:rgba(237,233,224,0.4); text-decoration:none; font-size:13px; transition:color 0.15s; }
+        .breadcrumb-link:hover { color:#C9A66B; }
+      `}</style>
 
-            {/* Preisalarm */}
-            {user&&(
-              <div style={{marginTop:10}}>
-                {alert ? (
-                  <div style={{padding:"8px 12px",borderRadius:10,background:"rgba(212,168,67,0.06)",border:"0.5px solid rgba(212,168,67,0.18)",display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:11,color:G,flex:1}}>🔔 Alarm bei {parseFloat(alertPrice).toLocaleString("de-DE",{minimumFractionDigits:2})} €</span>
-                    <button onClick={deleteAlert} style={{fontSize:10,color:"#62626f",background:"transparent",border:"none",cursor:"pointer"}}>× entfernen</button>
-                  </div>
-                ) : showAlertForm ? (
-                  <div style={{display:"flex",gap:6}}>
-                    <div style={{position:"relative",flex:1}}>
-                      <input value={alertPrice} onChange={e=>setAlertPrice(e.target.value)}
-                        type="number" placeholder={card?.price_market?.toFixed(2)??"0.00"} min="0" step="0.50"
-                        style={{width:"100%",padding:"8px 32px 8px 10px",borderRadius:9,background:"rgba(0,0,0,0.3)",border:"0.5px solid rgba(255,255,255,0.085)",color:TX1,fontSize:12,outline:"none"}}/>
-                      <span style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",fontSize:10,color:TX3}}>€</span>
-                    </div>
-                    <button onClick={saveAlert} disabled={!alertPrice} style={{padding:"8px 12px",borderRadius:9,background:alertPrice?G:"rgba(255,255,255,0.04)",color:alertPrice?"#0a0808":TX3,border:"none",cursor:alertPrice?"pointer":"default",fontSize:11}}>🔔</button>
-                    <button onClick={()=>setShowAlertForm(false)} style={{padding:"8px 10px",borderRadius:9,background:"transparent",color:TX3,border:"0.5px solid rgba(255,255,255,0.045)",cursor:"pointer",fontSize:11}}>×</button>
-                  </div>
-                ) : (
-                  <button onClick={()=>{setShowAlertForm(true);if(card?.price_market)setAlertPrice((card.price_market*0.9).toFixed(2));}} style={{width:"100%",padding:"8px",borderRadius:9,background:"transparent",color:TX3,border:"0.5px solid rgba(255,255,255,0.045)",cursor:"pointer",fontSize:11,transition:"all .15s"}}
-                  onMouseEnter={e=>{(e.currentTarget as any).style.color=G;(e.currentTarget as any).style.borderColor="rgba(212,168,67,0.18)"}}
-                  onMouseLeave={e=>{(e.currentTarget as any).style.color=TX3;(e.currentTarget as any).style.borderColor="rgba(255,255,255,0.045)"}}>
-                    🔔 Preisalarm setzen
-                  </button>
-                )}
-                {alertSaved&&<div style={{fontSize:10,color:GREEN,textAlign:"center",marginTop:4}}>✓ Alarm gespeichert</div>}
-              </div>
-            )}
-          </div>
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
+
+        {/* Breadcrumb */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 48, fontSize: 13, color: "rgba(237,233,224,0.4)" }}>
+          <Link href="/preischeck" className="breadcrumb-link">Preischeck</Link>
+          <span>›</span>
+          <Link href={`/sets/${card.set_id}`} className="breadcrumb-link">{card.set_id?.toUpperCase()}</Link>
+          <span>›</span>
+          <span style={{ color: TX2 }}>{card.name_de || card.name}</span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: 64, alignItems: "start" }}>
+
+          {/* Left — Card */}
           <div>
-            {type&&<div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:12,padding:"4px 12px",borderRadius:8,background:`${typeColor}12`,border:`0.5px solid ${typeColor}25`}}><div style={{width:7,height:7,borderRadius:"50%",background:typeColor}}/><span style={{fontSize:11,fontWeight:500,color:typeColor}}>{TYPE_DE[type]??type}</span></div>}
-            <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(22px,4vw,38px)",fontWeight:200,letterSpacing:"-.04em",marginBottom:6,lineHeight:1.1}}>{card.name_de||card.name}</h1>
-            {card.name_de&&card.name_de!==card.name&&<div style={{fontSize:13,color:TX3,marginBottom:14}}>{card.name}</div>}
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
-              <span style={{fontSize:11,color:TX3,fontFamily:"var(--font-mono)"}}>{card.set_id?.toUpperCase()}</span>
-              <span style={{color:TX3}}>·</span><span style={{fontSize:11,color:TX3}}>#{card.number??"-"}</span>
-              {card.rarity&&<><span style={{color:TX3}}>·</span><span style={{fontSize:11,color:TX2}}>{card.rarity}</span></>}
-            </div>
-            <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,padding:"16px 18px",marginBottom:12}}>
-              <div style={{fontSize:9,color:TX3,textTransform:"uppercase",letterSpacing:".1em",marginBottom:6}}>Marktpreis</div>
-              <div style={{display:"flex",alignItems:"baseline",gap:12,flexWrap:"wrap"}}>
-                <div style={{fontFamily:"var(--font-mono)",fontSize:"clamp(28px,5vw,48px)",fontWeight:300,color:G,letterSpacing:"-.05em",lineHeight:1}}>
-                  {card.price_market?.toLocaleString("de-DE",{minimumFractionDigits:2})} €
+            {/* Card image */}
+            <div style={{
+              background: BG2, borderRadius: 24, overflow: "hidden",
+              border: "1px solid rgba(201,166,107,0.15)",
+              boxShadow: "0 40px 80px rgba(0,0,0,0.6)",
+              marginBottom: 24, position: "relative",
+            }}>
+              <div style={{ padding: "24px 24px 0", background: BG3, display: "flex", justifyContent: "center" }}>
+                <div style={{ width: "75%", aspectRatio: "3/4" }}>
+                  {imgSrc ? (
+                    <img src={imgSrc} alt={card.name_de || card.name}
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, opacity: 0.1 }}>◎</div>
+                  )}
                 </div>
               </div>
-              {(card.price_low||card.price_avg30)&&(
-                <div style={{display:"flex",gap:16,marginTop:10,flexWrap:"wrap"}}>
-                  {card.price_low&&<div><div style={{fontSize:9,color:TX3,marginBottom:2}}>Niedrigster</div><div style={{fontSize:12,fontFamily:"var(--font-mono)",color:TX2}}>{card.price_low.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div></div>}
-                  {card.price_avg30&&<div><div style={{fontSize:9,color:TX3,marginBottom:2}}>30T-Schnitt</div><div style={{fontSize:12,fontFamily:"var(--font-mono)",color:TX2}}>{card.price_avg30.toLocaleString("de-DE",{minimumFractionDigits:2})} €</div></div>}
+              {/* Gold bottom glow */}
+              <div style={{ height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.3),transparent)" }}/>
+              <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontSize: 11, color: "rgba(237,233,224,0.3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  {card.set_id?.toUpperCase()} · #{card.number}
                 </div>
+                {card.scan_count > 0 && (
+                  <div style={{ fontSize: 10, color: GD2 }}>⊙ {card.scan_count}× gescannt</div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button onClick={addToPortfolio} className="btn-gold" disabled={added}
+                style={{ opacity: added ? 0.8 : 1 }}>
+                {added ? "✓ Zur Sammlung hinzugefügt" : "+ Zu meiner Sammlung"}
+              </button>
+              <button onClick={addToWishlist} className="btn-outline" disabled={wished}
+                style={{ opacity: wished ? 0.8 : 1, border: wished ? "1px solid rgba(201,166,107,0.5)" : undefined }}>
+                {wished ? "✓ Auf Wunschliste" : "◉ Zur Wunschliste"}
+              </button>
+              <Link href={`/marketplace?sell=${card.id}`} style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "13px 24px", borderRadius: 100,
+                border: "1px solid rgba(255,255,255,0.1)",
+                color: TX2, fontSize: 14, textDecoration: "none",
+                transition: "border-color 0.2s, color 0.2s",
+              }}>
+                Inserieren →
+              </Link>
+            </div>
+          </div>
+
+          {/* Right — Info */}
+          <div>
+            {/* Rarity / type */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+              {card.rarity && (
+                <span style={{ padding: "4px 12px", borderRadius: 100, background: "rgba(201,166,107,0.1)", color: GOLD, fontSize: 11, fontWeight: 600, border: "1px solid rgba(201,166,107,0.2)" }}>
+                  {card.rarity}
+                </span>
+              )}
+              {card.is_holo && (
+                <span style={{ padding: "4px 12px", borderRadius: 100, background: "rgba(255,255,255,0.05)", color: TX2, fontSize: 11 }}>
+                  Holo
+                </span>
               )}
             </div>
-            <PriceChart avg7={card.price_avg7} avg30={card.price_avg30} market={card.price_market} history={priceHistory}/>
-            <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:16,overflow:"hidden",marginBottom:12}}>
-              <div style={{padding:"10px 14px",borderBottom:`0.5px solid ${BR1}`,fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>Details</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
-                {[["Typ",card.types?.map((t:string)=>TYPE_DE[t]??t).join(", ")??"—"],["KP",card.hp??"—"],["Kategorie",card.category??"—"],["Stage",card.stage??"—"],["Illustrator",card.illustrator??"—"],["Regulation",card.regulation_mark??"—"]].map(([l,v],i)=>(
-                  <div key={l} style={{padding:"10px 14px",borderBottom:`0.5px solid ${BR1}`,borderRight:i%2===0?`0.5px solid ${BR1}`:undefined}}>
-                    <div style={{fontSize:9,color:TX3,textTransform:"uppercase",letterSpacing:".06em",marginBottom:2}}>{l}</div>
-                    <div style={{fontSize:12,color:TX1}}>{v}</div>
+
+            <h1 className="ph" style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 500, color: TX, marginBottom: 8, lineHeight: 1 }}>
+              {card.name_de || card.name}
+            </h1>
+            {card.name_de && card.name !== card.name_de && (
+              <div style={{ fontSize: 16, color: TX2, marginBottom: 32 }}>{card.name}</div>
+            )}
+
+            {/* Price block */}
+            <div style={{ background: BG2, borderRadius: 20, padding: "28px", marginBottom: 32, border: "1px solid rgba(201,166,107,0.12)", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.3),transparent)" }}/>
+              <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 12 }}>Marktwert</div>
+              <div className="ph" style={{ fontSize: "clamp(40px,5vw,64px)", fontWeight: 500, color: GOLD, lineHeight: 1, marginBottom: 16 }}>
+                {card.price_market ? card.price_market.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " €" : "–"}
+              </div>
+              <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                {card.price_low && (
+                  <div>
+                    <div style={{ fontSize: 10, color: GD2, marginBottom: 4, letterSpacing: "0.1em", textTransform: "uppercase" }}>Ab</div>
+                    <div style={{ fontFamily: "monospace", fontSize: 16, color: TX }}>{card.price_low.toFixed(2)} €</div>
                   </div>
-                ))}
+                )}
+                {card.price_avg7 && (
+                  <div>
+                    <div style={{ fontSize: 10, color: GD2, marginBottom: 4, letterSpacing: "0.1em", textTransform: "uppercase" }}>7-Tage-Ø</div>
+                    <div style={{ fontFamily: "monospace", fontSize: 16, color: TX }}>{card.price_avg7.toFixed(2)} €</div>
+                  </div>
+                )}
+                {pct30 !== null && (
+                  <div>
+                    <div style={{ fontSize: 10, color: GD2, marginBottom: 4, letterSpacing: "0.1em", textTransform: "uppercase" }}>30-Tage</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: up30 ? "#3db87a" : "#dc4a5a" }}>
+                      {up30 ? "▲" : "▼"} {Math.abs(pct30).toFixed(1)}%
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <Link href="/marketplace" style={{display:"block",padding:"11px 14px",borderRadius:12,background:G08,border:`0.5px solid ${G18}`,color:TX1,textDecoration:"none",fontSize:13,transition:"all .2s",marginBottom:10}}>
-              <span style={{color:G}}>◈</span> Angebote auf dem Marktplatz →
-            </Link>
 
-            {/* Forum discussions */}
-            {forumPosts.length > 0 && (
-              <div style={{background:BG1,border:`0.5px solid ${BR2}`,borderRadius:14,overflow:"hidden"}}>
-                <div style={{padding:"10px 14px",borderBottom:`0.5px solid ${BR1}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>
-                    💬 {forumPosts.length} Diskussion{forumPosts.length!==1?"en":""}
-                  </div>
-                  <Link href="/forum" style={{fontSize:11,color:TX3,textDecoration:"none"}}>Forum →</Link>
+            {/* Stats grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 32 }}>
+              {[
+                { l: "HP",        v: card.hp || "–"              },
+                { l: "Typ",       v: card.types?.join(", ") || "–" },
+                { l: "Stufe",     v: card.stage || "–"            },
+                { l: "Kategorie", v: card.category || "–"         },
+                { l: "Illustrator", v: card.illustrator || "–"    },
+                { l: "Regulation",  v: card.regulation_mark || "–" },
+              ].map(({ l, v }, i) => (
+                <div key={l} className="stat-cell" style={{ borderRight: (i+1)%3===0 ? "none" : undefined, borderBottom: i>2 ? "none" : undefined }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 4 }}>{l}</div>
+                  <div style={{ fontSize: 13, color: TX, fontWeight: 500 }}>{v}</div>
                 </div>
-                {forumPosts.map((post:any,i:number)=>(
-                  <Link key={post.id} href={`/forum/post/${post.id}`} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 14px",borderBottom:i<forumPosts.length-1?`0.5px solid ${BR1}`:undefined,textDecoration:"none"}}>
-                    <div style={{flex:1,fontSize:12,color:TX2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{post.title}</div>
-                    <div style={{fontSize:10,color:TX3,flexShrink:0}}>↑{post.upvotes}</div>
-                  </Link>
-                ))}
-                <Link href="/forum/new" style={{display:"block",padding:"9px 14px",fontSize:11,color:G,textDecoration:"none",borderTop:`0.5px solid ${BR1}`}}>
-                  + Diskussion starten
-                </Link>
+              ))}
+            </div>
+
+            {/* Attacks */}
+            {card.attacks?.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 14 }}>Attacken</div>
+                <div style={{ background: BG2, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  {card.attacks.map((atk: any, i: number) => (
+                    <div key={i} className="attack-row">
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontWeight: 600, fontSize: 14, color: TX }}>{atk.name}</span>
+                        {atk.damage && <span style={{ fontFamily: "monospace", fontSize: 14, color: GOLD }}>{atk.damage}</span>}
+                      </div>
+                      {atk.text && <div style={{ fontSize: 13, color: TX2, lineHeight: 1.6 }}>{atk.text}</div>}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
-            {forumPosts.length === 0 && (
-              <Link href="/forum/new" style={{display:"block",padding:"10px 14px",borderRadius:12,background:"transparent",border:`0.5px solid ${BR1}`,color:TX3,textDecoration:"none",fontSize:12,textAlign:"center"}}>
-                💬 Erste Diskussion starten →
-              </Link>
+
+            {/* Marketplace listings */}
+            {listings.length > 0 && (
+              <div style={{ marginBottom: 32 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2 }}>Angebote</div>
+                  <Link href="/marketplace" style={{ fontSize: 12, color: GOLD, textDecoration: "none" }}>Alle →</Link>
+                </div>
+                <div style={{ background: BG2, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(201,166,107,0.1)" }}>
+                  {listings.map((l: any) => (
+                    <div key={l.id} className="listing-row">
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: TX }}>@{l.profiles?.username ?? "Anonym"}</span>
+                        <span style={{ fontSize: 11, color: TX2, marginLeft: 8 }}>{l.condition}</span>
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: 16, fontWeight: 600, color: GOLD }}>
+                        {l.price?.toFixed(2)} €
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
+
+        {/* Similar cards */}
+        {similar.length > 0 && (
+          <div style={{ marginTop: 64 }}>
+            <div style={{ width: "100%", height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.2),transparent)", marginBottom: 40 }}/>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 20 }}>
+              Weitere Karten aus {card.set_id?.toUpperCase()}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 16 }}>
+              {similar.map(s => {
+                const sImg = s.image_url ? (s.image_url.includes(".") ? s.image_url : s.image_url + "/low.webp") : null;
+                return (
+                  <Link key={s.id} href={`/preischeck/${s.id}`} className="sim-card">
+                    <div style={{ aspectRatio: "3/4", background: BG3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                      {sImg && <img src={sImg} alt="" style={{ width: "85%", height: "85%", objectFit: "contain" }} loading="lazy"/>}
+                    </div>
+                    <div style={{ padding: "10px 12px 14px" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: TX, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{s.name_de || s.name}</div>
+                      <div style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 600, color: GOLD }}>{s.price_market?.toFixed(2)} €</div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
