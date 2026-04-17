@@ -36,7 +36,20 @@ export default function ForumPage() {
   useEffect(() => {
     SB.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
     SB.from("forum_categories").select("id,name,slug,icon").order("name")
-      .then(({ data }) => setCats(data ?? []));
+      .then(({ data }) => {
+        if (data?.length) {
+          setCats(data);
+        } else {
+          // Fallback categories if table is empty
+          setCats([
+            { id: "1", name: "Allgemein",    slug: "allgemein",    icon: "💬" },
+            { id: "2", name: "Preise",        slug: "preise",       icon: "📈" },
+            { id: "3", name: "Suche/Biete",   slug: "suche-biete",  icon: "🔄" },
+            { id: "4", name: "Neuheiten",     slug: "neuheiten",    icon: "✨" },
+            { id: "5", name: "Grading",       slug: "grading",      icon: "🏆" },
+          ]);
+        }
+      });
     loadPosts(null);
 
     channelRef.current = SB.channel("forum_realtime")
@@ -51,7 +64,7 @@ export default function ForumPage() {
     setLoading(true);
     try {
       let q = SB.from("forum_posts")
-        .select(`id,title,body,upvotes,created_at,card_id,
+        .select(`id,title,upvotes,created_at,card_id,
           profiles!forum_posts_user_id_fkey(username),
           forum_categories!forum_posts_category_id_fkey(name,slug),
           cards!forum_posts_card_id_fkey(name,name_de,image_url)`)
@@ -186,9 +199,9 @@ export default function ForumPage() {
                             )}
                           </div>
                           <div style={{ fontSize: 15, fontWeight: 600, color: TX, marginBottom: 4, lineHeight: 1.3 }}>{post.title}</div>
-                          {post.body && (
+                          {(post.body || post.content) && (
                             <div style={{ fontSize: 13, color: TX2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.6 }}>
-                              {post.body}
+                              {post.body || post.content}
                             </div>
                           )}
                           <div style={{ marginTop: 8, display: "flex", gap: 12, fontSize: 11, color: "rgba(237,233,224,0.35)" }}>
@@ -225,11 +238,21 @@ function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: () =
     try {
       const { data: { session } } = await SB.auth.getSession();
       if (!session) { window.location.href = "/auth/login"; return; }
-      const { error: e } = await SB.from("forum_posts").insert({
+      const postData: any = {
         user_id: session.user.id, title: title.trim(),
-        body: body.trim() || null, category_id: catId,
-        upvotes: 0, is_deleted: false,
-      });
+        category_id: catId, upvotes: 0, is_deleted: false,
+      };
+      // Try 'content' first (some DB versions use this), fallback to 'body'
+      const bodyText = body.trim() || null;
+      postData.content = bodyText;
+      let { error: e } = await SB.from("forum_posts").insert(postData);
+      if (e?.message?.includes("content")) {
+        // Try with 'body' column instead
+        delete postData.content;
+        postData.body = bodyText;
+        const result = await SB.from("forum_posts").insert(postData);
+        e = result.error;
+      }
       if (e) { setError(e.message); setLoading(false); return; }
       onCreated();
     } catch (e: any) { setError(e.message); }

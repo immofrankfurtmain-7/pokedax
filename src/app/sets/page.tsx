@@ -1,120 +1,89 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 
-const G="#C9A66B",G18="rgba(201,166,107,0.18)",G08="rgba(201,166,107,0.08)";
-const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a";
-
-const SERIES_ORDER = ["Scarlet & Violet","Sword & Shield","Sun & Moon","XY","Black & White","HeartGold & SoulSilver","Diamond & Pearl","EX","Neo","Gym","Base"];
+const SB = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 export default function SetsPage() {
   const [sets,    setSets]    = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search,  setSearch]  = useState("");
-  const [series,  setSeries]  = useState("alle");
-  const [owned,   setOwned]   = useState<Record<string,number>>({});
+  const [query,   setQuery]   = useState("");
 
-  useEffect(()=>{
-    fetch("/api/cards/sets").then(r=>r.json()).then(d=>{setSets(d.sets??[]);setLoading(false);});
-    const sb = createClient();
-    sb.auth.getSession().then(async({data:{session}})=>{
-      if (!session?.user) return;
-      const {data} = await sb.from("user_collection")
-        .select("cards!user_collection_card_id_fkey(set_id)").eq("user_id",session.user.id);
-      const counts:Record<string,number>={};
-      for (const e of data??[]) { const s=(e as any).cards?.set_id; if(s) counts[s]=(counts[s]??0)+1; }
-      setOwned(counts);
-    });
-  },[]);
+  useEffect(() => {
+    SB.from("sets").select("id,name,name_de,series,card_count,release_date")
+      .order("release_date", { ascending: false }).limit(300)
+      .then(({ data }) => { setSets(data ?? []); setLoading(false); });
+  }, []);
 
-  const allSeries = Array.from(new Set(sets.map(s=>s.series??'Sonstige'))).sort((a,b)=>{
-    const ia=SERIES_ORDER.indexOf(a), ib=SERIES_ORDER.indexOf(b);
-    return (ia<0?99:ia)-(ib<0?99:ib);
-  });
-
-  const filtered = sets.filter(s=>{
-    const matchSearch = !search||(s.name_de??s.name??"").toLowerCase().includes(search.toLowerCase())||s.id.toLowerCase().includes(search.toLowerCase());
-    const matchSeries = series==="alle"||(s.series??'Sonstige')===series;
-    return matchSearch&&matchSeries;
-  });
-
-  const grouped:Record<string,any[]>={};
-  for (const s of filtered) { const k=s.series??"Sonstige"; if(!grouped[k]) grouped[k]=[]; grouped[k].push(s); }
-  const sortedSeries = Object.keys(grouped).sort((a,b)=>{
-    const ia=SERIES_ORDER.indexOf(a),ib=SERIES_ORDER.indexOf(b);
-    return (ia<0?99:ia)-(ib<0?99:ib);
-  });
-  const hasOwned = Object.values(owned).some(v=>v>0);
+  const grouped = sets
+    .filter(s => !query || (s.name_de||s.name).toLowerCase().includes(query.toLowerCase()) || s.id.toLowerCase().includes(query.toLowerCase()))
+    .reduce((acc: Record<string, any[]>, s: any) => {
+      const series = s.series || "Sonstige";
+      if (!acc[series]) acc[series] = [];
+      acc[series].push(s);
+      return acc;
+    }, {});
 
   return (
-    <div style={{color:TX1,minHeight:"80vh"}}>
-      <div style={{maxWidth:1160,margin:"0 auto",padding:"clamp(52px,7vw,80px) clamp(16px,3vw,28px)"}}>
-        <div style={{marginBottom:"clamp(28px,4vw,44px)"}}>
-          <div style={{fontSize:9,fontWeight:600,letterSpacing:".14em",textTransform:"uppercase",color:TX3,marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-            <span style={{width:16,height:0.5,background:TX3,display:"inline-block"}}/>Sets & Serien
+    <div style={{ background:"#0A0A0A", minHeight:"100vh", color:"#EDE9E0" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&display=swap');
+        .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
+        .set-card { background:#111111; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:18px 22px; text-decoration:none; display:block; transition:border-color 0.2s,transform 0.2s; }
+        .set-card:hover { border-color:rgba(201,166,107,0.35); transform:translateY(-2px); }
+        .search-input { width:100%; max-width:480px; padding:14px 20px 14px 48px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:100px; color:#EDE9E0; font-size:15px; outline:none; font-family:inherit; transition:border-color 0.2s; }
+        .search-input:focus { border-color:rgba(201,166,107,0.4); }
+        .search-input::placeholder { color:rgba(237,233,224,0.3); }
+        @keyframes skeleton { 0%,100%{opacity:.3} 50%{opacity:.6} }
+      `}</style>
+
+      <div style={{ maxWidth:1600, margin:"0 auto", padding:"clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
+
+        {/* Header */}
+        <div style={{ marginBottom:56 }}>
+          <div style={{ fontSize:11, fontWeight:600, letterSpacing:"0.16em", textTransform:"uppercase", color:"rgba(201,166,107,0.7)", marginBottom:16 }}>Datenbank</div>
+          <h1 className="ph" style={{ fontSize:"clamp(40px,6vw,80px)", fontWeight:500, color:"#EDE9E0", lineHeight:1, marginBottom:24 }}>
+            {loading ? "…" : sets.length} Sets &<br/><span style={{ color:"#C9A66B" }}>Serien</span>
+          </h1>
+          {/* Search */}
+          <div style={{ position:"relative", display:"inline-block" }}>
+            <span style={{ position:"absolute", left:18, top:"50%", transform:"translateY(-50%)", fontSize:16, color:"rgba(237,233,224,0.3)" }}>◎</span>
+            <input className="search-input" placeholder="Set suchen…" value={query} onChange={e => setQuery(e.target.value)}/>
           </div>
-          <h1 style={{fontFamily:"var(--font-display)",fontSize:"clamp(26px,5vw,52px)",fontWeight:200,letterSpacing:"-.055em",marginBottom:8}}>Alle Sets</h1>
-          <p style={{fontSize:12,color:TX3}}>{loading?"Lädt…":`${sets.length} Sets · Klicken für alle Karten`}</p>
         </div>
-        <div style={{display:"flex",gap:10,marginBottom:20,flexWrap:"wrap",alignItems:"center"}}>
-          <div style={{position:"relative",flex:1,minWidth:180,maxWidth:300}}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Set suchen…"
-              style={{width:"100%",padding:"9px 12px",borderRadius:11,background:BG1,border:`0.5px solid ${BR2}`,color:TX1,fontSize:12,outline:"none"}}/>
-          </div>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            <button onClick={()=>setSeries("alle")} style={{padding:"5px 14px",borderRadius:8,fontSize:11,border:"none",cursor:"pointer",background:series==="alle"?G08:"transparent",color:series==="alle"?G:TX3,outline:`1px solid ${series==="alle"?G18:BR1}`}}>Alle</button>
-            {allSeries.slice(0,7).map(s=>(
-              <button key={s} onClick={()=>setSeries(s)} style={{padding:"5px 14px",borderRadius:8,fontSize:11,border:"none",cursor:"pointer",background:series===s?G08:"transparent",color:series===s?G:TX3,outline:`1px solid ${series===s?G18:BR1}`}}>{s}</button>
+
+        {loading ? (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
+            {Array.from({length:12}).map((_,i) => (
+              <div key={i} style={{ height:90, background:"#111", borderRadius:16, opacity:0.4, animation:"skeleton 1.5s ease-in-out infinite" }}/>
             ))}
           </div>
-        </div>
-        {loading?<div style={{padding:"48px",textAlign:"center",fontSize:14,color:TX3}}>Lädt…</div>:(
-          <div style={{display:"flex",flexDirection:"column",gap:28}}>
-            {sortedSeries.map(sname=>(
-              <div key={sname}>
-                {series==="alle"&&(
-                  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-                    <div style={{fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:TX3}}>{sname}</div>
-                    <div style={{flex:1,height:0.5,background:BR1}}/>
-                    <div style={{fontSize:10,color:TX3}}>{grouped[sname].length}</div>
-                  </div>
-                )}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(190px,1fr))",gap:8}}>
-                  {grouped[sname].map((s:any)=>{
-                    const oc=owned[s.id]??0;
-                    const pct=s.total?Math.round(oc/s.total*100):0;
-                    return (
-                      <Link key={s.id} href={`/preischeck?set=${encodeURIComponent(s.id)}`} style={{
-                        background:BG1,border:`0.5px solid ${oc>0?G18:BR1}`,borderRadius:14,
-                        padding:"14px 16px",textDecoration:"none",display:"flex",flexDirection:"column",gap:6,
-                        transition:"border-color .2s,background .2s",
-                      }}
-                      onMouseEnter={e=>{(e.currentTarget as any).style.background=BG2;}}
-                      onMouseLeave={e=>{(e.currentTarget as any).style.background=BG1;}}>
-                        {s.logo_url&&<img src={s.logo_url} alt={s.name} style={{height:28,objectFit:"contain",objectPosition:"left",opacity:.8}} onError={e=>{(e.target as any).style.display="none";}}/>}
-                        {!s.logo_url&&s.symbol_url&&<img src={s.symbol_url} alt="" style={{height:24,width:24,objectFit:"contain",opacity:.6}} onError={e=>{(e.target as any).style.display="none";}}/>}
-                        <div style={{fontSize:12.5,fontWeight:400,color:TX1,lineHeight:1.3}}>{s.name_de||s.name}</div>
-                        <div style={{fontSize:10,color:TX3}}>{s.id.toUpperCase()}{s.total&&<span> · {s.total} Karten</span>}{s.release_date&&<span> · {s.release_date.slice(0,4)}</span>}</div>
-                        {hasOwned&&s.total&&(
-                          <div>
-                            <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-                              <span style={{fontSize:9,color:TX3}}>{oc}/{s.total}</span>
-                              <span style={{fontSize:9,fontWeight:600,color:pct>=100?G:pct>=50?"#60A5FA":TX3}}>{pct}%</span>
-                            </div>
-                            <div style={{height:3,background:BR1,borderRadius:2,overflow:"hidden",marginTop:4}}>
-                              <div style={{height:"100%",width:`${Math.min(100,pct)}%`,background:pct>=100?G:pct>=50?"#60A5FA":TX3,borderRadius:2}}/>
-                            </div>
-                          </div>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
+        ) : (
+          Object.entries(grouped).map(([series, seriesSets]) => (
+            <div key={series} style={{ marginBottom:56 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:20 }}>
+                <div style={{ fontSize:11, fontWeight:600, letterSpacing:"0.14em", textTransform:"uppercase", color:"rgba(201,166,107,0.7)" }}>{series}</div>
+                <div style={{ flex:1, height:1, background:"linear-gradient(90deg,rgba(201,166,107,0.2),transparent)" }}/>
+                <div style={{ fontSize:11, color:"rgba(237,233,224,0.3)" }}>{seriesSets.length} Sets</div>
               </div>
-            ))}
-          </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
+                {seriesSets.map((set: any) => (
+                  <Link key={set.id} href={`/sets/${set.id}`} className="set-card">
+                    <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.12em", textTransform:"uppercase", color:"#C9A66B", marginBottom:6 }}>
+                      {set.id.toUpperCase()}
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:600, color:"#EDE9E0", marginBottom:4, lineHeight:1.3 }}>
+                      {set.name_de || set.name}
+                    </div>
+                    {set.card_count && (
+                      <div style={{ fontSize:11, color:"rgba(237,233,224,0.4)" }}>{set.card_count} Karten</div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
