@@ -1,0 +1,10 @@
+const fs = require('fs'), path = require('path');
+const root = 'C:\\Users\\lenovo\\pokedax\\pokedax\\pokedax';
+const f = path.join(root, 'src/app/page.tsx');
+const c = fs.readFileSync(f, 'utf8');
+console.log('Size:', c.length);
+console.log('Has Playfair:', c.includes('Playfair'));
+console.log('Has luxury-float:', c.includes('luxury-float'));
+console.log('Has C9A66B gold:', c.includes('C9A66B'));
+console.log('First line:', c.split('\n')[0]);
+console.log('First 200:', c.slice(0, 200));
