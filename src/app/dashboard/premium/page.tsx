@@ -3,9 +3,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
-const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a";
+const G="#C9A66B",G18="rgba(201,166,107,0.18)",G08="rgba(201,166,107,0.08)";
+const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
+const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a";
 
 const FEATURES = [
   "Marktplatz: Kaufen, Verkaufen, Inserieren",
@@ -48,7 +48,7 @@ export default function PremiumPage() {
           <p style={{ fontSize: 14, color: TX3, lineHeight: 1.7 }}>Alles was du brauchst um deine Sammlung professionell zu verwalten und zu handeln.</p>
         </div>
 
-        <div style={{ background: `linear-gradient(135deg,rgba(212,168,67,0.08),${BG1})`, border: `0.5px solid ${G18}`, borderRadius: 22, padding: "32px", marginBottom: 14, position: "relative", overflow: "hidden" }}>
+        <div style={{ background: `linear-gradient(135deg,rgba(201,166,107,0.08),${BG1})`, border: `0.5px solid ${G18}`, borderRadius: 22, padding: "32px", marginBottom: 14, position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 0.5, background: `linear-gradient(90deg,transparent,${G},transparent)` }}/>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 24 }}>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 200, letterSpacing: "-.06em", color: G, lineHeight: 1 }}>6,99</div>
@@ -63,7 +63,7 @@ export default function PremiumPage() {
             ))}
           </div>
           {error && <div style={{ fontSize: 12, color: "#dc4a5a", marginBottom: 12 }}>{error}</div>}
-          <button onClick={subscribe} disabled={loading} style={{ width: "100%", padding: "14px", borderRadius: 14, background: G, color: "#09090b", fontSize: 15, fontWeight: 400, border: "none", cursor: loading ? "wait" : "pointer", boxShadow: `0 4px 24px rgba(212,168,67,0.25)`, opacity: loading ? 0.7 : 1 }}>
+          <button onClick={subscribe} disabled={loading} style={{ width: "100%", padding: "14px", borderRadius: 14, background: G, color: "#0A0A0C", fontSize: 15, fontWeight: 400, border: "none", cursor: loading ? "wait" : "pointer", boxShadow: `0 4px 24px rgba(201,166,107,0.25)`, opacity: loading ? 0.7 : 1 }}>
             {loading ? "Weiterleitung…" : "Jetzt Premium werden ✦"}
           </button>
           <div style={{ fontSize: 11, color: TX3, textAlign: "center", marginTop: 12 }}>Jederzeit kündbar · Sichere Zahlung via Stripe</div>

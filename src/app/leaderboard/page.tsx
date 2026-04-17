@@ -2,15 +2,15 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
-const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a";
+const G="#C9A66B",G18="rgba(201,166,107,0.18)",G08="rgba(201,166,107,0.08)";
+const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
+const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a";
 
-const BADGE_COLORS = ["#D4A843","#9CA3AF","#CD7F32"];
+const BADGE_COLORS = ["#C9A66B","#9CA3AF","#CD7F32"];
 const BADGE_ICONS  = ["✦✦✦","✦✦","✦"];
 
 function MedalIcon({rank}:{rank:number}) {
-  const color = rank===1?"#D4A843":rank===2?"#9CA3AF":"#CD7F32";
+  const color = rank===1?"#C9A66B":rank===2?"#9CA3AF":"#CD7F32";
   return (
     <div style={{width:32,height:32,borderRadius:"50%",background:`${color}15`,
       border:`0.5px solid ${color}30`,display:"flex",alignItems:"center",
@@ -21,7 +21,7 @@ function MedalIcon({rank}:{rank:number}) {
 }
 
 function Avatar({username,size=32}:{username:string;size?:number}) {
-  const colors=["#D4A843","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
+  const colors=["#C9A66B","#60A5FA","#34D399","#A78BFA","#F472B6","#FB923C"];
   const c=colors[username.charCodeAt(0)%colors.length];
   return (
     <div style={{width:size,height:size,borderRadius:"50%",background:`${c}15`,

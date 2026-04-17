@@ -130,7 +130,7 @@ export default function PortfolioPage() {
               <button onClick={()=>setShowDupes(v=>!v)} style={{
                 padding:"8px 16px",borderRadius:10,fontSize:12,cursor:"pointer",
                 background:showDupes?"rgba(212,168,67,0.1)":"rgba(255,255,255,0.04)",
-                color:showDupes?"#D4A843":"#BEB9B0",
+                color:showDupes?"#C9A66B":"#BEB9B0",
                 border:`0.5px solid ${showDupes?"rgba(212,168,67,0.2)":"rgba(255,255,255,0.085)"}`,
               }}>◈ {dupes.length} Duplikate · {dupeValue.toFixed(0)} €</button>
             )}
@@ -139,10 +139,10 @@ export default function PortfolioPage() {
 
         {/* Duplikate-Ansicht */}
         {showDupes && dupes.length > 0 && (
-          <div style={{background:"#16161A",border:"0.5px solid rgba(212,168,67,0.18)",borderRadius:16,overflow:"hidden",marginBottom:16}}>
+          <div style={{background:"#16161A",border:"0.5px solid rgba(201,166,107,0.18)",borderRadius:16,overflow:"hidden",marginBottom:16}}>
             <div style={{padding:"11px 16px",borderBottom:"0.5px solid rgba(255,255,255,0.045)",fontSize:10,fontWeight:600,letterSpacing:".1em",textTransform:"uppercase",color:"#6E6B66",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span>Duplikate</span>
-              <span style={{color:"#D4A843"}}>{dupeValue.toFixed(2)} € Potenzial</span>
+              <span style={{color:"#C9A66B"}}>{dupeValue.toFixed(2)} € Potenzial</span>
             </div>
             {dupes.map((c:any)=>(
               <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 16px",borderBottom:"0.5px solid rgba(255,255,255,0.03)"}}>

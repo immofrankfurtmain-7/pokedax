@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const G="#C9A66B",G25="rgba(0,184,168,0.25)",G18="rgba(0,184,168,0.18)",G10="rgba(201,166,107,0.10)",G05="rgba(0,184,168,0.05)";
+const G="#C9A66B",G25="rgba(201,166,107,0.25)",G18="rgba(201,166,107,0.18)",G10="rgba(201,166,107,0.10)",G05="rgba(201,166,107,0.05)";
 const BG1="#16161A",BG2="#1C1C21",BG3="#222228";
 const BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)",BR3="rgba(255,255,255,0.13)";
 const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66";

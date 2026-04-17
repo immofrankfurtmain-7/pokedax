@@ -2,9 +2,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const G="#D4A843",G25="rgba(212,168,67,0.25)",G18="rgba(212,168,67,0.18)",G12="rgba(212,168,67,0.12)",G08="rgba(212,168,67,0.08)",G04="rgba(212,168,67,0.04)";
-const BG1="#111114",BG2="#18181c",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
-const TX1="#ededf2",TX2="#a4a4b4",TX3="#62626f",GREEN="#3db87a",RED="#dc4a5a";
+const G="#C9A66B",G25="rgba(201,166,107,0.25)",G18="rgba(201,166,107,0.18)",G12="rgba(212,168,67,0.12)",G08="rgba(201,166,107,0.08)",G04="rgba(201,166,107,0.04)";
+const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
+const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66",GREEN="#3db87a",RED="#dc4a5a";
 
 interface Pick {
   id: string;
@@ -260,7 +260,7 @@ export default function FantasyPage() {
                 <div key={t.id} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",borderBottom:i<leaderboard.length-1?`1px solid ${BR1}`:undefined}}>
                   <div style={{
                     width:28,fontSize:12,fontFamily:"var(--font-mono)",fontWeight:400,flexShrink:0,textAlign:"center",
-                    color:i===0?G:i===1?"#a8a8b4":i===2?"#8a7a5a":TX3,
+                    color:i===0?G:i===1?"#BEB9B0":i===2?"#8a7a5a":TX3,
                   }}>
                     {String(i+1).padStart(2,"0")}
                   </div>

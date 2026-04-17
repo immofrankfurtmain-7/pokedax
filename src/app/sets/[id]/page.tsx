@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-const G="#D4A843",G18="rgba(212,168,67,0.18)",G08="rgba(212,168,67,0.08)";
+const G="#C9A66B",G18="rgba(201,166,107,0.18)",G08="rgba(201,166,107,0.08)";
 const BG1="#16161A",BG2="#1C1C21",BR1="rgba(255,255,255,0.045)",BR2="rgba(255,255,255,0.085)";
 const TX1="#F8F6F2",TX2="#BEB9B0",TX3="#6E6B66";
 
@@ -113,13 +113,13 @@ export default function SetDetailPage() {
               <Link key={card.id} href={`/preischeck/${card.id}`} style={{ textDecoration: "none" }}>
                 <div style={{
                   background: "#16161A",
-                  border: `1px solid ${card.price_market ? "rgba(212,168,67,0.15)" : "rgba(255,255,255,0.07)"}`,
+                  border: `1px solid ${card.price_market ? "rgba(201,166,107,0.15)" : "rgba(255,255,255,0.07)"}`,
                   borderRadius: 16, overflow: "hidden",
                   transition: "transform .2s, border-color .2s",
                   cursor: "pointer",
                 }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(212,168,67,0.3)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.borderColor = card.price_market ? "rgba(212,168,67,0.15)" : "rgba(255,255,255,0.07)"; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(201,166,107,0.3)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.borderColor = card.price_market ? "rgba(201,166,107,0.15)" : "rgba(255,255,255,0.07)"; }}
                 >
                   {/* Card Image — padded, smaller */}
                   <div style={{ padding: "8px 8px 0", background: "#1C1C21" }}>

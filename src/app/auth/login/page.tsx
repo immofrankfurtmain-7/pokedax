@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const G   = "#D4A843";
-const G15 = "rgba(212,168,67,0.15)";
-const G08 = "rgba(212,168,67,0.08)";
-const BG1 = "#111114";
+const G   = "#C9A66B";
+const G15 = "rgba(201,166,107,0.15)";
+const G08 = "rgba(201,166,107,0.08)";
+const BG1 = "#16161A";
 const BR2 = "rgba(255,255,255,0.085)";
-const TX1 = "#ededf2";
-const TX2 = "#a4a4b4";
-const TX3 = "#62626f";
+const TX1 = "#F8F6F2";
+const TX2 = "#BEB9B0";
+const TX3 = "#6E6B66";
 const RED = "#dc4a5a";
 
 export default function LoginPage() {
