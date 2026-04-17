@@ -1,228 +1,245 @@
-'use client'
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 
-import { useState, useEffect } from 'react'
-import Image from 'next/image'
+const GOLD = "#C9A66B";
+const BG   = "#0A0A0A";
+const BG2  = "#111111";
+const BG3  = "#1A1A1A";
+const TX   = "#EDE9E0";
+const TX2  = "rgba(237,233,224,0.7)";
+const GD2  = "rgba(201,166,107,0.7)";
 
-type Wishlist = { id: string; name: string; is_watchlist: boolean; wishlist_items: { count: number }[] }
-type WishItem = { id: string; added_at: string; cards: { id: string; name: string; number: string; image_url: string | null; price_market: number; price_avg7: number | null; sets: { name: string } } }
+const SB = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-function fmt(n: number | null | undefined) {
-  if (!n) return '- '
-  return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' '
-}
+export default function MatchesPage() {
+  const [user,     setUser]     = useState<any>(null);
+  const [wish,     setWish]     = useState<any[]>([]);
+  const [matches,  setMatches]  = useState<any[]>([]);
+  const [tab,      setTab]      = useState<"wishlist"|"matches">("wishlist");
+  const [loading,  setLoading]  = useState(true);
 
-export default function WishlistPage() {
-  const [lists,      setLists]      = useState<Wishlist[]>([])
-  const [active,     setActive]     = useState<string | null>(null)
-  const [items,      setItems]      = useState<WishItem[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
-  const [newName,    setNewName]    = useState('')
-  const [isWatch,    setIsWatch]    = useState(false)
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await SB.auth.getUser();
+      if (!user) { window.location.href = "/auth/login"; return; }
+      setUser(user);
 
-  useEffect(() => { loadLists() }, [])
+      const [{ data: wData }, { data: mData }] = await Promise.all([
+        SB.from("user_wishlist")
+          .select("id,max_price,added_at,cards(id,name,name_de,set_id,number,image_url,price_market,price_avg7)")
+          .eq("user_id", user.id)
+          .order("added_at", { ascending: false }).limit(100),
+        SB.from("wishlist_matches")
+          .select("id,created_at,notified,cards(id,name,name_de,image_url,price_market,set_id,number),marketplace_listings(id,price,condition,profiles!marketplace_listings_user_id_fkey(username))")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false }).limit(20),
+      ]);
 
-  async function loadLists() {
-    const res  = await fetch('/api/wishlists')
-    const data = await res.json()
-    setLists(data.wishlists ?? [])
-    setLoading(false)
-    if (data.wishlists?.length > 0 && !active) {
-      setActive(data.wishlists[0].id)
-      loadItems(data.wishlists[0].id)
+      setWish((wData ?? []).map((w: any) => ({ ...w, cards: Array.isArray(w.cards) ? w.cards[0] : w.cards })));
+      setMatches((mData ?? []).map((m: any) => ({
+        ...m,
+        cards: Array.isArray(m.cards) ? m.cards[0] : m.cards,
+        marketplace_listings: Array.isArray(m.marketplace_listings) ? m.marketplace_listings[0] : m.marketplace_listings,
+      })));
+      setLoading(false);
     }
-  }
+    load();
+  }, []);
 
-  async function loadItems(id: string) {
-    setActive(id)
-    const res  = await fetch('/api/wishlist?id=' + id)
-    const data = await res.json()
-    setItems(data.items ?? [])
+  async function removeFromWishlist(wishId: string) {
+    try {
+      await SB.from("user_wishlist").delete().eq("id", wishId);
+      setWish(prev => prev.filter(w => w.id !== wishId));
+    } catch {}
   }
-
-  async function createList() {
-    if (!newName.trim()) return
-    const res  = await fetch('/api/wishlists', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName, is_watchlist: isWatch }),
-    })
-    const data = await res.json()
-    if (data.wishlist) {
-      setShowCreate(false)
-      setNewName('')
-      setIsWatch(false)
-      loadLists()
-    }
-  }
-
-  async function deleteItem(wishlist_id: string, card_id: string) {
-    await fetch('/api/wishlist', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ wishlist_id, card_id }),
-    })
-    if (active) loadItems(active)
-  }
-
-  async function deleteList(id: string) {
-    await fetch('/api/wishlists', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    setActive(null)
-    setItems([])
-    loadLists()
-  }
-
-  const totalValue = items.reduce((sum, i) => sum + (i.cards?.price_market ?? 0), 0)
 
   return (
-    <>
-      <main className="min-h-screen bg-black text-white">
-        <div className="max-w-5xl mx-auto px-4 pt-24 pb-12">
+    <div style={{ background: BG, minHeight: "100vh", color: TX }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap');
+        .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
+        .tab-btn { padding:10px 28px; border-radius:100px; border:1px solid transparent; font-size:14px; cursor:pointer; transition:all 0.2s; background:transparent; }
+        .tab-btn.active { background:rgba(201,166,107,0.1); border-color:rgba(201,166,107,0.3); color:#C9A66B; font-weight:600; }
+        .tab-btn:not(.active) { color:rgba(237,233,224,0.5); }
+        .wish-card { background:#111111; border:1px solid rgba(255,255,255,0.07); border-radius:20px; overflow:hidden; transition:border-color 0.2s,transform 0.2s; }
+        .wish-card:hover { border-color:rgba(201,166,107,0.2); transform:translateY(-2px); }
+        .match-row { background:#111111; border:1px solid rgba(201,166,107,0.2); border-radius:16px; padding:20px; display:flex; gap:16px; align-items:center; transition:border-color 0.2s; background:linear-gradient(135deg,rgba(201,166,107,0.05),#111111); }
+        .match-row:hover { border-color:rgba(201,166,107,0.35); }
+        .btn-gold { display:inline-flex; align-items:center; gap:6px; padding:10px 20px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s; white-space:nowrap; }
+        .btn-gold:hover { transform:scale(1.03); }
+        @keyframes skeleton { 0%,100%{opacity:.3} 50%{opacity:.6} }
+        .skel { animation:skeleton 1.5s ease-in-out infinite; background:#111; border-radius:16px; }
+      `}</style>
 
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <div className="text-xs text-cyan-400 uppercase tracking-widest mb-1">Dashboard</div>
-              <h1 className="text-3xl font-bold">Meine Wishlists</h1>
-            </div>
-            <button onClick={() => setShowCreate(true)}
-              className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              + Neue Liste
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 48 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: GD2, marginBottom: 16 }}>Automatisches Matching</div>
+          <h1 className="ph" style={{ fontSize: "clamp(36px,5vw,72px)", fontWeight: 500, color: TX, lineHeight: 1 }}>
+            Wishlist &<br/><span style={{ color: GOLD }}>Matches</span>
+          </h1>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 40 }}>
+          {(["wishlist","matches"] as const).map(t => (
+            <button key={t} className={`tab-btn${tab===t?" active":""}`} onClick={() => setTab(t)}>
+              {t === "wishlist" ? "Wunschliste" : (
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  Matches
+                  {matches.length > 0 && <span style={{ background: GOLD, color: BG, borderRadius: 100, padding: "1px 8px", fontSize: 11, fontWeight: 700 }}>{matches.length}</span>}
+                </span>
+              )}
             </button>
-          </div>
+          ))}
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-            {/* Sidebar */}
-            <div className="lg:col-span-1 space-y-2">
-              {loading ? (
-                <div className="text-gray-500 text-sm">Laedt...</div>
-              ) : lists.length === 0 ? (
-                <div className="text-gray-600 text-sm text-center py-8">
-                  Noch keine Listen.<br/>Erstelle deine erste!
-                </div>
-              ) : lists.map(list => (
-                <button key={list.id} onClick={() => loadItems(list.id)}
-                  className={'w-full text-left px-4 py-3 rounded-xl border transition-all ' +
-                    (active === list.id
-                      ? 'border-purple-600 bg-purple-950/30 text-white'
-                      : 'border-gray-800 bg-gray-900 text-gray-400 hover:border-gray-600')}>
-                  <div className="flex items-center gap-2">
-                    <span>{list.is_watchlist ? '' : ''}</span>
-                    <span className="font-medium text-sm truncate">{list.name}</span>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-0.5 ml-6">
-                    {list.wishlist_items?.[0]?.count ?? 0} Karten
-                  </div>
-                </button>
-              ))}
+        {/* Wishlist */}
+        {tab === "wishlist" && (
+          loading ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16 }}>
+              {Array.from({length: 6}).map((_,i) => <div key={i} className="skel" style={{ aspectRatio: "3/5" }}/>)}
             </div>
-
-            {/* Content */}
-            <div className="lg:col-span-3">
-              {active && (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="text-lg font-bold text-white">
-                        {lists.find(l => l.id === active)?.name}
-                        {lists.find(l => l.id === active)?.is_watchlist && (
-                          <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-cyan-900 text-cyan-300">Beobachtungsliste</span>
+          ) : wish.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "80px 20px" }}>
+              <div style={{ fontSize: 56, opacity: 0.1, marginBottom: 24, color: GOLD }}>◉</div>
+              <h2 className="ph" style={{ fontSize: 28, fontWeight: 500, color: TX2, marginBottom: 16 }}>Wunschliste ist leer</h2>
+              <Link href="/preischeck" style={{ display: "inline-flex", padding: "13px 28px", background: GOLD, color: BG, borderRadius: 100, fontSize: 14, fontWeight: 600, textDecoration: "none" }}>
+                Karten entdecken →
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 16 }}>
+              {wish.map(w => {
+                const card = w.cards;
+                if (!card) return null;
+                const imgSrc = card.image_url?.includes(".") ? card.image_url : (card.image_url ? card.image_url + "/low.webp" : null);
+                const pct    = card.price_avg7 && card.price_market ? ((card.price_market - card.price_avg7) / card.price_avg7 * 100) : null;
+                const isDeal = w.max_price && card.price_market && card.price_market <= w.max_price;
+                return (
+                  <div key={w.id} className="wish-card">
+                    <Link href={`/preischeck/${card.id}`} style={{ textDecoration: "none", display: "block" }}>
+                      <div style={{ aspectRatio: "3/4", background: BG3, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+                        {imgSrc && <img src={imgSrc} alt={card.name} style={{ width: "85%", height: "85%", objectFit: "contain" }}/>}
+                        {isDeal && (
+                          <div style={{ position: "absolute", top: 10, right: 10, padding: "3px 8px", borderRadius: 100, background: "rgba(201,166,107,0.2)", color: GOLD, fontSize: 9, fontWeight: 700, border: "1px solid rgba(201,166,107,0.3)" }}>
+                            DEAL ✦
+                          </div>
+                        )}
+                        {pct !== null && (
+                          <div style={{ position: "absolute", top: 10, left: 10, padding: "2px 7px", borderRadius: 100, fontSize: 9, fontWeight: 700, background: pct >= 0 ? "rgba(61,184,122,0.15)" : "rgba(220,74,90,0.12)", color: pct >= 0 ? "#3db87a" : "#dc4a5a" }}>
+                            {pct >= 0 ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
+                          </div>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500 mt-0.5">
-                        Gesamtwert: <span className="text-cyan-400 font-bold">{fmt(totalValue)}</span>
+                      <div style={{ padding: "12px 14px" }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: TX, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {card.name_de || card.name}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <div style={{ fontFamily: "monospace", fontSize: 14, fontWeight: 600, color: GOLD }}>
+                            {card.price_market?.toFixed(2)} €
+                          </div>
+                          {w.max_price && (
+                            <div style={{ fontSize: 10, color: "rgba(237,233,224,0.3)" }}>Limit: {w.max_price.toFixed(2)} €</div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                    <div style={{ padding: "0 14px 14px" }}>
+                      <button onClick={() => removeFromWishlist(w.id)} style={{
+                        width: "100%", padding: "8px", background: "transparent",
+                        border: "1px solid rgba(255,255,255,0.08)", borderRadius: 100,
+                        color: "rgba(237,233,224,0.35)", fontSize: 12, cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as any).style.borderColor = "rgba(220,74,90,0.3)"; (e.currentTarget as any).style.color = "#dc4a5a"; }}
+                      onMouseLeave={e => { (e.currentTarget as any).style.borderColor = "rgba(255,255,255,0.08)"; (e.currentTarget as any).style.color = "rgba(237,233,224,0.35)"; }}>
+                        Von Wunschliste entfernen
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+
+        {/* Matches */}
+        {tab === "matches" && (
+          loading ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {Array.from({length: 4}).map((_,i) => <div key={i} className="skel" style={{ height: 100 }}/>)}
+            </div>
+          ) : matches.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "80px 20px" }}>
+              <div style={{ fontSize: 56, opacity: 0.1, marginBottom: 24, color: GOLD }}>✦</div>
+              <h2 className="ph" style={{ fontSize: 28, fontWeight: 500, color: TX2, marginBottom: 16 }}>
+                Noch keine Matches
+              </h2>
+              <p style={{ fontSize: 15, color: "rgba(237,233,224,0.4)", maxWidth: 400, margin: "0 auto 32px", lineHeight: 1.7 }}>
+                Füge Karten zur Wunschliste hinzu. Sobald jemand eine deiner Wunschkarten inseriert, erscheint es hier.
+              </p>
+              <button onClick={() => setTab("wishlist")} style={{ padding: "13px 28px", background: GOLD, color: BG, borderRadius: 100, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                Zur Wunschliste
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {matches.map(m => {
+                const card    = m.cards;
+                const listing = m.marketplace_listings;
+                if (!card) return null;
+                const imgSrc  = card.image_url?.includes(".") ? card.image_url : (card.image_url ? card.image_url + "/low.webp" : null);
+                const isCheap = listing?.price && card.price_market && listing.price < card.price_market * 0.97;
+                return (
+                  <div key={m.id} className="match-row">
+                    {/* Gold line top */}
+                    <div style={{ position: "absolute" }}/>
+                    {/* Card image */}
+                    <Link href={`/preischeck/${card.id}`} style={{ textDecoration: "none", flexShrink: 0 }}>
+                      <div style={{ width: 56, height: 78, borderRadius: 8, overflow: "hidden", background: BG3, border: "1px solid rgba(201,166,107,0.15)" }}>
+                        {imgSrc && <img src={imgSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }}/>}
+                      </div>
+                    </Link>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: "0.08em" }}>✦ MATCH GEFUNDEN</span>
+                        {!m.notified && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3db87a", flexShrink: 0 }}/>}
+                      </div>
+                      <Link href={`/preischeck/${card.id}`} style={{ textDecoration: "none" }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: TX, marginBottom: 2 }}>{card.name_de || card.name}</div>
+                      </Link>
+                      <div style={{ fontSize: 12, color: "rgba(237,233,224,0.4)" }}>
+                        {card.set_id?.toUpperCase()} · @{listing?.profiles?.username ?? "Anonym"} · {listing?.condition ?? "NM"}
                       </div>
                     </div>
-                    <button onClick={() => deleteList(active)}
-                      className="text-xs text-red-500 hover:text-red-400 transition-colors">
-                      Liste loeschen
-                    </button>
+
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div className="ph" style={{ fontSize: 22, fontWeight: 500, color: GOLD, marginBottom: 4 }}>
+                        {listing?.price?.toFixed(2)} €
+                      </div>
+                      {card.price_market && listing?.price && (
+                        <div style={{ fontSize: 11, color: isCheap ? "#3db87a" : "rgba(237,233,224,0.35)", marginBottom: 10 }}>
+                          Marktwert: {card.price_market.toFixed(2)} €
+                        </div>
+                      )}
+                      <Link href="/marketplace" className="btn-gold">Kaufen ✦</Link>
+                    </div>
                   </div>
-
-                  {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3">
-                      <span className="text-4xl"></span>
-                      <p>Noch keine Karten in dieser Liste</p>
-                      <p className="text-sm">Fuege Karten im Preischeck oder Portfolio hinzu</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {items.map(item => {
-                        const card = item.cards
-                        const trend = card.price_market && card.price_avg7
-                          ? ((card.price_market - card.price_avg7) / card.price_avg7) * 100
-                          : null
-                        return (
-                          <div key={item.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden group">
-                            <div className="relative aspect-[2.5/3.5] bg-gray-800">
-                              {card.image_url ? (
-                                <Image src={card.image_url} alt={card.name} fill
-                                  className="object-contain p-1"
-                                  sizes="(max-width: 640px) 50vw, 150px" />
-                              ) : (
-                                <div className="flex items-center justify-center h-full text-gray-600 text-xs">Kein Bild</div>
-                              )}
-                            </div>
-                            <div className="p-3">
-                              <p className="text-white text-xs font-medium truncate">{card.name}</p>
-                              <p className="text-gray-500 text-xs truncate">{Array.isArray(card.sets) ? card.sets[0]?.name : card.sets?.name}</p>
-                              <div className="mt-1.5 flex items-center justify-between">
-                                <span className="text-cyan-400 text-sm font-bold">{fmt(card.price_market)}</span>
-                                {trend !== null && (
-                                  <span className={`text-xs font-medium ${trend > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {trend > 0 ? '+' : ''}{trend.toFixed(1)}%
-                                  </span>
-                                )}
-                              </div>
-                              <button onClick={() => deleteItem(active, card.id)}
-                                className="mt-2 w-full text-xs text-red-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">
-                                Entfernen
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
+                );
+              })}
             </div>
-          </div>
-
-          {/* Create Modal */}
-          {showCreate && (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-              <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6">
-                <h2 className="text-lg font-bold mb-4">Neue Wishlist</h2>
-                <input type="text" placeholder="Name der Liste..." value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm mb-3 focus:outline-none focus:border-purple-500"
-                />
-                <label className="flex items-center gap-2 text-sm text-gray-400 mb-4 cursor-pointer">
-                  <input type="checkbox" checked={isWatch} onChange={e => setIsWatch(e.target.checked)}
-                    className="rounded" />
-                  Als Beobachtungsliste (fuer Preis-Alerts)
-                </label>
-                <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowCreate(false)}
-                    className="px-4 py-2 rounded-lg border border-gray-700 text-sm text-gray-400 hover:border-gray-500">
-                    Abbrechen
-                  </button>
-                  <button onClick={createList} disabled={!newName.trim()}
-                    className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white text-sm font-medium">
-                    Erstellen
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </div>
-      </main>
-    </>
-  )
+          )
+        )}
+      </div>
+    </div>
+  );
 }
