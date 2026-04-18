@@ -22,7 +22,7 @@ function timeAgo(date: string) {
 export default function ForumPage() {
   const [posts,   setPosts]   = useState<any[]>([]);
   const [cats,    setCats]    = useState<any[]>([]);
-  const [catId,   setCatId]   = useState<string>("einsteiger");
+  const [catId,   setCatId]   = useState<string|null>(null);
   const [loading, setLoading] = useState(true);
   const [user,    setUser]    = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
