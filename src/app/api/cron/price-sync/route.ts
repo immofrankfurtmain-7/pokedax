@@ -20,9 +20,10 @@ export async function GET(request: Request) {
       .not("price_market","is",null).range(from, from + 499);
     if (error || !cards?.length) break;
     const rows = cards.map(c => ({
-      card_id: c.id, recorded_at: today,
-      price: c.price_market, price_low: c.price_low,
-      price_avg: c.price_avg7, source: "cardmarket",
+      card_id:      c.id,
+      recorded_at:  today,
+      price_market: c.price_market,
+      price_low:    c.price_low ?? null,
     }));
     const { error: e2 } = await supabase.from("price_history")
       .upsert(rows, { onConflict: "card_id,recorded_at", ignoreDuplicates: true });
