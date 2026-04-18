@@ -424,7 +424,7 @@ function PriceChart({ data }: { data: { recorded_at?: string; date?: string; pri
       </svg>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
         <div style={{ fontSize: 11, color: "rgba(237,233,224,0.4)" }}>{minP.toFixed(2)} €</div>
-        <div style={{ fontSize: 12, fontWeight: 600, color }}>{up?"▲":"▼"} {Math.abs(last.price-first.price).toFixed(2)} € ({((last.price-first.price)/first.price*100).toFixed(1)}%)</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: color }}>{up?"▲":"▼"} {Math.abs(last.price-first.price).toFixed(2)} € ({((last.price-first.price)/first.price*100).toFixed(1)}%)</div>
         <div style={{ fontSize: 11, color: "rgba(237,233,224,0.4)" }}>{maxP.toFixed(2)} €</div>
       </div>
     </div>

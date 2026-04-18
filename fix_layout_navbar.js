@@ -1,4 +1,7 @@
-import type { Metadata } from "next";
+const fs = require('fs'), path = require('path');
+const root = 'C:\\Users\\lenovo\\pokedax\\pokedax\\pokedax';
+
+const layout = `import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -22,3 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+`;
+
+fs.writeFileSync(path.join(root, 'src/app/layout.tsx'), layout, 'utf8');
+console.log('layout.tsx fixed — Navbar restored');
