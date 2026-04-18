@@ -22,7 +22,7 @@ function timeAgo(date: string) {
 export default function ForumPage() {
   const [posts,   setPosts]   = useState<any[]>([]);
   const [cats,    setCats]    = useState<any[]>([]);
-  const [catId,   setCatId]   = useState<string|null>(null);
+  const [catId,   setCatId]   = useState<string|null>("einsteiger");
   const [loading, setLoading] = useState(true);
   const [user,    setUser]    = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
@@ -213,7 +213,7 @@ function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: ()=>
     try {
       const { data: { session } } = await SB.auth.getSession();
       if (!session) { window.location.href = "/auth/login"; return; }
-      const validCatId = catId && catId.length > 10 ? catId : null;
+      const validCatId = catId || "einsteiger";
       const { error: e } = await SB.from("forum_posts").insert({
         author_id:   session.user.id,
         title:       title.trim(),
