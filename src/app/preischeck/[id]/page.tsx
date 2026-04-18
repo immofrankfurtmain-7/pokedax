@@ -93,11 +93,9 @@ export default function CardDetailPage() {
 
   return (
     <div style={{ background: BG, minHeight: "100vh", color: TX }}>
-      {/* eslint-disable-next-line */}
-      <link rel="preconnect" href="https://fonts.googleapis.com"/>
-      <link href={"https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap"} rel="stylesheet"/>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap"/>
       <style>{`
-        .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
+.ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
         .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s; width:100%; justify-content:center; }
         .btn-gold:hover { transform:scale(1.02); }
         .btn-outline { display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border:1px solid rgba(201,166,107,0.3); color:#C9A66B; border-radius:100px; background:transparent; font-size:14px; cursor:pointer; text-decoration:none; transition:all 0.2s; width:100%; justify-content:center; }
