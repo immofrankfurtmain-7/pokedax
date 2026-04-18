@@ -12,7 +12,7 @@ export default function SetsPage() {
 
   useEffect(() => {
     SB.from("sets")
-      .select("id,name,name_de,series,card_count,release_date,logo_url,image_url,symbol_url")
+      .select("id,name,name_de,series,card_count,release_date")
       .order("release_date", { ascending: false }).limit(300)
       .then(({ data }) => { setSets(data ?? []); setLoading(false); });
   }, []);
@@ -75,7 +75,7 @@ export default function SetsPage() {
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:10 }}>
                 {seriesSets.map((set: any) => {
-                  const imgSrc = getSetImage(set);
+                  const imgSrc = "https://assets.tcgdex.net/en/" + set.id + "/logo.png";
                   return (
                     <Link key={set.id} href={`/sets/${set.id}`} className="set-card">
                       {/* Set logo/image */}
