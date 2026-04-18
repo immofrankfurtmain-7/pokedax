@@ -276,8 +276,8 @@ function CreateModal({ presellCardId, onClose, onCreated }: {
             style={{ width: "100%", padding: "14px 18px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, color: TX, fontSize: 15, outline: "none", fontFamily: "inherit", transition: "border-color 0.2s" }}
             onFocus={e => (e.target as any).style.borderColor = "rgba(201,166,107,0.4)"}
             onBlur={e  => (e.target as any).style.borderColor = "rgba(255,255,255,0.1)"}/>
-          {results.length > 0 && !card && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10, background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0 0 12px 12px", boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}>
+          {results.length > 0 && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 9999, background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "0 0 12px 12px", boxShadow: "0 16px 40px rgba(0,0,0,0.6)" }}>
               {results.map((r: any) => (
                 <button key={r.id} onClick={() => { setCard(r); setSearch(r.name_de || r.name); setResults([]); }} style={{
                   display: "flex", alignItems: "center", gap: 10,

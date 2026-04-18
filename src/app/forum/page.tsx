@@ -22,7 +22,7 @@ function timeAgo(date: string) {
 export default function ForumPage() {
   const [posts,   setPosts]   = useState<any[]>([]);
   const [cats,    setCats]    = useState<any[]>([]);
-  const [catId,   setCatId]   = useState<string|null>("einsteiger");
+  const [catId,   setCatId]   = useState<string>("einsteiger");
   const [loading, setLoading] = useState(true);
   const [user,    setUser]    = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
@@ -36,11 +36,13 @@ export default function ForumPage() {
           setCats(data);
         } else {
           setCats([
-            { id: null, name: "Allgemein",  icon: "💬" },
-            { id: null, name: "Preise",     icon: "📈" },
-            { id: null, name: "Suche/Biete",icon: "🔄" },
-            { id: null, name: "Neuheiten",  icon: "✨" },
-            { id: null, name: "Grading",    icon: "🏆" },
+            { id: "einsteiger", name: "Einsteiger",       icon: "💬" },
+            { id: "preise",     name: "Preisdiskussion",  icon: "📈" },
+            { id: "marktplatz", name: "Marktplatz",       icon: "🔄" },
+            { id: "news",       name: "Neuigkeiten",      icon: "✨" },
+            { id: "turniere",   name: "Turniere & Events",icon: "🏆" },
+            { id: "fake-check", name: "Fake-Check",       icon: "🔍" },
+            { id: "premium",    name: "Premium Lounge",   icon: "✦"  },
           ]);
         }
       });
@@ -69,7 +71,7 @@ export default function ForumPage() {
         forum_categories: Array.isArray(p.forum_categories) ? p.forum_categories[0] : p.forum_categories,
         cards:            Array.isArray(p.cards)            ? p.cards[0]            : p.cards,
       })));
-    } catch {}
+    } catch(err) { console.error("Forum load error:", err); }
     setLoading(false);
   }
 
@@ -126,7 +128,7 @@ export default function ForumPage() {
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 12 }}>Kategorien</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <button className={"cat-btn" + (catId === null ? " active" : "")} onClick={() => setCatId(null)}>Alle Beiträge</button>
-              {cats.map((cat: any) => (
+              {cats.filter((c: any) => c.id).map((cat: any) => (
                 <button key={cat.id || cat.name} className={"cat-btn" + (catId === cat.id ? " active" : "")} onClick={() => setCatId(cat.id)}>
                   {cat.icon && <span style={{ marginRight: 6 }}>{cat.icon}</span>}{cat.name}
                 </button>
@@ -239,7 +241,7 @@ function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: ()=>
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: GD2, marginBottom: 8 }}>Kategorie</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {cats.filter(c => c.id).map((cat: any) => (
+            {cats.filter((c: any) => c.id !== null && c.id !== undefined).map((cat: any) => (
               <button key={cat.id} onClick={() => setCatId(cat.id)} style={{ padding: "7px 16px", borderRadius: 100, fontSize: 12, fontWeight: 500, cursor: "pointer", border: "1px solid", transition: "all .15s", borderColor: catId===cat.id?"rgba(201,166,107,0.4)":"rgba(255,255,255,0.1)", background: catId===cat.id?"rgba(201,166,107,0.1)":"transparent", color: catId===cat.id?GOLD:TX2 }}>
                 {cat.icon && cat.icon + " "}{cat.name}
               </button>
