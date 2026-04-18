@@ -1,4 +1,15 @@
-"use client";
+// Use correct DB schema: author_id, content, category_id
+      const validCatId = catId && catId.length > 10 ? catId : null;
+      let e: any = null;
+      const { error: insertErr } = await SB.from("forum_posts").insert({
+        author_id:   session.user.id,
+        title:       title.trim(),
+        content:     body.trim() || null,
+        category_id: validCatId,
+        upvotes:     0,
+        is_deleted:  false,
+      });
+      e = insertErr;"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
@@ -64,8 +75,8 @@ export default function ForumPage() {
     setLoading(true);
     try {
       let q = SB.from("forum_posts")
-        .select(`id,title,upvotes,created_at,card_id,
-          profiles!forum_posts_user_id_fkey(username),
+        .select(`id,title,content,upvotes,created_at,card_id,
+          profiles!forum_posts_author_id_fkey(username),
           forum_categories!forum_posts_category_id_fkey(name,slug),
           cards!forum_posts_card_id_fkey(name,name_de,image_url)`)
         .eq("is_deleted", false)
@@ -199,9 +210,9 @@ export default function ForumPage() {
                             )}
                           </div>
                           <div style={{ fontSize: 15, fontWeight: 600, color: TX, marginBottom: 4, lineHeight: 1.3 }}>{post.title}</div>
-                          {(post.body || post.content) && (
+                          {(post.content) && (
                             <div style={{ fontSize: 13, color: TX2, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.6 }}>
-                              {post.body || post.content}
+                              {post.content}
                             </div>
                           )}
                           <div style={{ marginTop: 8, display: "flex", gap: 12, fontSize: 11, color: "rgba(237,233,224,0.35)" }}>
@@ -248,12 +259,6 @@ function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: () =
         { user_id: session.user.id, title: title.trim(), category_id: (catId && catId.length > 10) ? catId : null, upvotes: 0 },
       ];
       let e: any = null;
-      for (const attempt of attempts) {
-        const result = await SB.from("forum_posts").insert(attempt);
-        if (!result.error) { e = null; break; }
-        e = result.error;
-        if (!result.error.message?.includes("column")) break;
-      }
       if (e) { setError(e.message); setLoading(false); return; }
       onCreated();
     } catch (e: any) { setError(e.message); }
