@@ -47,10 +47,8 @@ export default function ForumPage() {
         }
       });
     loadPosts(null);
-    channelRef.current = SB.channel("forum_rt")
-      .on("postgres_changes", { event: "*", schema: "public", table: "forum_posts" }, () => loadPosts(catId))
-      .subscribe();
-    return () => { channelRef.current?.unsubscribe(); };
+    // Realtime disabled - WebSocket key issue
+    return () => {};
   }, []);
 
   useEffect(() => { loadPosts(catId); }, [catId]);
@@ -59,18 +57,13 @@ export default function ForumPage() {
     setLoading(true);
     try {
       let q = SB.from("forum_posts")
-        .select("id,title,content,upvotes,created_at,card_id,profiles!forum_posts_author_id_fkey(username),forum_categories!forum_posts_category_id_fkey(name,slug),cards!forum_posts_card_id_fkey(name,name_de,image_url)")
+        .select("id,title,content,upvotes,created_at,card_id,author_id,category_id")
         .neq("is_deleted", true)
         .order("created_at", { ascending: false })
         .limit(40);
       if (categoryId) q = (q as any).eq("category_id", categoryId);
       const { data } = await q;
-      setPosts((data ?? []).map((p: any) => ({
-        ...p,
-        profiles:         Array.isArray(p.profiles)         ? p.profiles[0]         : p.profiles,
-        forum_categories: Array.isArray(p.forum_categories) ? p.forum_categories[0] : p.forum_categories,
-        cards:            Array.isArray(p.cards)            ? p.cards[0]            : p.cards,
-      })));
+      setPosts(data ?? []);
     } catch(err) { console.error("Forum load error:", err); }
     setLoading(false);
   }
@@ -171,9 +164,9 @@ export default function ForumPage() {
                           </div>
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          {post.forum_categories && (
+                          {post.category_id && (
                             <span style={{ padding: "2px 10px", borderRadius: 100, background: "rgba(201,166,107,0.08)", color: GD2, fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", border: "1px solid rgba(201,166,107,0.15)", marginBottom: 6, display: "inline-block" }}>
-                              {post.forum_categories.name}
+                              {post.category_id}
                             </span>
                           )}
                           <div style={{ fontSize: 15, fontWeight: 600, color: TX, marginBottom: 4, lineHeight: 1.3 }}>{post.title}</div>
@@ -183,7 +176,7 @@ export default function ForumPage() {
                             </div>
                           )}
                           <div style={{ marginTop: 8, display: "flex", gap: 12, fontSize: 11, color: "rgba(237,233,224,0.35)" }}>
-                            <span>@{post.profiles?.username ?? "Anonym"}</span>
+                            <span>@{post.author_id?.slice(0,8) ?? "Anonym"}</span>
                             <span>vor {timeAgo(post.created_at)}</span>
                           </div>
                         </div>
