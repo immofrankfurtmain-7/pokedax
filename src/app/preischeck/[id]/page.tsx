@@ -25,6 +25,8 @@ export default function CardDetailPage() {
   const [loading,  setLoading]  = useState(true);
   const [added,    setAdded]    = useState(false);
   const [wished,   setWished]   = useState(false);
+  const [history,  setHistory]  = useState<{date:string;price:number}[]>([]);
+  const [sales,    setSales]    = useState<any[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +39,19 @@ export default function CardDetailPage() {
       ]);
       setCard(c);
       setListings((l ?? []).map((x: any) => ({ ...x, profiles: Array.isArray(x.profiles) ? x.profiles[0] : x.profiles })));
+
+      // Price history
+      const { data: hist } = await SB.from("price_history")
+        .select("date,price").eq("card_id", id as string)
+        .order("date", { ascending: true }).limit(90);
+      if (hist?.length) setHistory(hist);
+
+      // Completed sales from escrow
+      const { data: salesData } = await SB.from("escrow_transactions")
+        .select("amount,created_at,condition,profiles!escrow_transactions_buyer_id_fkey(username)")
+        .eq("card_id", id as string).eq("status","released")
+        .order("created_at", { ascending: false }).limit(10);
+      if (salesData?.length) setSales(salesData.map((s:any) => ({ ...s, profiles: Array.isArray(s.profiles)?s.profiles[0]:s.profiles })));
 
       // Similar cards from same set
       if (c?.set_id) {
@@ -277,7 +292,54 @@ export default function CardDetailPage() {
           </div>
         </div>
 
-        {/* Similar cards */}
+
+        {/* Price History Chart */}
+        {history.length > 1 && (
+          <div style={{ marginTop: 48 }}>
+            <div style={{ width: "100%", height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.2),transparent)", marginBottom: 32 }}/>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 20 }}>
+              Preisverlauf ({history.length} Tage)
+            </div>
+            <div style={{ background: BG2, borderRadius: 20, padding: "24px", border: "1px solid rgba(201,166,107,0.1)" }}>
+              <PriceChart data={history} />
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 11, color: "rgba(237,233,224,0.35)" }}>
+                <span>{history[0]?.date}</span>
+                <span>{history[history.length-1]?.date}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Completed Sales */}
+        {sales.length > 0 && (
+          <div style={{ marginTop: 40 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: GD2, marginBottom: 16 }}>
+              Abgeschlossene Verkäufe
+            </div>
+            <div style={{ background: BG2, borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
+              {(() => {
+                const avg = sales.reduce((s:number,x:any)=>s+(x.amount??0),0)/sales.length;
+                return (
+                  <div style={{ padding:"14px 20px", background:"rgba(201,166,107,0.06)", borderBottom:"1px solid rgba(255,255,255,0.05)", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ fontSize:12, color:GD2 }}>Ø Verkaufspreis</span>
+                    <span className="ph" style={{ fontSize:20, fontWeight:500, color:GOLD }}>{avg.toFixed(2)} €</span>
+                  </div>
+                );
+              })()}
+              {sales.map((s:any, i:number) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", borderBottom:"1px solid rgba(255,255,255,0.04)", fontSize:13 }}>
+                  <div style={{ color:TX2 }}>@{s.profiles?.username ?? "Anonym"} · {s.condition ?? "NM"}</div>
+                  <div style={{ display:"flex", gap:16, alignItems:"center" }}>
+                    <span style={{ color:"rgba(237,233,224,0.35)", fontSize:11 }}>{new Date(s.created_at).toLocaleDateString("de-DE")}</span>
+                    <span style={{ fontFamily:"monospace", fontWeight:600, color:GOLD }}>{s.amount?.toFixed(2)} €</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Similar cards */
         {similar.length > 0 && (
           <div style={{ marginTop: 64 }}>
             <div style={{ width: "100%", height: 1, background: "linear-gradient(90deg,transparent,rgba(201,166,107,0.2),transparent)", marginBottom: 40 }}/>
@@ -302,6 +364,52 @@ export default function CardDetailPage() {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+function PriceChart({ data }: { data: { date: string; price: number }[] }) {
+  const w = 600, h = 120, pad = { t: 8, r: 8, b: 4, l: 8 };
+  const prices = data.map(d => d.price);
+  const minP   = Math.min(...prices);
+  const maxP   = Math.max(...prices);
+  const range  = maxP - minP || 1;
+  const iw     = w - pad.l - pad.r;
+  const ih     = h - pad.t - pad.b;
+
+  const pts = data.map((d, i) => {
+    const x = pad.l + (i / (data.length - 1)) * iw;
+    const y = pad.t + (1 - (d.price - minP) / range) * ih;
+    return `${x},${y}`;
+  });
+
+  const pathD  = `M ${pts.join(" L ")}`;
+  const areaD  = `M ${pts[0]} L ${pts.join(" L ")} L ${pad.l + iw},${pad.t + ih} L ${pad.l},${pad.t + ih} Z`;
+  const last   = data[data.length - 1];
+  const first  = data[0];
+  const up     = last.price >= first.price;
+  const color  = up ? "#3db87a" : "#dc4a5a";
+  const lastPt = pts[pts.length - 1].split(",");
+
+  return (
+    <div style={{ position: "relative" }}>
+      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "auto" }}>
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor={color} stopOpacity="0.3"/>
+            <stop offset="100%" stopColor={color} stopOpacity="0.02"/>
+          </linearGradient>
+        </defs>
+        <path d={areaD} fill="url(#chartGrad)"/>
+        <path d={pathD} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx={lastPt[0]} cy={lastPt[1]} r="3" fill={color}/>
+      </svg>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+        <div style={{ fontSize: 11, color: "rgba(237,233,224,0.4)" }}>{minP.toFixed(2)} €</div>
+        <div style={{ fontSize: 12, fontWeight: 600, color }}>{up?"▲":"▼"} {Math.abs(last.price-first.price).toFixed(2)} € ({((last.price-first.price)/first.price*100).toFixed(1)}%)</div>
+        <div style={{ fontSize: 11, color: "rgba(237,233,224,0.4)" }}>{maxP.toFixed(2)} €</div>
       </div>
     </div>
   );

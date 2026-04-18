@@ -238,20 +238,21 @@ function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: () =
     try {
       const { data: { session } } = await SB.auth.getSession();
       if (!session) { window.location.href = "/auth/login"; return; }
-      const postData: any = {
-        user_id: session.user.id, title: title.trim(),
-        category_id: catId, upvotes: 0, is_deleted: false,
-      };
-      // Try 'content' first (some DB versions use this), fallback to 'body'
       const bodyText = body.trim() || null;
-      postData.content = bodyText;
-      let { error: e } = await SB.from("forum_posts").insert(postData);
-      if (e?.message?.includes("content")) {
-        // Try with 'body' column instead
-        delete postData.content;
-        postData.body = bodyText;
-        const result = await SB.from("forum_posts").insert(postData);
+      // Try all possible column name combinations
+      const attempts = [
+        { user_id: session.user.id, title: title.trim(), content: bodyText, category_id: catId, upvotes: 0, is_deleted: false },
+        { user_id: session.user.id, title: title.trim(), body: bodyText,    category_id: catId, upvotes: 0, is_deleted: false },
+        { author_id: session.user.id, title: title.trim(), content: bodyText, category_id: catId, upvotes: 0 },
+        { author_id: session.user.id, title: title.trim(), body: bodyText,    category_id: catId, upvotes: 0 },
+        { user_id: session.user.id, title: title.trim(), category_id: catId, upvotes: 0 },
+      ];
+      let e: any = null;
+      for (const attempt of attempts) {
+        const result = await SB.from("forum_posts").insert(attempt);
+        if (!result.error) { e = null; break; }
         e = result.error;
+        if (!result.error.message?.includes("column")) break;
       }
       if (e) { setError(e.message); setLoading(false); return; }
       onCreated();
