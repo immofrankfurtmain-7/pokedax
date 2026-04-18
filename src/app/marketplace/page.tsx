@@ -215,9 +215,22 @@ function CreateModal({ presellCardId, onClose, onCreated }: {
   async function searchCards(q: string) {
     setSearch(q);
     if (q.length < 2) { setResults([]); return; }
-    const res = await fetch(`/api/cards/search?q=${encodeURIComponent(q)}&limit=6`);
-    const data = await res.json();
-    setResults(data.cards ?? []);
+    try {
+      const url = "/api/cards/search?q=" + encodeURIComponent(q) + "&limit=6";
+      const res = await fetch(url);
+      if (!res.ok) { console.error("Search failed:", res.status); return; }
+      const data = await res.json();
+      console.log("Search results:", data);
+      setResults(data.cards ?? []);
+    } catch(err) {
+      console.error("Search error:", err);
+      // Fallback: search directly in Supabase
+      const { data } = await SB.from("cards")
+        .select("id,name,name_de,set_id,number,image_url,price_market")
+        .or("name.ilike.*" + q + "*,name_de.ilike.*" + q + "*")
+        .limit(6);
+      setResults(data ?? []);
+    }
   }
 
   async function submit() {

@@ -60,7 +60,7 @@ export default function ForumPage() {
     try {
       let q = SB.from("forum_posts")
         .select("id,title,content,upvotes,created_at,card_id,profiles!forum_posts_author_id_fkey(username),forum_categories!forum_posts_category_id_fkey(name,slug),cards!forum_posts_card_id_fkey(name,name_de,image_url)")
-        .eq("is_deleted", false)
+        .neq("is_deleted", true)
         .order("created_at", { ascending: false })
         .limit(40);
       if (categoryId) q = (q as any).eq("category_id", categoryId);
@@ -225,7 +225,7 @@ function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: ()=>
         is_deleted:  false,
       });
       if (e) { setError(e.message); setLoading(false); return; }
-      onCreated();
+      onCreated(); // triggers loadPosts in parent
     } catch (e: any) { setError(e.message); }
     setLoading(false);
   }
