@@ -42,11 +42,11 @@ export default function ForumPage() {
         } else {
           // Fallback categories if table is empty
           setCats([
-            { id: "1", name: "Allgemein",    slug: "allgemein",    icon: "💬" },
-            { id: "2", name: "Preise",        slug: "preise",       icon: "📈" },
-            { id: "3", name: "Suche/Biete",   slug: "suche-biete",  icon: "🔄" },
-            { id: "4", name: "Neuheiten",     slug: "neuheiten",    icon: "✨" },
-            { id: "5", name: "Grading",       slug: "grading",      icon: "🏆" },
+            { id: null, name: "Allgemein",    slug: "allgemein",    icon: "💬" },
+            { id: null, name: "Preise",        slug: "preise",       icon: "📈" },
+            { id: null, name: "Suche/Biete",   slug: "suche-biete",  icon: "🔄" },
+            { id: null, name: "Neuheiten",     slug: "neuheiten",    icon: "✨" },
+            { id: null, name: "Grading",       slug: "grading",      icon: "🏆" },
           ]);
         }
       });
@@ -241,11 +241,11 @@ function NewPostModal({ cats, onClose, onCreated }: { cats: any[]; onClose: () =
       const bodyText = body.trim() || null;
       // Try all possible column name combinations
       const attempts = [
-        { user_id: session.user.id, title: title.trim(), content: bodyText, category_id: catId, upvotes: 0, is_deleted: false },
-        { user_id: session.user.id, title: title.trim(), body: bodyText,    category_id: catId, upvotes: 0, is_deleted: false },
-        { author_id: session.user.id, title: title.trim(), content: bodyText, category_id: catId, upvotes: 0 },
-        { author_id: session.user.id, title: title.trim(), body: bodyText,    category_id: catId, upvotes: 0 },
-        { user_id: session.user.id, title: title.trim(), category_id: catId, upvotes: 0 },
+        { user_id: session.user.id, title: title.trim(), content: bodyText, category_id: (catId && catId.length > 10) ? catId : null, upvotes: 0, is_deleted: false },
+        { user_id: session.user.id, title: title.trim(), body: bodyText,    category_id: (catId && catId.length > 10) ? catId : null, upvotes: 0, is_deleted: false },
+        { author_id: session.user.id, title: title.trim(), content: bodyText, category_id: (catId && catId.length > 10) ? catId : null, upvotes: 0 },
+        { author_id: session.user.id, title: title.trim(), body: bodyText,    category_id: (catId && catId.length > 10) ? catId : null, upvotes: 0 },
+        { user_id: session.user.id, title: title.trim(), category_id: (catId && catId.length > 10) ? catId : null, upvotes: 0 },
       ];
       let e: any = null;
       for (const attempt of attempts) {
