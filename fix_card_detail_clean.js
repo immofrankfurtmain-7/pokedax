@@ -1,4 +1,7 @@
-"use client";
+const fs = require('fs'), path = require('path');
+const f = path.join('C:\\Users\\lenovo\\pokedax\\pokedax\\pokedax', 'src/app/preischeck/[id]/page.tsx');
+
+const content = `"use client";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -366,3 +369,10 @@ function PriceChart({ data }: { data: { date: string; price: number }[] }) {
     </div>
   );
 }
+`;
+
+fs.mkdirSync(path.dirname(f), { recursive: true });
+fs.writeFileSync(f, content, 'utf8');
+console.log('Written:', content.length, 'bytes');
+console.log('Has @import:', content.includes('@import'));
+console.log('Has backtick style:', content.includes('<style>{`'));
