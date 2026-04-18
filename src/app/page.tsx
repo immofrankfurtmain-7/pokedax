@@ -132,30 +132,7 @@ export default function HomePage() {
       `}</style>
 
       {/* ── NAVBAR ─────────────────────────────────────────── */}
-      <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
-        borderBottom: `1px solid rgba(201,166,107,${scrolled?0.15:0.06})`,
-        background: scrolled ? "rgba(10,10,10,0.97)" : "rgba(10,10,10,0.8)",
-        backdropFilter: "blur(20px)",
-        transition: "all 0.3s",
-      }}>
-        <div style={{ maxWidth:1600, margin:"0 auto", padding:"0 clamp(20px,4vw,40px)", height:88, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-          <Link href="/" style={{ textDecoration:"none", color:TX }}>
-            <span className="heading" style={{ fontSize:36, letterSpacing:"-1.5px" }}>pokédax</span>
-          </Link>
-
-          <div className="nav-links" style={{ display:"flex", alignItems:"center", gap:40 }}>
-            {[["#scanner","KI-Scanner"],["#marktplatz","Marktplatz"],["#sammlung","Sammlung"],["#portfolio","Portfolio"]].map(([href,label])=>(
-              <a key={href} href={href} className="nav-link">{label}</a>
-            ))}
-          </div>
-
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <Link href="/auth/login"    className="btn-outline" style={{ padding:"12px 24px" }}>Anmelden</Link>
-            <Link href="/auth/register" className="btn-gold"   style={{ padding:"12px 28px" }}>Kostenlos starten</Link>
-          </div>
-        </div>
-      </nav>
+      
 
       {/* ── HERO ───────────────────────────────────────────── */}
       <header style={{ minHeight:"100vh", display:"flex", alignItems:"center", maxWidth:1600, margin:"0 auto", padding:"clamp(120px,18vw,180px) clamp(20px,4vw,40px) clamp(60px,8vw,100px)" }}>

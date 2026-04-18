@@ -94,23 +94,7 @@ export default function CardDetailPage() {
   return (
     <div style={{ background: BG, minHeight: "100vh", color: TX }}>
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap"/>
-      <style>{`
-.ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
-        .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s; width:100%; justify-content:center; }
-        .btn-gold:hover { transform:scale(1.02); }
-        .btn-outline { display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border:1px solid rgba(201,166,107,0.3); color:#C9A66B; border-radius:100px; background:transparent; font-size:14px; cursor:pointer; text-decoration:none; transition:all 0.2s; width:100%; justify-content:center; }
-        .btn-outline:hover { background:#C9A66B; color:#0A0A0A; }
-        .listing-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:#1A1A1A; border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.15s; }
-        .listing-row:hover { background:#1F1F1F; }
-        .listing-row:last-child { border-bottom:none; }
-        .sim-card { background:#111111; border:1px solid rgba(255,255,255,0.06); border-radius:16px; overflow:hidden; text-decoration:none; display:block; transition:transform 0.2s,border-color 0.2s; }
-        .sim-card:hover { transform:translateY(-4px); border-color:rgba(201,166,107,0.25); }
-        .attack-row { padding:16px 18px; background:#1A1A1A; border-bottom:1px solid rgba(255,255,255,0.05); }
-        .attack-row:last-child { border-bottom:none; }
-        .stat-cell { padding:16px; background:#111111; border-right:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05); }
-        .breadcrumb-link { color:rgba(237,233,224,0.4); text-decoration:none; font-size:13px; transition:color 0.15s; }
-        .breadcrumb-link:hover { color:#C9A66B; }
-      `}</style>
+      <style dangerouslySetInnerHTML={{__html:"\n.ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }\n        .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s; width:100%; justify-content:center; }\n        .btn-gold:hover { transform:scale(1.02); }\n        .btn-outline { display:inline-flex; align-items:center; gap:8px; padding:13px 24px; border:1px solid rgba(201,166,107,0.3); color:#C9A66B; border-radius:100px; background:transparent; font-size:14px; cursor:pointer; text-decoration:none; transition:all 0.2s; width:100%; justify-content:center; }\n        .btn-outline:hover { background:#C9A66B; color:#0A0A0A; }\n        .listing-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:#1A1A1A; border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.15s; }\n        .listing-row:hover { background:#1F1F1F; }\n        .listing-row:last-child { border-bottom:none; }\n        .sim-card { background:#111111; border:1px solid rgba(255,255,255,0.06); border-radius:16px; overflow:hidden; text-decoration:none; display:block; transition:transform 0.2s,border-color 0.2s; }\n        .sim-card:hover { transform:translateY(-4px); border-color:rgba(201,166,107,0.25); }\n        .attack-row { padding:16px 18px; background:#1A1A1A; border-bottom:1px solid rgba(255,255,255,0.05); }\n        .attack-row:last-child { border-bottom:none; }\n        .stat-cell { padding:16px; background:#111111; border-right:1px solid rgba(255,255,255,0.05); border-bottom:1px solid rgba(255,255,255,0.05); }\n        .breadcrumb-link { color:rgba(237,233,224,0.4); text-decoration:none; font-size:13px; transition:color 0.15s; }\n        .breadcrumb-link:hover { color:#C9A66B; }\n      "}}/>
 
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "clamp(60px,8vw,100px) clamp(20px,4vw,48px)" }}>
 
