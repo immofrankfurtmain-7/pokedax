@@ -94,7 +94,7 @@ export default function CardDetailPage() {
   return (
     <div style={{ background: BG, minHeight: "100vh", color: TX }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700\u0026family=Instrument+Sans:wght@400;500;600\u0026display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap');
         .ph { font-family:'Playfair Display',serif; letter-spacing:-0.05em; }
         .btn-gold { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; background:#C9A66B; color:#0A0A0A; border-radius:100px; border:none; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:transform 0.2s; width:100%; justify-content:center; }
         .btn-gold:hover { transform:scale(1.02); }
@@ -382,20 +382,21 @@ function PriceChart({ data }: { data: { date: string; price: number }[] }) {
   const pts = data.map((d, i) => {
     const x = pad.l + (i / (data.length - 1)) * iw;
     const y = pad.t + (1 - (d.price - minP) / range) * ih;
-    return `${x},${y}`;
+    return x.toFixed(2) + "," + y.toFixed(2);
   });
 
-  const pathD  = `M ${pts.join(" L ")}`;
-  const areaD  = `M ${pts[0]} L ${pts.join(" L ")} L ${pad.l + iw},${pad.t + ih} L ${pad.l},${pad.t + ih} Z`;
+  const ptsStr = pts.join(" L ");
+  const pathD  = "M " + ptsStr;
+  const areaD  = "M " + pts[0] + " L " + ptsStr + " L " + (pad.l + iw) + "," + (pad.t + ih) + " L " + pad.l + "," + (pad.t + ih) + " Z";
   const last   = data[data.length - 1];
   const first  = data[0];
   const up     = last.price >= first.price;
   const color  = up ? "#3db87a" : "#dc4a5a";
-  const lastPt = pts[pts.length - 1].split(",");
+  const lastPtArr = pts[pts.length - 1].split(","); const lastPt = [lastPtArr[0], lastPtArr[1]];
 
   return (
     <div style={{ position: "relative" }}>
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "auto" }}>
+      <svg viewBox={"0 0 " + w + " " + h} style={{ width: "100%", height: "auto" }}>
         <defs>
           <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor={color} stopOpacity="0.3"/>
